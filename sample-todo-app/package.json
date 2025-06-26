@@ -4,17 +4,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "echo 'dev sample-app'",
+    "dev": "vite",
     "test": "vitest"
   },
   "dependencies": {
     "@intentional-ui/core": "workspace:*",
     "@intentional-ui/intentional-mui": "workspace:*",
-    "@intentional-ui/intentional-shadcn": "workspace:*"
+    "@intentional-ui/intentional-shadcn": "workspace:*",
+    "react-router-dom": "^7.6.2"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^4.6.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "vite": "^7.0.0",
     "vitest": "latest"
   }
-} 
+}

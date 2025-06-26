@@ -14,10 +14,11 @@
   },
   "devDependencies": {
     "react": "^18.2.0",
-    "vitest": "latest",
-    "rollup": "latest"
+    "react-dom": "^18.2.0",
+    "rollup": "latest",
+    "vitest": "latest"
   },
   "peerDependencies": {
     "react": "^18.2.0"
   }
-} 
+}
