@@ -1,0 +1,18 @@
+{
+  "name": "@intentional-ui/storybook",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'dev storybook'"
+  },
+  "dependencies": {
+    "@intentional-ui/core": "workspace:*",
+    "@intentional-ui/intentional-mui": "workspace:*",
+    "@intentional-ui/intentional-shadcn": "workspace:*"
+  },
+  "devDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+} 

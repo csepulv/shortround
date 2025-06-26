@@ -1,0 +1,23 @@
+{
+  "name": "@intentional-ui/intentional-mui",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "scripts": {
+    "build": "echo 'build intentional-mui'",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@intentional-ui/core": "workspace:*"
+  },
+  "devDependencies": {
+    "react": "^18.2.0",
+    "vitest": "latest",
+    "rollup": "latest"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  }
+} 

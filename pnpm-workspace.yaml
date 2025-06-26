@@ -1,0 +1,8 @@
+packages:
+  - 'core'
+  - 'intentional-mui'
+  - 'intentional-shadcn'
+  - 'sample-todo-app'
+  - 'storybook'
+  - '!./.prettierrc.json'
+  - '!./eslint.config.js' 
