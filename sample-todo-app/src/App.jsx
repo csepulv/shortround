@@ -1,5 +1,7 @@
 import React from 'react';
+import { Box } from '@mui/material';
 import { IntentionalDialog } from '@intentional-ui/intentional-mui/src/IntentionalDialog.jsx';
+import { SystemIntentIds } from '@intentional-ui/core/src/utils.js';
 
 const help = {
   id: 'help',
@@ -7,21 +9,18 @@ const help = {
   subtitle: 'Help',
   icon: 'help',
   action: () => ({
+    systemIntentions: [SystemIntentIds.BACK],
     intentions: [
-      {
-        id: 'back',
-        title: 'Back',
-        icon: 'back',
-        group: 'Actions',
-        action: (text) => console.log(text)
-      },
       {
         id: 'help::using-app',
         title: 'Using the App',
         subtitle: 'Guidance on app usage',
         icon: 'help',
         group: 'Help',
-        action: (text) => console.log(text)
+        action: (text) => {
+          console.log(text);
+          return { systemIntentions: [SystemIntentIds.BACK] };
+        }
       },
       {
         id: 'help::faq',
@@ -29,7 +28,10 @@ const help = {
         subtitle: 'Common questions (and answers)',
         icon: 'help',
         group: 'Help',
-        action: (text) => console.log(text)
+        action: (text) => {
+          console.log(text);
+          return { systemIntentions: [SystemIntentIds.BACK] };
+        }
       }
     ],
     selectedIntention: 'help::using-app'

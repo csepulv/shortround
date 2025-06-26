@@ -6,12 +6,15 @@ import { ANIMATION_DURATION } from './mui-styles.js';
 import { SidecarDrawer } from './SidecarDrawer.jsx';
 import {
   IntentionalDialogProvider,
-  useIntentionalDialogController
+  useIntentionalDialogController,
+  useIntentionalKeyboardShortcuts
 } from './useIntentionalDialogController.js';
 
 function IntentionalDialogContent({ title, defaultIntentions }) {
   const { isOpen, onClose, anchorOrigin, anchorPosition, transformOrigin, height, totalWidth } =
     useIntentionalDialogController();
+
+  useIntentionalKeyboardShortcuts();
   return (
     <motion.div
       animate={{

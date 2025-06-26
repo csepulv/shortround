@@ -76,6 +76,7 @@ export function IntentionalDialogProvider({
 
   const value = {
     isOpen,
+    setIsOpen,
     onClose,
     height,
     size,
@@ -100,24 +101,31 @@ export function IntentionalDialogProvider({
 
 export const useIntentionalDialogController = () => useContext(IntentionalDialogContext);
 
-export const useIntentionalKeyboardShortcuts = () =>
-  useEffect(() => {
-    console.log('REGISTERING');
-    const handleKeyDown = (event) => {
-      console.log('handleKeyDown', event);
-      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
-        // event.preventDefault();
-      }
+export const useIntentionalKeyboardShortcuts = (installKeyboardShortcuts = true) => {
+  const { setIsOpen } = useIntentionalDialogController();
+  console.log('USE CONTROLLER', useIntentionalDialogController());
+  return useEffect(() => {
+    if (installKeyboardShortcuts) {
+      console.log('REGISTERING');
+      const handleKeyDown = (event) => {
+        console.log('handleKeyDown', event);
+        if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+          // event.preventDefault();
+          setIsOpen(true);
+        }
 
-      if (event.key === 'Escape') {
-        console.log('ESCAPING');
-      }
-    };
+        if (event.key === 'Escape') {
+          console.log('ESCAPING');
+          setIsOpen(false);
+        }
+      };
 
-    document.addEventListener('keydown', handleKeyDown, { capture: true });
-    document.addEventListener('keypress', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('keypress', handleKeyDown);
-    };
+      document.addEventListener('keydown', handleKeyDown, { capture: true });
+      document.addEventListener('keypress', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('keypress', handleKeyDown);
+      };
+    }
   }, []);
+};

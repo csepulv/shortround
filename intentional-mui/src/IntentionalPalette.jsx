@@ -97,7 +97,7 @@ export function IntentionalPalette({ defaultIntentions }) {
                   className="intention-item"
                   key={intention.id}
                   keywords={intention.keywords}
-                  onSelect={() => dispatch(intention, inputValue)}
+                  onSelect={dispatch}
                   value={intention.id}
                 >
                   <Box sx={styles.itemFrame}>
