@@ -2,10 +2,10 @@ import { makeValidator, requiredAlphanumericDashUnderscoreSpace } from './valida
 import { SystemIntentIds } from '@intentional-ui/core/src/utils.js';
 
 export const saveItemIntent = {
-  id: 'search::start-build',
-  title: 'Search',
-  subtitle: 'Search for ...',
-  icon: 'search',
+  id: 'save::start-build',
+  title: 'Save',
+  subtitle: 'Save ...',
+  icon: 'save',
   action: () => ({
     intentions: [
       {

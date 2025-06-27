@@ -95,11 +95,12 @@ export function IntentionalPalette({ defaultIntentions }) {
               {group.intentions.map((intention) => (
                 <CmdkCommand.Item
                   className="intention-item"
+                  disabled={intention.disabled}
                   key={intention.id}
                   keywords={intention.keywords}
                   onSelect={async (id) => {
                     const result = await dispatch(id);
-                    if (result.sideEffects?.sidecarRenderer) {
+                    if (result?.sideEffects?.sidecarRenderer) {
                       setSidecarRenderer(result.sideEffects?.sidecarRenderer);
                     } else {
                       closeSidecar();

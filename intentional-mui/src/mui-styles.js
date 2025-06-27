@@ -31,28 +31,6 @@ export function CommandIcon({ iconName }) {
   return <IconComponent sx={{ fontSize: 18, color: 'action.active' }} />;
 }
 
-export function shortcutEffectHandler(setOpenState) {
-  return () => {
-    const handleKeyDown = (event) => {
-      // Check for Cmd+K (Mac) or Ctrl+K (Windows/Linux)
-      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
-        event.preventDefault();
-        setOpenState(true);
-      }
-
-      // ESC to close
-      if (event.key === 'Escape') {
-        setOpenState(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  };
-}
-
 export function makeIntentionalPaletteStyles(theme) {
   return {
     root: {
@@ -109,6 +87,13 @@ export function makeIntentionalPaletteStyles(theme) {
         willChange: 'background, color',
         transition: 'all 150ms ease',
         position: 'relative',
+        '&[data-disabled="true"]': {
+          color: theme.palette.text.disabled,
+          cursor: 'not-allowed',
+          '& .MuiTypography-root': {
+            color: theme.palette.text.disabled
+          }
+        },
         '&[data-selected="true"]': {
           background: alpha(theme.palette.primary.main, 0.12),
           color: theme.palette.primary.main,
@@ -132,6 +117,12 @@ export function makeIntentionalPaletteStyles(theme) {
         },
         '&:last-child': {
           marginBottom: '8px'
+        },
+        '&:hover': {
+          bgcolor: alpha(theme.palette.primary.main, 0.08)
+        },
+        '&[data-disabled="true"]:hover': {
+          bgcolor: 'transparent'
         }
       },
       '& [cmdk-separator]': {
@@ -182,13 +173,15 @@ export function makeIntentionalPaletteStyles(theme) {
       '&:hover': {
         bgcolor: alpha(theme.palette.primary.main, 0.08)
       },
+      '&[data-disabled="true"]:hover': {
+        bgcolor: 'transparent'
+      },
       '&[data-selected="true"]': {
         bgcolor: alpha(theme.palette.primary.main, 0.12)
       }
     },
     itemTitle: {
       fontWeight: 500,
-      color: 'text.primary',
       mb: 0.25
     }
   };
