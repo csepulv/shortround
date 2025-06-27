@@ -17,6 +17,7 @@ export const saveItemIntent = {
         validate: makeValidator(requiredAlphanumericDashUnderscoreSpace)
       }
     ],
+    disableInputMatching: true,
     systemIntentions: [SystemIntentIds.CANCEL]
   }),
   group: 'Common'

@@ -102,6 +102,7 @@ export function useIntentional({ defaultIntentions }) {
     currentIntentions.forEach((intention) => {
       if (intention.disabled) {
         const result = intention.validate?.(newVal);
+        console.log('validate', result, newVal);
         if (result) {
           changes.push({
             intentionId: intention.id,

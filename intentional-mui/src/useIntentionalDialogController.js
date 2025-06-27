@@ -39,9 +39,7 @@ export const useIntentionalDialogController = () => useContext(IntentionalContex
 const useIntentionalKeyboardShortcuts = (setIsOpen, installKeyboardShortcuts = true) => {
   return useEffect(() => {
     if (installKeyboardShortcuts) {
-      console.log('REGISTERING');
       const handleKeyDown = (event) => {
-        console.log('handleKeyDown', event);
         if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
           // event.preventDefault();
           setIsOpen(true);
