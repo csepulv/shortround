@@ -27,6 +27,7 @@ const systemIntentions = [CANCEL_INTENTION, BACK_INTENTION];
 
 export function useIntentional({ defaultIntentions }) {
   const [inputValue, setInputValue] = useState('');
+  const [sideEffects, setSideEffects] = useState();
   const [currentIntentions, setCurrentIntentions] = useState(defaultIntentions);
   const [intentionIndex, setIntentionIndex] = useState(indexIntentions(defaultIntentions));
   const [additionalIntentions, setAdditionalIntents] = useState([]);
@@ -90,6 +91,7 @@ export function useIntentional({ defaultIntentions }) {
 
     setDisableInputMatching(result.disableInputMatching);
 
+    setSideEffects(result.sideEffects);
     setInputValue('');
     return result;
   };
@@ -133,6 +135,7 @@ export function useIntentional({ defaultIntentions }) {
     inputValue,
     updateInputValue,
     intentions: availableIntentions,
+    sideEffects,
     dispatch,
     cancel,
     back,

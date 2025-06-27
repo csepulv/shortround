@@ -1,10 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, test } from 'vitest';
-import {
-  BACK_INTENTION,
-  CANCEL_INTENTION,
-  useIntentional
-} from "../useIntentional.js";
+import { BACK_INTENTION, CANCEL_INTENTION, useIntentional } from '../useIntentional.js';
 
 import { SystemIntentIds, NO_OP } from '../utils.js';
 
@@ -85,7 +81,7 @@ describe('useIntentional', () => {
         ).rejects.toThrow('Invariant failed: Unknown intention id: bad-id');
       });
       test('should handle new intentions, clear input', async () => {
-        second.action = vi.fn().mockResolvedValue({ intentions });
+        second.action = vi.fn().mockResolvedValue({ intentions, sideEffects: 'the side effect' });
         act(() => {
           hook.result.current.updateInputValue('foo');
         });
@@ -98,6 +94,7 @@ describe('useIntentional', () => {
         expect(second.action).toHaveBeenCalledWith('foo');
         expect(hook.result.current.intentions).toEqual(intentions);
         expect(hook.result.current.inputValue).toEqual('');
+        expect(hook.result.current.sideEffects).toEqual('the side effect');
       });
       test('should include back, cancel as requested', async () => {
         second.action = () => ({
@@ -174,6 +171,7 @@ describe('useIntentional', () => {
       thirdIntentions = defaultIntentions;
       second.action = () => ({
         intentions: secondIntentions,
+        sideEffects: 'the side effect',
         systemIntentions: [SystemIntentIds.BACK, SystemIntentIds.CANCEL]
       });
       third.action = () => ({
@@ -184,11 +182,12 @@ describe('useIntentional', () => {
         await hook.result.current.dispatch(second.id);
       });
       expect(hook.result.current.intentions.length).toEqual(4);
-
+      expect(hook.result.current.sideEffects).toEqual('the side effect');
       await act(async () => {
         await hook.result.current.dispatch(third.id);
       });
       expect(hook.result.current.intentions.length).toEqual(5);
+      expect(hook.result.current.sideEffects).toBeOneOf([null, undefined]);
     };
     test('should handle back intention', async () => {
       await dispatchSecondAndThirdIntentions();
