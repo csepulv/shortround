@@ -3,11 +3,15 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 export const FULL_HEIGHT_POPOVER = '100vh';
 
 export const positionAnchors = {
-  center: { top: window.innerHeight / 2, left: window.innerWidth / 2 },
+  center: {
+    top: window.innerHeight / 2,
+    left: window.innerWidth / 2,
+    transform: 'translate(-50%, -50%)'
+  },
   'top-left': { top: 0, left: 0 },
-  'top-right': { top: 0, left: window.innerWidth },
-  'bottom-right': { top: window.innerHeight, left: window.innerWidth },
-  'bottom-left': { top: window.innerHeight, left: 0 }
+  'top-right': { top: 0, right: 0 },
+  'bottom-right': { bottom: 0, right: 0 },
+  'bottom-left': { bottom: 0, left: 0 }
 };
 
 export const originTransforms = {

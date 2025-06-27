@@ -1,4 +1,4 @@
-import { Box, Popover } from '@mui/material';
+import { Box, Paper, Popper, Portal, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
 
 import { IntentionalPaletteFrame } from './IntentionalPaletteFrame.jsx';
@@ -10,8 +10,9 @@ import {
 } from './useIntentionalDialogController.js';
 
 function IntentionalDialogContent({ title, defaultIntentions }) {
-  const { isOpen, onClose, anchorOrigin, anchorPosition, transformOrigin, height, totalWidth } =
+  const { isOpen, anchorPosition, anchorOrigin, height, totalWidth } =
     useIntentionalDialogController();
+  if (!isOpen) return null;
 
   return (
     <motion.div
@@ -21,36 +22,33 @@ function IntentionalDialogContent({ title, defaultIntentions }) {
       layout
       transition={{ duration: ANIMATION_DURATION, ease: 'easeInOut' }}
     >
-      <Popover
-        PaperProps={{
-          sx: {
-            elevation: 1,
-            height,
-            width: totalWidth,
-            backgroundColor: 'transparent',
-            backgroundImage: 'none'
-          }
-        }}
-        anchorPosition={anchorPosition}
-        anchorReference="anchorPosition"
-        onClose={onClose}
-        open={isOpen}
-        transformOrigin={transformOrigin}
-      >
-        <Box
+      <Portal>
+        <Paper
+          elevation={1}
           sx={{
-            backgroundColor: 'transparent',
-            display: 'flex',
+            position: 'fixed',
+            ...anchorPosition,
+            zIndex: (theme) => theme.zIndex.modal + 1,
             height,
             width: totalWidth,
-            alignItems: 'flex-start',
-            flexDirection: anchorOrigin?.toLowerCase()?.endsWith('right') ? 'row-reverse' : 'row'
+            backgroundColor: 'transparent'
           }}
         >
-          <IntentionalPaletteFrame title={title} defaultIntentions={defaultIntentions} />
-          <SidecarDrawer />
-        </Box>
-      </Popover>
+          <Box
+            sx={{
+              backgroundColor: 'transparent',
+              display: 'flex',
+              height,
+              width: totalWidth,
+              alignItems: 'flex-start',
+              flexDirection: anchorOrigin?.toLowerCase()?.endsWith('right') ? 'row-reverse' : 'row'
+            }}
+          >
+            <IntentionalPaletteFrame title={title} defaultIntentions={defaultIntentions} />
+            <SidecarDrawer />
+          </Box>
+        </Paper>
+      </Portal>
     </motion.div>
   );
 }
