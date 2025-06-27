@@ -1,4 +1,4 @@
-import { Box, Paper, Popover, Popper } from '@mui/material';
+import { Box, Popover } from '@mui/material';
 import { motion } from 'framer-motion';
 
 import { IntentionalPaletteFrame } from './IntentionalPaletteFrame.jsx';
@@ -8,19 +8,10 @@ import {
   IntentionalProvider,
   useIntentionalDialogController
 } from './useIntentionalDialogController.js';
-import { useMemo } from 'react';
 
 function IntentionalDialogContent({ title, defaultIntentions }) {
   const { isOpen, onClose, anchorOrigin, anchorPosition, transformOrigin, height, totalWidth } =
     useIntentionalDialogController();
-
-  const anchor = useMemo(
-    () => ({
-      getBoundingClientRect: () => new DOMRect(window.innerWidth / 2, window.innerHeight / 2, 0, 0),
-      contextElement: document.body
-    }),
-    []
-  );
 
   return (
     <motion.div
@@ -30,31 +21,36 @@ function IntentionalDialogContent({ title, defaultIntentions }) {
       layout
       transition={{ duration: ANIMATION_DURATION, ease: 'easeInOut' }}
     >
-      <Popper open={isOpen} anchorEl={anchor} placement="auto">
-        <Paper
-          sx={{
+      <Popover
+        PaperProps={{
+          sx: {
+            elevation: 1,
             height,
             width: totalWidth,
             backgroundColor: 'transparent',
-            boxShadow: 'none',
             backgroundImage: 'none'
+          }
+        }}
+        anchorPosition={anchorPosition}
+        anchorReference="anchorPosition"
+        onClose={onClose}
+        open={isOpen}
+        transformOrigin={transformOrigin}
+      >
+        <Box
+          sx={{
+            backgroundColor: 'transparent',
+            display: 'flex',
+            height,
+            width: totalWidth,
+            alignItems: 'flex-start',
+            flexDirection: anchorOrigin?.toLowerCase()?.endsWith('right') ? 'row-reverse' : 'row'
           }}
         >
-          <Box
-            sx={{
-              backgroundColor: 'transparent',
-              display: 'flex',
-              height,
-              width: totalWidth,
-              alignItems: 'flex-start',
-              flexDirection: anchorOrigin?.toLowerCase()?.endsWith('right') ? 'row-reverse' : 'row'
-            }}
-          >
-            <IntentionalPaletteFrame title={title} defaultIntentions={defaultIntentions} />
-            <SidecarDrawer />
-          </Box>
-        </Paper>
-      </Popper>
+          <IntentionalPaletteFrame title={title} defaultIntentions={defaultIntentions} />
+          <SidecarDrawer />
+        </Box>
+      </Popover>
     </motion.div>
   );
 }

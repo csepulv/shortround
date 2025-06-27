@@ -91,6 +91,7 @@ export function useIntentional({ defaultIntentions }) {
     setDisableInputMatching(result.disableInputMatching);
 
     setInputValue('');
+    return result;
   };
 
   const updateInputValue = (newVal) => {

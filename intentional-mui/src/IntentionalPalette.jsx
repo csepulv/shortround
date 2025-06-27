@@ -37,7 +37,7 @@ export function IntentionalPalette({ defaultIntentions }) {
   const { inputValue, updateInputValue, intentions, dispatch } = useIntentional({
     defaultIntentions
   });
-  const { height } = useIntentionalDialogController();
+  const { height, setSidecarRenderer } = useIntentionalDialogController();
   const theme = useTheme();
 
   const styles = makeIntentionalPaletteStyles(theme);
@@ -97,7 +97,10 @@ export function IntentionalPalette({ defaultIntentions }) {
                   className="intention-item"
                   key={intention.id}
                   keywords={intention.keywords}
-                  onSelect={dispatch}
+                  onSelect={async (id) => {
+                    const result = await dispatch(id);
+                    setSidecarRenderer(() => result.selectedIntention);
+                  }}
                   value={intention.id}
                 >
                   <Box sx={styles.itemFrame}>
