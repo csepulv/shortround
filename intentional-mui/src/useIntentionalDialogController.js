@@ -26,14 +26,46 @@ export const heightMap = {
   full: FULL_HEIGHT_POPOVER
 };
 
-const IntentionalDialogContext = createContext(null);
+const NO_PROVIDER = Symbol('NO_PROVIDER_YET');
 
-export function IntentionalDialogProvider({
+const IntentionalContext = createContext(NO_PROVIDER);
+
+export const useIntentionalDialogController = () => useContext(IntentionalContext);
+
+const useIntentionalKeyboardShortcuts = (setIsOpen, installKeyboardShortcuts = true) => {
+  return useEffect(() => {
+    if (installKeyboardShortcuts) {
+      console.log('REGISTERING');
+      const handleKeyDown = (event) => {
+        console.log('handleKeyDown', event);
+        if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+          // event.preventDefault();
+          setIsOpen(true);
+        }
+
+        if (event.key === 'Escape') {
+          console.log('ESCAPING');
+          setIsOpen(false);
+        }
+      };
+
+      document.addEventListener('keydown', handleKeyDown, { capture: true });
+      document.addEventListener('keypress', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('keypress', handleKeyDown);
+      };
+    }
+  }, []);
+};
+
+function DialogContextProvider({
   children,
   initialIsOpen = false,
   initialAnchorOrigin = 'center',
   maxTotalWidth = '90vw',
-  commandWidth = '40vw'
+  commandWidth = '40vw',
+  installKeyboardShortcuts = true
 }) {
   const [internalSidecarRenderer, setInternalSidecarRenderer] = useState();
   const [showSidecar, setShowSidecar] = useState(false);
@@ -43,6 +75,7 @@ export function IntentionalDialogProvider({
   const [transformOrigin, setTransformOrigin] = useState(originTransforms[initialAnchorOrigin]);
   const [totalWidth, setTotalWidth] = useState(commandWidth);
   const [isOpen, setIsOpen] = useState(initialIsOpen);
+  useIntentionalKeyboardShortcuts(setIsOpen, installKeyboardShortcuts);
 
   const height = size === 'minimized' ? 'auto' : heightMap[size];
   const sidecarWidth = `calc(${maxTotalWidth} - ${commandWidth})`;
@@ -94,38 +127,14 @@ export function IntentionalDialogProvider({
     closeSidecar,
     renderSidecar
   };
-  return (
-    <IntentionalDialogContext.Provider value={value}>{children}</IntentionalDialogContext.Provider>
-  );
+  return <IntentionalContext.Provider value={value}>{children}</IntentionalContext.Provider>;
 }
 
-export const useIntentionalDialogController = () => useContext(IntentionalDialogContext);
-
-export const useIntentionalKeyboardShortcuts = (installKeyboardShortcuts = true) => {
-  const { setIsOpen } = useIntentionalDialogController();
-  console.log('USE CONTROLLER', useIntentionalDialogController());
-  return useEffect(() => {
-    if (installKeyboardShortcuts) {
-      console.log('REGISTERING');
-      const handleKeyDown = (event) => {
-        console.log('handleKeyDown', event);
-        if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
-          // event.preventDefault();
-          setIsOpen(true);
-        }
-
-        if (event.key === 'Escape') {
-          console.log('ESCAPING');
-          setIsOpen(false);
-        }
-      };
-
-      document.addEventListener('keydown', handleKeyDown, { capture: true });
-      document.addEventListener('keypress', handleKeyDown);
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-        document.removeEventListener('keypress', handleKeyDown);
-      };
-    }
-  }, []);
-};
+export function IntentionalProvider(props) {
+  const { children, ...rest } = props;
+  const existing = useIntentionalDialogController();
+  if (existing !== NO_PROVIDER) {
+    return children;
+  }
+  return <DialogContextProvider value={rest}>{children}</DialogContextProvider>;
+}
