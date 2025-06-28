@@ -9,10 +9,12 @@
     ".": {
       "import": "./src/index.js",
       "require": "./dist/intentional-shadcn.js"
-    }
+    },
+    "./styles.css": "./dist/styles.css"
   },
   "scripts": {
     "build": "vite build",
+    "dev": "vite --config vite.dev.config.js",
     "test": "vitest"
   },
   "dependencies": {
@@ -26,6 +28,7 @@
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.11",
     "@tailwindcss/vite": "^4.0.0",
     "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.21",
