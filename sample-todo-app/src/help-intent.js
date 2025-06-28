@@ -46,5 +46,5 @@ export const helpIntent = {
     ],
     selectedIntention: 'help::using-app'
   }),
-  group: 'App'
+  group: 'MuiApp'
 };

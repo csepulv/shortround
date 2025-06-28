@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Button } from '@mui/material';
 import { IntentionalDialog } from '@intentional-ui/intentional-mui/src/IntentionalDialog.jsx';
 import {
@@ -13,7 +12,7 @@ function ToggleIntentionPalette() {
   return <Button onClick={() => setIsOpen(!isOpen)}>Click Me</Button>;
 }
 
-function App() {
+function MuiApp() {
   return (
     <IntentionalProvider>
       <Box sx={{ m: 'auto' }}>
@@ -26,4 +25,4 @@ function App() {
   );
 }
 
-export default App;
+export default MuiApp;
