@@ -3,19 +3,38 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
+  "main": "./dist/intentional-shadcn.js",
+  "module": "./dist/intentional-shadcn.js",
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "require": "./dist/intentional-shadcn.js"
+    }
+  },
   "scripts": {
-    "build": "echo 'build intentional-shadcn'",
+    "build": "vite build",
     "test": "vitest"
   },
   "dependencies": {
-    "@intentional-ui/core": "workspace:*"
+    "@intentional-ui/core": "workspace:*",
+    "@radix-ui/react-dialog": "^1.1.14",
+    "@radix-ui/react-popover": "^1.1.14",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "lucide-react": "^0.523.0",
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@vitejs/plugin-react": "^4.6.0",
+    "autoprefixer": "^10.4.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "rollup": "latest",
+    "tailwindcss": "^4.0.0",
+    "tw-animate-css": "^1.3.4",
+    "vite": "^7.0.0",
     "vitest": "latest"
   },
   "peerDependencies": {

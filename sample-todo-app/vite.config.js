@@ -1,6 +1,7 @@
 import { defineConfig, transformWithEsbuild } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   resolve: {
@@ -9,6 +10,7 @@ export default defineConfig({
     }
   },
   plugins: [
+    tailwindcss(),
     {
       name: 'load+transform-js-files-as-jsx',
       async transform(code, id) {
