@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { Toast } from './Toast.jsx';
 
 export const FULL_HEIGHT_POPOVER = '100vh';
 
@@ -69,6 +70,13 @@ function DialogContextProvider({
   commandWidth = '40vw',
   installKeyboardShortcuts = true
 }) {
+  const [toastData, setToastData] = useState({
+    isOpen: false,
+    message: null,
+    anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
+    severity: 'info',
+    autoHideDuration: 4000
+  });
   const [internalSidecarRenderer, setInternalSidecarRenderer] = useState();
   const [showSidecar, setShowSidecar] = useState(false);
   const [size, setSize] = useState('compact');
@@ -109,6 +117,17 @@ function DialogContextProvider({
     closeSidecar();
   };
 
+  const showToast = ({ message }) => setToastData({ ...toastData, isOpen: true, message });
+
+  const closeToast = () =>
+    setToastData({
+      isOpen: false,
+      message: null,
+      anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
+      severity: 'info',
+      autoHideDuration: 4000
+    });
+
   const value = {
     isOpen,
     setIsOpen,
@@ -127,9 +146,15 @@ function DialogContextProvider({
     commandWidth,
     sidecarWidth,
     closeSidecar,
-    renderSidecar
+    renderSidecar,
+    showToast
   };
-  return <IntentionalContext.Provider value={value}>{children}</IntentionalContext.Provider>;
+  return (
+    <IntentionalContext.Provider value={value}>
+      {children}
+      <Toast toastData={toastData} closeToast={closeToast} />
+    </IntentionalContext.Provider>
+  );
 }
 
 export function IntentionalProvider(props) {

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import invariant from 'tiny-invariant';
 
 import { useFuzzyMatcher } from './useFuzzyMatcher';
@@ -29,13 +29,14 @@ export function useIntentional({ defaultIntentions }) {
   const [inputValue, setInputValue] = useState('');
   const [sideEffects, setSideEffects] = useState();
   const [currentIntentions, setCurrentIntentions] = useState(defaultIntentions);
-  const [intentionIndex, setIntentionIndex] = useState(indexIntentions(defaultIntentions));
   const [additionalIntentions, setAdditionalIntents] = useState([]);
   const [disableInputMatching, setDisableInputMatching] = useState(false);
   const matchingIntentions = useFuzzyMatcher({ inputValue, intentions: currentIntentions });
   const intentStackRef = useRef([]);
 
   const isSystemIntention = (intentionId) => systemIntentionIds.includes(intentionId);
+
+  const intentionIndex = useMemo(() => indexIntentions(currentIntentions), [currentIntentions]);
 
   async function handleSystemIntention(intentionId) {
     switch (intentionId) {
@@ -54,7 +55,7 @@ export function useIntentional({ defaultIntentions }) {
     }
   }
 
-  const cancel = async () => dispatch(SystemIntentIds.CANCEL);
+  const resetIntentions = async () => dispatch(SystemIntentIds.CANCEL);
   const back = async () => dispatch(SystemIntentIds.BACK);
 
   /*
@@ -81,7 +82,6 @@ export function useIntentional({ defaultIntentions }) {
 
     if (result.intentions) {
       setCurrentIntentions(result.intentions);
-      setIntentionIndex(indexIntentions(result.intentions));
     }
 
     const addedIntents = result.systemIntentions
@@ -90,9 +90,11 @@ export function useIntentional({ defaultIntentions }) {
     setAdditionalIntents(addedIntents);
 
     setDisableInputMatching(result.disableInputMatching);
-
     setSideEffects(result.sideEffects);
     setInputValue('');
+    if (result.shouldReset) {
+      resetIntentions();
+    }
     return result;
   };
 
@@ -102,19 +104,18 @@ export function useIntentional({ defaultIntentions }) {
     currentIntentions.forEach((intention) => {
       if (intention.disabled) {
         const result = intention.validate?.(newVal);
-        console.log('validate', result, newVal);
         if (result) {
           changes.push({
             intentionId: intention.id,
             disabled: !result.valid,
-            subtitle: result.message
+            subtitle: result.message || ' '
           });
         }
       }
     });
     if (changes.length > 0) {
-      setCurrentIntentions((existing) =>
-        existing.map((intention) => {
+      setCurrentIntentions((existing) => {
+        return existing.map((intention) => {
           const change = changes.find((c) => c.intentionId === intention.id);
           return change
             ? {
@@ -123,22 +124,21 @@ export function useIntentional({ defaultIntentions }) {
                 subtitle: change.subtitle || intention.subtitle
               }
             : intention;
-        })
-      );
+        });
+      });
     }
   };
 
   const availableIntentions = disableInputMatching
     ? [...additionalIntentions, ...currentIntentions]
     : [...additionalIntentions, ...matchingIntentions];
-
   return {
     inputValue,
     updateInputValue,
     intentions: availableIntentions,
     sideEffects,
     dispatch,
-    cancel,
+    cancel: resetIntentions,
     back,
     intentionStack: [...intentStackRef.current]
   };

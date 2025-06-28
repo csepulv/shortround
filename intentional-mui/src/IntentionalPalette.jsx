@@ -37,7 +37,7 @@ export function IntentionalPalette({ defaultIntentions }) {
   const { inputValue, updateInputValue, intentions, dispatch } = useIntentional({
     defaultIntentions
   });
-  const { height, setSidecarRenderer, closeSidecar } = useIntentionalDialogController();
+  const { height, setSidecarRenderer, closeSidecar, showToast } = useIntentionalDialogController();
   const theme = useTheme();
 
   const styles = makeIntentionalPaletteStyles(theme);
@@ -104,6 +104,9 @@ export function IntentionalPalette({ defaultIntentions }) {
                       setSidecarRenderer(result.sideEffects?.sidecarRenderer);
                     } else {
                       closeSidecar();
+                    }
+                    if (result?.message) {
+                      showToast({ message: result.message });
                     }
                   }}
                   value={intention.id}

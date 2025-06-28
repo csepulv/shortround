@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, test } from 'vitest';
 import { BACK_INTENTION, CANCEL_INTENTION, useIntentional } from '../useIntentional.js';
 
-import { SystemIntentIds, NO_OP } from '../utils.js';
+import { NO_OP, SystemIntentIds } from '../utils.js';
 
 const makeIntention = ({
   id,
@@ -166,9 +166,10 @@ describe('useIntentional', () => {
   });
   describe('back, cancel', () => {
     let secondIntentions, thirdIntentions;
-    const dispatchSecondAndThirdIntentions = async () => {
+    const dispatchSecondAndThirdIntentions = async (intentionsForThird = defaultIntentions) => {
       secondIntentions = [intentions[0], third];
-      thirdIntentions = defaultIntentions;
+      first.action = () => ({ shouldReset: true });
+      thirdIntentions = intentionsForThird;
       second.action = () => ({
         intentions: secondIntentions,
         sideEffects: 'the side effect',
@@ -186,9 +187,18 @@ describe('useIntentional', () => {
       await act(async () => {
         await hook.result.current.dispatch(third.id);
       });
-      expect(hook.result.current.intentions.length).toEqual(5);
+      expect(hook.result.current.intentions.length).toEqual(intentionsForThird.length + 2); // + system
       expect(hook.result.current.sideEffects).toBeOneOf([null, undefined]);
     };
+    test('should reset back to home', async () => {
+      const itention = makeIntention({ id: 'be-done', action: () => ({ shouldReset: true }) });
+      await dispatchSecondAndThirdIntentions([itention]);
+
+      await act(async () => {
+        await hook.result.current.dispatch(itention.id);
+      });
+      expect(hook.result.current.intentions).toEqual(defaultIntentions);
+    });
     test('should handle back intention', async () => {
       await dispatchSecondAndThirdIntentions();
       await act(async () => {

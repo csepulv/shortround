@@ -11,10 +11,12 @@ export const saveItemIntent = {
       {
         id: 'save-item::execute',
         title: 'Save',
+        subtitle: 'Please specify a name.',
         icon: 'save',
         group: 'Actions',
         disabled: true,
-        validate: makeValidator(requiredAlphanumericDashUnderscoreSpace)
+        validate: makeValidator(requiredAlphanumericDashUnderscoreSpace),
+        action: (inputValue) => ({ message: `Saved file: ${inputValue}`, shouldReset: true })
       }
     ],
     disableInputMatching: true,
