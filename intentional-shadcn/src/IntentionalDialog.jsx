@@ -5,9 +5,27 @@ import {
 } from "./components/ui/popover"
 
 import { IntentionalProvider, useIntentionalDialogController } from "./useIntentionalDialogController"
+import { IntentionalPaletteFrame } from "./IntentionalPaletteFrame"
+import { cn } from "./lib/utils";
+import { SidecarDrawer } from "./SidecarDrawer";
+import { motion } from "framer-motion";
 
-function IntentionalDialogContent({ children }) {
-  const { isOpen, setIsOpen } = useIntentionalDialogController();
+const positionClasses = {
+  'top-left': 'top-0 left-0',
+  'top-right': 'top-0 right-0',
+  'bottom-left': 'bottom-0 left-0',
+  'bottom-right': 'bottom-0 right-0',
+  'center': 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
+};
+
+const sizeClasses = {
+  'minimized': 'h-auto',
+  'compact': 'h-[50vh]',
+  'full': 'h-screen',
+}
+
+function DialogContent({ title, defaultIntentions }) {
+  const { isOpen, setIsOpen, anchor, size, totalWidth } = useIntentionalDialogController();
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen} modal={false}>
@@ -15,19 +33,31 @@ function IntentionalDialogContent({ children }) {
         {/* The trigger can be anything, but it's controlled by the isOpen state */}
         <button style={{ display: 'none' }} />
       </PopoverTrigger>
-      <PopoverContent>
-        {children}
+      <PopoverContent
+        className={cn(
+          "fixed p-0",
+          positionClasses[anchor],
+          sizeClasses[size],
+        )}
+        asChild
+      >
+        <motion.div
+          animate={{ width: totalWidth }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="flex h-full"
+        >
+          <IntentionalPaletteFrame title={title} defaultIntentions={defaultIntentions} />
+          <SidecarDrawer />
+        </motion.div>
       </PopoverContent>
     </Popover>
-  )
+  );
 }
 
-export function IntentionalDialog({ children }) {
+export function IntentionalDialog({ title, defaultIntentions }) {
   return (
     <IntentionalProvider>
-      <IntentionalDialogContent>
-        {children}
-      </IntentionalDialogContent>
+      <DialogContent title={title} defaultIntentions={defaultIntentions} />
     </IntentionalProvider>
   )
 } 

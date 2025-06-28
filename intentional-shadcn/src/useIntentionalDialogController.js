@@ -27,20 +27,37 @@ const useIntentionalKeyboardShortcuts = (setIsOpen, installKeyboardShortcuts = t
   }, [installKeyboardShortcuts, setIsOpen]);
 };
 
+export const positionAnchors = [
+  'center',
+  'top-left',
+  'top-right',
+  'bottom-left',
+  'bottom-right',
+];
+
 function DialogContextProvider({
   children,
   initialIsOpen = false,
+  initialAnchor = 'center',
   maxTotalWidth = '90vw',
   commandWidth = '40vw',
   installKeyboardShortcuts = true
 }) {
   const [internalSidecarRenderer, setInternalSidecarRenderer] = useState();
   const [showSidecar, setShowSidecar] = useState(false);
+  const [size, setSize] = useState('compact');
+  const [anchor, setAnchor] = useState(initialAnchor);
   const [totalWidth, setTotalWidth] = useState(commandWidth);
   const [isOpen, setIsOpen] = useState(initialIsOpen);
   useIntentionalKeyboardShortcuts(setIsOpen, installKeyboardShortcuts);
 
   const sidecarWidth = `calc(${maxTotalWidth} - ${commandWidth})`;
+
+  const cycleAnchor = () => {
+    const currentIndex = positionAnchors.indexOf(anchor);
+    const nextIndex = (currentIndex + 1) % positionAnchors.length;
+    setAnchor(positionAnchors[nextIndex]);
+  };
 
   const setSidecarRenderer = (renderer) => {
     setInternalSidecarRenderer(() => renderer);
@@ -67,6 +84,10 @@ function DialogContextProvider({
     isOpen,
     setIsOpen,
     onClose,
+    size,
+    setSize,
+    anchor,
+    cycleAnchor,
     showSidecar,
     setSidecarRenderer,
     totalWidth,

@@ -1,5 +1,9 @@
 import { Button } from '@/components/ui/button';
-import { IntentionalDialog, IntentionalPalette, useIntentionalDialogController } from '@intentional-ui/intentional-shadcn';
+import {
+  IntentionalDialog,
+  IntentionalPalette,
+  useIntentionalDialogController
+} from '@intentional-ui/intentional-shadcn';
 import { helpIntent } from '@/help-intent.js';
 import { saveItemIntent } from '@/save-item-intent.js';
 
@@ -13,12 +17,10 @@ function ShadcnApp() {
     <div className="m-auto">
       <ToggleIntentionPalette />
       <div className="m-auto">
-        <IntentionalDialog>
-          <IntentionalPalette defaultIntentions={[helpIntent, saveItemIntent]} />
-        </IntentionalDialog>
+        <IntentionalDialog defaultIntentions={[helpIntent, saveItemIntent]} />
       </div>
     </div>
   );
 }
 
-export default ShadcnApp; 
+export default ShadcnApp;
