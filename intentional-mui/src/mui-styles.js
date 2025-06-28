@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { alpha } from '@mui/material';
 
-export const ANIMATION_DURATION = 0.75;
+export const ANIMATION_DURATION = 0.5;
 
 export function CommandIcon({ iconName }) {
   const iconMap = {

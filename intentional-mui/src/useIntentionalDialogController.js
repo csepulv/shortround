@@ -115,6 +115,7 @@ function DialogContextProvider({
 
   const onClose = () => {
     closeSidecar();
+    setIsOpen(false);
   };
 
   const showToast = ({ message }) => setToastData({ ...toastData, isOpen: true, message });
