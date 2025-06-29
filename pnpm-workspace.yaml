@@ -1,8 +1,5 @@
 packages:
-  - 'shortround-core'
-  - 'shortround-mui'
-  - 'shortround-shadcn-ui'
-  - 'sample-todo-app'
-  - 'storybook'
+  - 'packages/*'
+  - 'examples/*'
   - '!./.prettierrc.json'
   - '!./eslint.config.js' 

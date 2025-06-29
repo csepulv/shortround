@@ -33,7 +33,26 @@ importers:
         specifier: latest
         version: 2.5.4
 
-  sample-todo-app:
+  examples/storybook:
+    dependencies:
+      '@shortround/core':
+        specifier: workspace:*
+        version: link:../../packages/shortround-core
+      '@shortround/mui':
+        specifier: workspace:*
+        version: link:../../packages/shortround-mui
+      '@shortround/shadcnui':
+        specifier: workspace:*
+        version: link:../../packages/shortround-shadcn-ui
+    devDependencies:
+      react:
+        specifier: ^18.2.0
+        version: 18.2.0
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.2.0(react@18.2.0)
+
+  examples/todo-app:
     dependencies:
       '@emotion/react':
         specifier: ^11.14.0
@@ -52,13 +71,13 @@ importers:
         version: 1.2.3(@types/react@19.1.8)(react@18.2.0)
       '@shortround/core':
         specifier: workspace:*
-        version: link:../shortround-core
+        version: link:../../packages/shortround-core
       '@shortround/mui':
         specifier: workspace:*
-        version: link:../shortround-mui
+        version: link:../../packages/shortround-mui
       '@shortround/shadcnui':
         specifier: workspace:*
-        version: link:../shortround-shadcn-ui
+        version: link:../../packages/shortround-shadcn-ui
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -103,7 +122,7 @@ importers:
         specifier: latest
         version: 3.2.4(jsdom@26.1.0)
 
-  shortround-core:
+  packages/shortround-core:
     dependencies:
       fuzzysort:
         specifier: ^3.1.0
@@ -137,7 +156,7 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(jsdom@26.1.0)
 
-  shortround-mui:
+  packages/shortround-mui:
     dependencies:
       '@shortround/core':
         specifier: workspace:*
@@ -183,7 +202,7 @@ importers:
         specifier: latest
         version: 3.2.4(jsdom@26.1.0)
 
-  shortround-shadcn-ui:
+  packages/shortround-shadcn-ui:
     dependencies:
       '@radix-ui/react-dialog':
         specifier: ^1.1.14
@@ -255,25 +274,6 @@ importers:
       vitest:
         specifier: latest
         version: 3.2.4(jsdom@26.1.0)
-
-  storybook:
-    dependencies:
-      '@shortround/core':
-        specifier: workspace:*
-        version: link:../shortround-core
-      '@shortround/mui':
-        specifier: workspace:*
-        version: link:../shortround-mui
-      '@shortround/shadcnui':
-        specifier: workspace:*
-        version: link:../shortround-shadcn-ui
-    devDependencies:
-      react:
-        specifier: ^18.2.0
-        version: 18.2.0
-      react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
 
 packages:
 
