@@ -33,125 +33,6 @@ importers:
         specifier: latest
         version: 2.5.4
 
-  intentional-mui:
-    dependencies:
-      '@shortround/core':
-        specifier: workspace:*
-        version: link:../shortround-core
-      cmdk:
-        specifier: ^1.1.1
-        version: 1.1.1(@types/react@19.1.8)(react-dom@18.2.0)(react@18.2.0)
-      framer-motion:
-        specifier: ^12.19.1
-        version: 12.19.1(react-dom@18.2.0)(react@18.2.0)
-      react-icons:
-        specifier: ^5.5.0
-        version: 5.5.0(react@18.2.0)
-    devDependencies:
-      '@emotion/react':
-        specifier: ^11.14.0
-        version: 11.14.0(@types/react@19.1.8)(react@18.2.0)
-      '@emotion/styled':
-        specifier: ^11.14.0
-        version: 11.14.0(@emotion/react@11.14.0)(@types/react@19.1.8)(react@18.2.0)
-      '@mui/icons-material':
-        specifier: ^7.1.2
-        version: 7.1.2(@mui/material@7.1.2)(@types/react@19.1.8)(react@18.2.0)
-      '@mui/material':
-        specifier: ^7.1.2
-        version: 7.1.2(@emotion/react@11.14.0)(@emotion/styled@11.14.0)(@types/react@19.1.8)(react-dom@18.2.0)(react@18.2.0)
-      '@vitejs/plugin-react':
-        specifier: ^4.6.0
-        version: 4.6.0(vite@7.0.0)
-      lucide-react:
-        specifier: ^0.523.0
-        version: 0.523.0(react@18.2.0)
-      react:
-        specifier: ^18.2.0
-        version: 18.2.0
-      react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
-      vite:
-        specifier: ^7.0.0
-        version: 7.0.0
-      vitest:
-        specifier: latest
-        version: 3.2.4(jsdom@26.1.0)
-
-  intentional-shadcn:
-    dependencies:
-      '@radix-ui/react-dialog':
-        specifier: ^1.1.14
-        version: 1.1.14(@types/react@19.1.8)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-popover':
-        specifier: ^1.1.14
-        version: 1.1.14(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-slot':
-        specifier: ^1.2.3
-        version: 1.2.3(@types/react@19.1.8)(react@18.2.0)
-      '@radix-ui/react-toggle':
-        specifier: ^1.1.9
-        version: 1.1.9(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-toggle-group':
-        specifier: ^1.1.10
-        version: 1.1.10(react-dom@18.2.0)(react@18.2.0)
-      '@shortround/core':
-        specifier: workspace:*
-        version: link:../shortround-core
-      class-variance-authority:
-        specifier: ^0.7.1
-        version: 0.7.1
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
-      cmdk:
-        specifier: ^1.1.1
-        version: 1.1.1(@types/react@19.1.8)(react-dom@18.2.0)(react@18.2.0)
-      framer-motion:
-        specifier: ^12.19.1
-        version: 12.19.1(react-dom@18.2.0)(react@18.2.0)
-      lucide-react:
-        specifier: ^0.523.0
-        version: 0.523.0(react@18.2.0)
-      tailwind-merge:
-        specifier: ^3.3.1
-        version: 3.3.1
-    devDependencies:
-      '@tailwindcss/postcss':
-        specifier: ^4.1.11
-        version: 4.1.11
-      '@tailwindcss/vite':
-        specifier: ^4.0.0
-        version: 4.0.0(vite@7.0.0)
-      '@vitejs/plugin-react':
-        specifier: ^4.6.0
-        version: 4.6.0(vite@7.0.0)
-      autoprefixer:
-        specifier: ^10.4.21
-        version: 10.4.21(postcss@8.5.6)
-      react:
-        specifier: ^18.2.0
-        version: 18.2.0
-      react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
-      rollup:
-        specifier: latest
-        version: 4.44.1
-      tailwindcss:
-        specifier: ^4.0.0
-        version: 4.0.0
-      tw-animate-css:
-        specifier: ^1.3.4
-        version: 1.3.4
-      vite:
-        specifier: ^7.0.0
-        version: 7.0.0
-      vitest:
-        specifier: latest
-        version: 3.2.4(jsdom@26.1.0)
-
   sample-todo-app:
     dependencies:
       '@emotion/react':
@@ -174,10 +55,10 @@ importers:
         version: link:../shortround-core
       '@shortround/mui':
         specifier: workspace:*
-        version: link:../intentional-mui
+        version: link:../shortround-mui
       '@shortround/shadcnui':
         specifier: workspace:*
-        version: link:../intentional-shadcn
+        version: link:../shortround-shadcnui
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -256,6 +137,125 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(jsdom@26.1.0)
 
+  shortround-mui:
+    dependencies:
+      '@shortround/core':
+        specifier: workspace:*
+        version: link:../shortround-core
+      cmdk:
+        specifier: ^1.1.1
+        version: 1.1.1(@types/react@19.1.8)(react-dom@18.2.0)(react@18.2.0)
+      framer-motion:
+        specifier: ^12.19.1
+        version: 12.19.1(react-dom@18.2.0)(react@18.2.0)
+      react-icons:
+        specifier: ^5.5.0
+        version: 5.5.0(react@18.2.0)
+    devDependencies:
+      '@emotion/react':
+        specifier: ^11.14.0
+        version: 11.14.0(@types/react@19.1.8)(react@18.2.0)
+      '@emotion/styled':
+        specifier: ^11.14.0
+        version: 11.14.0(@emotion/react@11.14.0)(@types/react@19.1.8)(react@18.2.0)
+      '@mui/icons-material':
+        specifier: ^7.1.2
+        version: 7.1.2(@mui/material@7.1.2)(@types/react@19.1.8)(react@18.2.0)
+      '@mui/material':
+        specifier: ^7.1.2
+        version: 7.1.2(@emotion/react@11.14.0)(@emotion/styled@11.14.0)(@types/react@19.1.8)(react-dom@18.2.0)(react@18.2.0)
+      '@vitejs/plugin-react':
+        specifier: ^4.6.0
+        version: 4.6.0(vite@7.0.0)
+      lucide-react:
+        specifier: ^0.523.0
+        version: 0.523.0(react@18.2.0)
+      react:
+        specifier: ^18.2.0
+        version: 18.2.0
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.2.0(react@18.2.0)
+      vite:
+        specifier: ^7.0.0
+        version: 7.0.0
+      vitest:
+        specifier: latest
+        version: 3.2.4(jsdom@26.1.0)
+
+  shortround-shadcnui:
+    dependencies:
+      '@radix-ui/react-dialog':
+        specifier: ^1.1.14
+        version: 1.1.14(@types/react@19.1.8)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-popover':
+        specifier: ^1.1.14
+        version: 1.1.14(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-slot':
+        specifier: ^1.2.3
+        version: 1.2.3(@types/react@19.1.8)(react@18.2.0)
+      '@radix-ui/react-toggle':
+        specifier: ^1.1.9
+        version: 1.1.9(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-toggle-group':
+        specifier: ^1.1.10
+        version: 1.1.10(react-dom@18.2.0)(react@18.2.0)
+      '@shortround/core':
+        specifier: workspace:*
+        version: link:../shortround-core
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      cmdk:
+        specifier: ^1.1.1
+        version: 1.1.1(@types/react@19.1.8)(react-dom@18.2.0)(react@18.2.0)
+      framer-motion:
+        specifier: ^12.19.1
+        version: 12.19.1(react-dom@18.2.0)(react@18.2.0)
+      lucide-react:
+        specifier: ^0.523.0
+        version: 0.523.0(react@18.2.0)
+      tailwind-merge:
+        specifier: ^3.3.1
+        version: 3.3.1
+    devDependencies:
+      '@tailwindcss/postcss':
+        specifier: ^4.1.11
+        version: 4.1.11
+      '@tailwindcss/vite':
+        specifier: ^4.0.0
+        version: 4.0.0(vite@7.0.0)
+      '@vitejs/plugin-react':
+        specifier: ^4.6.0
+        version: 4.6.0(vite@7.0.0)
+      autoprefixer:
+        specifier: ^10.4.21
+        version: 10.4.21(postcss@8.5.6)
+      react:
+        specifier: ^18.2.0
+        version: 18.2.0
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.2.0(react@18.2.0)
+      rollup:
+        specifier: latest
+        version: 4.44.1
+      tailwindcss:
+        specifier: ^4.0.0
+        version: 4.0.0
+      tw-animate-css:
+        specifier: ^1.3.4
+        version: 1.3.4
+      vite:
+        specifier: ^7.0.0
+        version: 7.0.0
+      vitest:
+        specifier: latest
+        version: 3.2.4(jsdom@26.1.0)
+
   storybook:
     dependencies:
       '@shortround/core':
@@ -263,10 +263,10 @@ importers:
         version: link:../shortround-core
       '@shortround/mui':
         specifier: workspace:*
-        version: link:../intentional-mui
+        version: link:../shortround-mui
       '@shortround/shadcnui':
         specifier: workspace:*
-        version: link:../intentional-shadcn
+        version: link:../shortround-shadcnui
     devDependencies:
       react:
         specifier: ^18.2.0
