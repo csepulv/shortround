@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "build": "vite build",
-    "dev": "vite --config vite.dev.config.js",
+    "dev:standalone": "vite --config vite.dev.config.js",
     "test": "vitest"
   },
   "dependencies": {
