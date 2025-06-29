@@ -5,13 +5,12 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
-} from "./components/ui/command"
-import { useIntentional } from '@intentional-ui/core';
+  CommandSeparator
+} from './components/ui/command';
+import { useIntentional } from '@shortround/core';
 import { useIntentionalDialogController } from './useIntentionalDialogController.js';
-import { useMemo } from "react";
-import { File } from "lucide-react";
-
+import { useMemo } from 'react';
+import { File } from 'lucide-react';
 
 export function IntentionalPalette({ defaultIntentions }) {
   const { inputValue, updateInputValue, intentions, dispatch } = useIntentional({
@@ -34,7 +33,7 @@ export function IntentionalPalette({ defaultIntentions }) {
 
   return (
     <Command shouldFilter={false} className="h-full">
-      <CommandInput 
+      <CommandInput
         onValueChange={updateInputValue}
         placeholder="Type a intention or search..."
         value={inputValue}
@@ -60,7 +59,9 @@ export function IntentionalPalette({ defaultIntentions }) {
                 <File className="mr-2 h-4 w-4" />
                 <div className="flex flex-col">
                   <span>{intention.title}</span>
-                  {intention.subtitle && <span className="text-muted-foreground text-xs">{intention.subtitle}</span>}
+                  {intention.subtitle && (
+                    <span className="text-muted-foreground text-xs">{intention.subtitle}</span>
+                  )}
                 </div>
               </CommandItem>
             ))}
@@ -69,5 +70,5 @@ export function IntentionalPalette({ defaultIntentions }) {
         ))}
       </CommandList>
     </Command>
-  )
-} 
+  );
+}

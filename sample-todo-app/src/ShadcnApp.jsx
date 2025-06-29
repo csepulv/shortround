@@ -3,7 +3,7 @@ import {
   IntentionalDialog,
   IntentionalPalette,
   useIntentionalDialogController
-} from '@intentional-ui/intentional-shadcn';
+} from '@shortround/shadcnui';
 import { helpIntent } from '@/help-intent.js';
 import { saveItemIntent } from '@/save-item-intent.js';
 

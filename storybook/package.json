@@ -7,9 +7,9 @@
     "dev:storybook": "echo 'dev storybook'"
   },
   "dependencies": {
-    "@intentional-ui/core": "workspace:*",
-    "@intentional-ui/intentional-mui": "workspace:*",
-    "@intentional-ui/intentional-shadcn": "workspace:*"
+    "@shortround/core": "workspace:*",
+    "@shortround/mui": "workspace:*",
+    "@shortround/shadcnui": "workspace:*"
   },
   "devDependencies": {
     "react": "^18.2.0",

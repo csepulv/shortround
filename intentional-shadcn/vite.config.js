@@ -6,8 +6,8 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
-    },
+      '@': resolve(__dirname, 'src')
+    }
   },
   esbuild: {
     loader: 'jsx',
@@ -15,19 +15,20 @@ export default defineConfig({
     exclude: []
   },
   css: {
-    postcss: './postcss.config.js',
+    postcss: './postcss.config.js'
   },
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.js'),
-      name: 'IntentionalShadcn',
-      fileName: 'intentional-shadcn',
+      name: 'ShortroundShadcnui',
+      fileName: 'shadcnui',
       formats: ['es']
     },
     rollupOptions: {
       external: [
-        'react', 
+        'react',
         'react-dom',
+        '@shortround/core',
         'framer-motion',
         '@emotion/is-prop-valid',
         '@emotion/styled',

@@ -28,7 +28,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.js'),
-      name: 'IntentionalCore',
+      name: 'ShortroundCore',
       fileName: 'core',
       formats: ['es']
     },
@@ -41,4 +41,4 @@ export default defineConfig({
       }
     }
   }
-}); 
+});

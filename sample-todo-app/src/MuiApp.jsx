@@ -3,7 +3,7 @@ import {
   IntentionalDialog,
   IntentionalProvider,
   useIntentionalDialogController
-} from '@intentional-ui/intentional-mui';
+} from '@shortround/mui';
 import { helpIntent } from '@/help-intent.js';
 import { saveItemIntent } from '@/save-item-intent.js';
 

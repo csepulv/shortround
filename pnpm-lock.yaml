@@ -69,7 +69,7 @@ importers:
 
   intentional-mui:
     dependencies:
-      '@intentional-ui/core':
+      '@shortround/core':
         specifier: workspace:*
         version: link:../core
       cmdk:
@@ -115,9 +115,6 @@ importers:
 
   intentional-shadcn:
     dependencies:
-      '@intentional-ui/core':
-        specifier: workspace:*
-        version: link:../core
       '@radix-ui/react-dialog':
         specifier: ^1.1.14
         version: 1.1.14(@types/react@19.1.8)(react-dom@18.2.0)(react@18.2.0)
@@ -133,6 +130,9 @@ importers:
       '@radix-ui/react-toggle-group':
         specifier: ^1.1.10
         version: 1.1.10(react-dom@18.2.0)(react@18.2.0)
+      '@shortround/core':
+        specifier: workspace:*
+        version: link:../core
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -194,15 +194,6 @@ importers:
       '@emotion/styled':
         specifier: ^11.14.0
         version: 11.14.0(@emotion/react@11.14.0)(@types/react@19.1.8)(react@18.2.0)
-      '@intentional-ui/core':
-        specifier: workspace:*
-        version: link:../core
-      '@intentional-ui/intentional-mui':
-        specifier: workspace:*
-        version: link:../intentional-mui
-      '@intentional-ui/intentional-shadcn':
-        specifier: workspace:*
-        version: link:../intentional-shadcn
       '@mui/icons-material':
         specifier: ^7.1.2
         version: 7.1.2(@mui/material@7.1.2)(@types/react@19.1.8)(react@18.2.0)
@@ -212,6 +203,15 @@ importers:
       '@radix-ui/react-slot':
         specifier: ^1.2.3
         version: 1.2.3(@types/react@19.1.8)(react@18.2.0)
+      '@shortround/core':
+        specifier: workspace:*
+        version: link:../core
+      '@shortround/mui':
+        specifier: workspace:*
+        version: link:../intentional-mui
+      '@shortround/shadcnui':
+        specifier: workspace:*
+        version: link:../intentional-shadcn
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -258,13 +258,13 @@ importers:
 
   storybook:
     dependencies:
-      '@intentional-ui/core':
+      '@shortround/core':
         specifier: workspace:*
         version: link:../core
-      '@intentional-ui/intentional-mui':
+      '@shortround/mui':
         specifier: workspace:*
         version: link:../intentional-mui
-      '@intentional-ui/intentional-shadcn':
+      '@shortround/shadcnui':
         specifier: workspace:*
         version: link:../intentional-shadcn
     devDependencies:

@@ -1,4 +1,4 @@
-import { SystemIntentIds } from '@intentional-ui/core';
+import { SystemIntentIds } from '@shortround/core';
 
 export const helpIntent = {
   id: 'help',

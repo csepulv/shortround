@@ -1,13 +1,13 @@
 {
-  "name": "@intentional-ui/intentional-shadcn",
+  "name": "@shortround/shadcnui",
   "version": "0.0.1",
   "type": "module",
-  "main": "./dist/intentional-shadcn.js",
-  "module": "./dist/intentional-shadcn.js",
+  "main": "./dist/shadcnui.js",
+  "module": "./dist/shadcnui.js",
   "exports": {
     ".": {
-      "import": "./dist/intentional-shadcn.js",
-      "types": "./dist/intentional-shadcn.d.ts"
+      "import": "./dist/shadcnui.js",
+      "types": "./dist/shadcnui.d.ts"
     },
     "./styles.css": "./dist/styles.css"
   },
@@ -20,7 +20,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@intentional-ui/core": "workspace:*",
+    "@shortround/core": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-popover": "^1.1.14",
     "@radix-ui/react-slot": "^1.2.3",
@@ -48,6 +48,7 @@
   },
   "peerDependencies": {
     "react": "^18.2.0",
+    "@shortround/core": "^0.0.1",
     "framer-motion": "^12.0.0",
     "lucide-react": "^0.300.0",
     "@radix-ui/react-dialog": "^1.0.0",

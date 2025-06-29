@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 
 import { CommandIcon, makeIntentionalPaletteStyles } from './mui-styles.js';
 import { useIntentionalDialogController } from './useIntentionalDialogController.js';
-import { useIntentional } from '@intentional-ui/core';
+import { useIntentional } from '@shortround/core';
 
 function ShortcutChip({ shortcut }) {
   const theme = useTheme();

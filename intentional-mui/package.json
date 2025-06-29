@@ -1,13 +1,13 @@
 {
-  "name": "@intentional-ui/intentional-mui",
+  "name": "@shortround/mui",
   "version": "0.0.1",
   "type": "module",
-  "main": "./dist/intentional-mui.js",
-  "module": "./dist/intentional-mui.js",
+  "main": "./dist/mui.js",
+  "module": "./dist/mui.js",
   "exports": {
     ".": {
-      "import": "./dist/intentional-mui.js",
-      "types": "./dist/intentional-mui.d.ts"
+      "import": "./dist/mui.js",
+      "types": "./dist/mui.d.ts"
     }
   },
   "files": [
@@ -18,7 +18,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@intentional-ui/core": "workspace:*",
+    "@shortround/core": "workspace:*",
     "cmdk": "^1.1.1",
     "framer-motion": "^12.19.1",
     "react-icons": "^5.5.0"

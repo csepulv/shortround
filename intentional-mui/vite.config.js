@@ -17,19 +17,19 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.js'),
-      name: 'IntentionalMui',
-      fileName: 'intentional-mui',
+      name: 'ShortroundMui',
+      fileName: 'mui',
       formats: ['es']
     },
     rollupOptions: {
       external: [
-        'react', 
+        'react',
         'react-dom',
         '@mui/material',
-        '@mui/icons-material', 
+        '@mui/icons-material',
         '@emotion/react',
         '@emotion/styled',
-        '@intentional-ui/core',
+        '@shortround/core',
         'cmdk',
         'framer-motion',
         'lucide-react',
@@ -43,4 +43,4 @@ export default defineConfig({
       }
     }
   }
-}); 
+});
