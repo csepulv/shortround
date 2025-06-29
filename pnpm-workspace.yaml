@@ -1,5 +1,5 @@
 packages:
-  - 'core'
+  - 'shortround-core'
   - 'intentional-mui'
   - 'intentional-shadcn'
   - 'sample-todo-app'
