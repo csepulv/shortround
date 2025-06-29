@@ -6,9 +6,15 @@
     "dev": "turbo dev",
     "test": "turbo test",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{js,jsx,md}\""
+    "format": "prettier --write \"**/*.{js,jsx,md}\"",
+    "release": "scripts/release.sh",
+    "cs:add": "changeset add",
+    "cs:version": "changeset version",
+    "cs:tag": "changeset tag",
+    "cs:publish": "changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.5",
     "eslint": "latest",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
