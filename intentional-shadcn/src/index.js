@@ -2,8 +2,8 @@
 import './index.css';
 
 // This is a placeholder entrypoint for the vite build.
-// The actual components will be exported from here. 
+// The actual components will be exported from here.
 
 export * from './IntentionalDialog';
 export * from './IntentionalPalette';
-export * from './useIntentionalDialogController'; 
+export * from './useShortRoundDialogController.js';

@@ -4,8 +4,8 @@ import { Command as CmdkCommand } from 'cmdk';
 import { useMemo } from 'react';
 
 import { CommandIcon, makeIntentionalPaletteStyles } from './mui-styles.js';
-import { useIntentionalDialogController } from './useIntentionalDialogController.js';
-import { useIntentional } from '@shortround/core';
+import { useShortRoundDialogController } from './useShortRoundDialogController.js';
+import { useShortRound } from '@shortround/core';
 
 function ShortcutChip({ shortcut }) {
   const theme = useTheme();
@@ -34,10 +34,10 @@ function ShortcutChip({ shortcut }) {
 }
 
 export function IntentionalPalette({ defaultIntentions }) {
-  const { inputValue, updateInputValue, intentions, dispatch } = useIntentional({
+  const { inputValue, updateInputValue, intentions, dispatch } = useShortRound({
     defaultIntentions
   });
-  const { height, setSidecarRenderer, closeSidecar, showToast } = useIntentionalDialogController();
+  const { height, setSidecarRenderer, closeSidecar, showToast } = useShortRoundDialogController();
   const theme = useTheme();
 
   const styles = makeIntentionalPaletteStyles(theme);

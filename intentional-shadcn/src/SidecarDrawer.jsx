@@ -1,8 +1,8 @@
-import { AnimatePresence, motion } from "framer-motion";
-import { useIntentionalDialogController } from "./useIntentionalDialogController";
+import { AnimatePresence, motion } from 'framer-motion';
+import { useShortRoundDialogController } from './useShortRoundDialogController.js';
 
 export function SidecarDrawer() {
-  const { showSidecar, renderSidecar, sidecarWidth } = useIntentionalDialogController();
+  const { showSidecar, renderSidecar, sidecarWidth } = useShortRoundDialogController();
 
   return (
     <AnimatePresence>
@@ -14,11 +14,9 @@ export function SidecarDrawer() {
           transition={{ duration: 0.3, ease: 'easeInOut' }}
           className="bg-background border-l"
         >
-          <div className="h-full w-full">
-            {renderSidecar()}
-          </div>
+          <div className="h-full w-full">{renderSidecar()}</div>
         </motion.div>
       )}
     </AnimatePresence>
   );
-} 
+}

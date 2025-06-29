@@ -6,12 +6,12 @@ import { ANIMATION_DURATION } from './mui-styles.js';
 import { SidecarDrawer } from './SidecarDrawer.jsx';
 import {
   IntentionalProvider,
-  useIntentionalDialogController
-} from './useIntentionalDialogController.js';
+  useShortRoundDialogController
+} from './useShortRoundDialogController.js';
 
 function IntentionalDialogContent({ title, defaultIntentions }) {
   const { isOpen, anchorPosition, anchorOrigin, height, totalWidth } =
-    useIntentionalDialogController();
+    useShortRoundDialogController();
   if (!isOpen) return null;
 
   return (

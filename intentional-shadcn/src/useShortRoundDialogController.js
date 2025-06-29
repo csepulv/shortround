@@ -4,9 +4,9 @@ const NO_PROVIDER = Symbol('NO_PROVIDER_YET');
 
 const IntentionalContext = createContext(NO_PROVIDER);
 
-export const useIntentionalDialogController = () => useContext(IntentionalContext);
+export const useShortRoundDialogController = () => useContext(IntentionalContext);
 
-const useIntentionalKeyboardShortcuts = (setIsOpen, installKeyboardShortcuts = true) => {
+const useShortRoundKeyboardShortcuts = (setIsOpen, installKeyboardShortcuts = true) => {
   return useEffect(() => {
     if (installKeyboardShortcuts) {
       const handleKeyDown = (event) => {
@@ -27,13 +27,7 @@ const useIntentionalKeyboardShortcuts = (setIsOpen, installKeyboardShortcuts = t
   }, [installKeyboardShortcuts, setIsOpen]);
 };
 
-export const positionAnchors = [
-  'center',
-  'top-left',
-  'top-right',
-  'bottom-left',
-  'bottom-right',
-];
+export const positionAnchors = ['center', 'top-left', 'top-right', 'bottom-left', 'bottom-right'];
 
 function DialogContextProvider({
   children,
@@ -49,7 +43,7 @@ function DialogContextProvider({
   const [anchor, setAnchor] = useState(initialAnchor);
   const [totalWidth, setTotalWidth] = useState(commandWidth);
   const [isOpen, setIsOpen] = useState(initialIsOpen);
-  useIntentionalKeyboardShortcuts(setIsOpen, installKeyboardShortcuts);
+  useShortRoundKeyboardShortcuts(setIsOpen, installKeyboardShortcuts);
 
   const sidecarWidth = `calc(${maxTotalWidth} - ${commandWidth})`;
 
@@ -94,20 +88,16 @@ function DialogContextProvider({
     commandWidth,
     sidecarWidth,
     closeSidecar,
-    renderSidecar,
+    renderSidecar
   };
-  return (
-    <IntentionalContext.Provider value={value}>
-      {children}
-    </IntentionalContext.Provider>
-  );
+  return <IntentionalContext.Provider value={value}>{children}</IntentionalContext.Provider>;
 }
 
 export function IntentionalProvider(props) {
   const { children, ...rest } = props;
-  const existing = useIntentionalDialogController();
+  const existing = useShortRoundDialogController();
   if (existing !== NO_PROVIDER) {
     return children;
   }
   return <DialogContextProvider {...rest}>{children}</DialogContextProvider>;
-} 
+}

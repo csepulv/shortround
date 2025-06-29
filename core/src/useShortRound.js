@@ -25,7 +25,7 @@ const systemIntentionIds = [SystemIntentionIds.CANCEL, SystemIntentionIds.BACK];
 
 const systemIntentions = [CANCEL_INTENTION, BACK_INTENTION];
 
-export function useIntentional({ defaultIntentions }) {
+export function useShortRound({ defaultIntentions }) {
   const [inputValue, setInputValue] = useState('');
   const [sideEffects, setSideEffects] = useState();
   const [currentIntentions, setCurrentIntentions] = useState(defaultIntentions);

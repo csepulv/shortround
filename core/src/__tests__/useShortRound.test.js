@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, test } from 'vitest';
-import { BACK_INTENTION, CANCEL_INTENTION, useIntentional } from '../useIntentional.js';
+import { BACK_INTENTION, CANCEL_INTENTION, useShortRound } from '../useShortRound.js';
 
 import { NO_OP, SystemIntentionIds } from '../utils.js';
 
@@ -22,7 +22,7 @@ const makeIntention = ({
   disableInputMatching
 });
 
-describe('useIntentional', () => {
+describe('useShortRound', () => {
   let defaultIntentions, intentions;
   let first, second, third;
   let hook;
@@ -33,7 +33,7 @@ describe('useIntentional', () => {
 
     defaultIntentions = [first, second, third];
     intentions = [makeIntention({ id: '123' }), makeIntention({ id: '456' })];
-    hook = renderHook(() => useIntentional({ defaultIntentions }));
+    hook = renderHook(() => useShortRound({ defaultIntentions }));
   });
   describe('handle input changes', () => {
     test('should use fuzzy matching, title, group and aliases (preserve order)', async () => {

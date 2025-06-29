@@ -15,7 +15,7 @@ import {
 
 import { IntentionalPalette } from './IntentionalPalette.jsx';
 import { ANIMATION_DURATION } from './mui-styles.js';
-import { useIntentionalDialogController } from './useIntentionalDialogController.js';
+import { useShortRoundDialogController } from './useShortRoundDialogController.js';
 
 const anchorIcons = {
   center: AnchorCenterIcon,
@@ -53,7 +53,7 @@ function IntentionalPaletteWrapper({ width, height, defaultIntentions }) {
 
 export function IntentionalPaletteFrame({ title, defaultIntentions }) {
   const { onClose, setSize, anchorOrigin, cycleAnchorOrigin, height, size, commandWidth } =
-    useIntentionalDialogController();
+    useShortRoundDialogController();
   return (
     <motion.div layout transition={{ duration: ANIMATION_DURATION, ease: 'easeInOut' }}>
       <Paper

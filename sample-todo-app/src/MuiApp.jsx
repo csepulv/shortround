@@ -2,13 +2,13 @@ import { Box, Button } from '@mui/material';
 import {
   IntentionalDialog,
   IntentionalProvider,
-  useIntentionalDialogController
+  useShortRoundDialogController
 } from '@shortround/mui';
 import { helpIntent } from '@/help-intent.js';
 import { saveItemIntent } from '@/save-item-intent.js';
 
 function ToggleIntentionPalette() {
-  const { setIsOpen, isOpen } = useIntentionalDialogController();
+  const { setIsOpen, isOpen } = useShortRoundDialogController();
   return <Button onClick={() => setIsOpen(!isOpen)}>Click Me</Button>;
 }
 

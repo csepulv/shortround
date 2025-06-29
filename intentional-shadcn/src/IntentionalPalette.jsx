@@ -7,16 +7,16 @@ import {
   CommandList,
   CommandSeparator
 } from './components/ui/command';
-import { useIntentional } from '@shortround/core';
-import { useIntentionalDialogController } from './useIntentionalDialogController.js';
+import { useShortRound } from '@shortround/core';
+import { useShortRoundDialogController } from './useShortRoundDialogController.js';
 import { useMemo } from 'react';
 import { File } from 'lucide-react';
 
 export function IntentionalPalette({ defaultIntentions }) {
-  const { inputValue, updateInputValue, intentions, dispatch } = useIntentional({
+  const { inputValue, updateInputValue, intentions, dispatch } = useShortRound({
     defaultIntentions
   });
-  const { setSidecarRenderer, closeSidecar } = useIntentionalDialogController();
+  const { setSidecarRenderer, closeSidecar } = useShortRoundDialogController();
 
   const intentionGroups = useMemo(() => {
     return intentions.reduce((acc, intention) => {

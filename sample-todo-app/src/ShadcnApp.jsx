@@ -2,13 +2,13 @@ import { Button } from '@/components/ui/button';
 import {
   IntentionalDialog,
   IntentionalPalette,
-  useIntentionalDialogController
+  useShortRoundDialogController
 } from '@shortround/shadcnui';
 import { helpIntent } from '@/help-intent.js';
 import { saveItemIntent } from '@/save-item-intent.js';
 
 function ToggleIntentionPalette() {
-  const { setIsOpen, isOpen } = useIntentionalDialogController();
+  const { setIsOpen, isOpen } = useShortRoundDialogController();
   return <Button onClick={() => setIsOpen(!isOpen)}>Click Me</Button>;
 }
 

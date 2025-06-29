@@ -35,9 +35,9 @@ const NO_PROVIDER = Symbol('NO_PROVIDER_YET');
 
 const IntentionalContext = createContext(NO_PROVIDER);
 
-export const useIntentionalDialogController = () => useContext(IntentionalContext);
+export const useShortRoundDialogController = () => useContext(IntentionalContext);
 
-const useIntentionalKeyboardShortcuts = (setIsOpen, installKeyboardShortcuts = true) => {
+const useShortRoundKeyboardShortcuts = (setIsOpen, installKeyboardShortcuts = true) => {
   return useEffect(() => {
     if (installKeyboardShortcuts) {
       const handleKeyDown = (event) => {
@@ -85,7 +85,7 @@ function DialogContextProvider({
   const [transformOrigin, setTransformOrigin] = useState(originTransforms[initialAnchorOrigin]);
   const [totalWidth, setTotalWidth] = useState(commandWidth);
   const [isOpen, setIsOpen] = useState(initialIsOpen);
-  useIntentionalKeyboardShortcuts(setIsOpen, installKeyboardShortcuts);
+  useShortRoundKeyboardShortcuts(setIsOpen, installKeyboardShortcuts);
 
   const height = size === 'minimized' ? 'auto' : heightMap[size];
   const sidecarWidth = `calc(${maxTotalWidth} - ${commandWidth})`;
@@ -160,7 +160,7 @@ function DialogContextProvider({
 
 export function IntentionalProvider(props) {
   const { children, ...rest } = props;
-  const existing = useIntentionalDialogController();
+  const existing = useShortRoundDialogController();
   if (existing !== NO_PROVIDER) {
     return children;
   }
