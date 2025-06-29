@@ -25,7 +25,23 @@ export default defineConfig({
       formats: ['es']
     },
     rollupOptions: {
-      external: ['react', 'react-dom'],
+      external: [
+        'react', 
+        'react-dom',
+        'framer-motion',
+        '@emotion/is-prop-valid',
+        '@emotion/styled',
+        '@radix-ui/react-dialog',
+        '@radix-ui/react-popover',
+        '@radix-ui/react-slot',
+        '@radix-ui/react-toggle',
+        '@radix-ui/react-toggle-group',
+        'lucide-react',
+        'cmdk',
+        'clsx',
+        'tailwind-merge',
+        'class-variance-authority'
+      ],
       output: {
         globals: {
           react: 'React',

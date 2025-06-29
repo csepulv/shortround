@@ -1,9 +1,9 @@
 import { Box, Button } from '@mui/material';
-import { IntentionalDialog } from '@intentional-ui/intentional-mui/src/IntentionalDialog.jsx';
 import {
+  IntentionalDialog,
   IntentionalProvider,
   useIntentionalDialogController
-} from '@intentional-ui/intentional-mui/src/useIntentionalDialogController.js';
+} from '@intentional-ui/intentional-mui';
 import { helpIntent } from '@/help-intent.js';
 import { saveItemIntent } from '@/save-item-intent.js';
 
