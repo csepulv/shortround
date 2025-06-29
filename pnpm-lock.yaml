@@ -58,7 +58,7 @@ importers:
         version: link:../shortround-mui
       '@shortround/shadcnui':
         specifier: workspace:*
-        version: link:../shortround-shadcnui
+        version: link:../shortround-shadcn-ui
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -183,7 +183,7 @@ importers:
         specifier: latest
         version: 3.2.4(jsdom@26.1.0)
 
-  shortround-shadcnui:
+  shortround-shadcn-ui:
     dependencies:
       '@radix-ui/react-dialog':
         specifier: ^1.1.14
@@ -266,7 +266,7 @@ importers:
         version: link:../shortround-mui
       '@shortround/shadcnui':
         specifier: workspace:*
-        version: link:../shortround-shadcnui
+        version: link:../shortround-shadcn-ui
     devDependencies:
       react:
         specifier: ^18.2.0

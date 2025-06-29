@@ -1,7 +1,7 @@
 packages:
   - 'shortround-core'
   - 'shortround-mui'
-  - 'shortround-shadcnui'
+  - 'shortround-shadcn-ui'
   - 'sample-todo-app'
   - 'storybook'
   - '!./.prettierrc.json'

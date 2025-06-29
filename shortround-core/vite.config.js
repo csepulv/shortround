@@ -28,7 +28,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.js'),
-      name: 'ShortroundCore',
+      name: 'ShortRoundCore',
       fileName: 'core',
       formats: ['es']
     },

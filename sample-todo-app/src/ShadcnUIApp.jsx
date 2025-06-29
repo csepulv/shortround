@@ -12,7 +12,7 @@ function ToggleIntentionPalette() {
   return <Button onClick={() => setIsOpen(!isOpen)}>Click Me</Button>;
 }
 
-function ShadcnApp() {
+function ShadcnUIApp() {
   return (
     <div className="m-auto">
       <ToggleIntentionPalette />
@@ -23,4 +23,4 @@ function ShadcnApp() {
   );
 }
 
-export default ShadcnApp;
+export default ShadcnUIApp;
