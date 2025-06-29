@@ -1,5 +1,5 @@
 import { makeValidator, requiredAlphanumericDashUnderscoreSpace } from './validation-utils.js';
-import { SystemIntentIds } from '@shortround/core';
+import { SystemIntentionIds } from '@shortround/core';
 
 export const saveItemIntent = {
   id: 'save::start-build',
@@ -20,7 +20,7 @@ export const saveItemIntent = {
       }
     ],
     disableInputMatching: true,
-    systemIntentions: [SystemIntentIds.CANCEL]
+    systemIntentions: [SystemIntentionIds.CANCEL]
   }),
   group: 'Common'
 };

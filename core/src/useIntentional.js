@@ -2,26 +2,26 @@ import { useMemo, useRef, useState } from 'react';
 import invariant from 'tiny-invariant';
 
 import { useFuzzyMatcher } from './useFuzzyMatcher';
-import { SystemIntentIds } from './utils';
+import { SystemIntentionIds } from './utils';
 
 const indexIntentions = (intentions) =>
   Object.fromEntries(intentions.map((item) => [item.id, item]));
 
 export const BACK_INTENTION = {
-  id: SystemIntentIds.BACK,
+  id: SystemIntentionIds.BACK,
   title: 'Back',
   group: 'Actions',
   icon: 'back'
 };
 
 export const CANCEL_INTENTION = {
-  id: SystemIntentIds.CANCEL,
+  id: SystemIntentionIds.CANCEL,
   title: 'Cancel',
   group: 'Actions',
   icon: 'cancel'
 };
 
-const systemIntentionIds = [SystemIntentIds.CANCEL, SystemIntentIds.BACK];
+const systemIntentionIds = [SystemIntentionIds.CANCEL, SystemIntentionIds.BACK];
 
 const systemIntentions = [CANCEL_INTENTION, BACK_INTENTION];
 
@@ -40,10 +40,10 @@ export function useIntentional({ defaultIntentions }) {
 
   async function handleSystemIntention(intentionId) {
     switch (intentionId) {
-      case SystemIntentIds.CANCEL:
+      case SystemIntentionIds.CANCEL:
         intentStackRef.current = [];
         return { intentions: defaultIntentions };
-      case SystemIntentIds.BACK:
+      case SystemIntentionIds.BACK:
         intentStackRef.current.pop();
         const prev =
           intentStackRef.current.length > 0
@@ -55,8 +55,8 @@ export function useIntentional({ defaultIntentions }) {
     }
   }
 
-  const resetIntentions = async () => dispatch(SystemIntentIds.CANCEL);
-  const back = async () => dispatch(SystemIntentIds.BACK);
+  const resetIntentions = async () => dispatch(SystemIntentionIds.CANCEL);
+  const back = async () => dispatch(SystemIntentionIds.BACK);
 
   /*
     TODO; consider context

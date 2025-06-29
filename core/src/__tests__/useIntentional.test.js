@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, test } from 'vitest';
 import { BACK_INTENTION, CANCEL_INTENTION, useIntentional } from '../useIntentional.js';
 
-import { NO_OP, SystemIntentIds } from '../utils.js';
+import { NO_OP, SystemIntentionIds } from '../utils.js';
 
 const makeIntention = ({
   id,
@@ -99,7 +99,7 @@ describe('useIntentional', () => {
       test('should include back, cancel as requested', async () => {
         second.action = () => ({
           intentions,
-          systemIntentions: [SystemIntentIds.BACK, SystemIntentIds.CANCEL]
+          systemIntentions: [SystemIntentionIds.BACK, SystemIntentionIds.CANCEL]
         });
         await act(async () => {
           await hook.result.current.dispatch(second.id);
@@ -113,7 +113,7 @@ describe('useIntentional', () => {
       test('should include system intentions if input doesnt match', async () => {
         second.action = () => ({
           intentions,
-          systemIntentions: [SystemIntentIds.BACK]
+          systemIntentions: [SystemIntentionIds.BACK]
         });
         await act(async () => {
           await hook.result.current.dispatch(second.id);
@@ -173,11 +173,11 @@ describe('useIntentional', () => {
       second.action = () => ({
         intentions: secondIntentions,
         sideEffects: 'the side effect',
-        systemIntentions: [SystemIntentIds.BACK, SystemIntentIds.CANCEL]
+        systemIntentions: [SystemIntentionIds.BACK, SystemIntentionIds.CANCEL]
       });
       third.action = () => ({
         intentions: thirdIntentions,
-        systemIntentions: [SystemIntentIds.BACK, SystemIntentIds.CANCEL]
+        systemIntentions: [SystemIntentionIds.BACK, SystemIntentionIds.CANCEL]
       });
       await act(async () => {
         await hook.result.current.dispatch(second.id);
@@ -202,7 +202,7 @@ describe('useIntentional', () => {
     test('should handle back intention', async () => {
       await dispatchSecondAndThirdIntentions();
       await act(async () => {
-        await hook.result.current.dispatch(SystemIntentIds.BACK);
+        await hook.result.current.dispatch(SystemIntentionIds.BACK);
       });
       expect(hook.result.current.intentions).toEqual([
         CANCEL_INTENTION,
@@ -226,7 +226,7 @@ describe('useIntentional', () => {
     test('should handle cancel intention', async () => {
       await dispatchSecondAndThirdIntentions();
       await act(async () => {
-        await hook.result.current.dispatch(SystemIntentIds.CANCEL);
+        await hook.result.current.dispatch(SystemIntentionIds.CANCEL);
       });
       expect(hook.result.current.intentions).toEqual(defaultIntentions);
       expect(hook.result.current.intentionStack).toEqual([]);
