@@ -6,34 +6,41 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
-    },
+      '@': resolve(__dirname, 'src')
+    }
   },
   esbuild: {
     loader: 'jsx',
     include: /src\/.*\.jsx?$/,
     exclude: []
   },
-  css: {
-    postcss: './postcss.config.js',
-  },
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.js'),
-      name: 'IntentionalShadcn',
-      fileName: 'intentional-shadcn',
+      name: 'IntentionalMui',
+      fileName: 'intentional-mui',
       formats: ['es']
     },
     rollupOptions: {
-      external: ['react', 'react-dom'],
+      external: [
+        'react', 
+        'react-dom',
+        '@mui/material',
+        '@mui/icons-material', 
+        '@emotion/react',
+        '@emotion/styled',
+        '@intentional-ui/core',
+        'cmdk',
+        'framer-motion',
+        'lucide-react',
+        'react-icons'
+      ],
       output: {
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM'
-        },
-        assetFileNames: 'styles.[ext]'
+        }
       }
-    },
-    cssCodeSplit: false
+    }
   }
-});
+}); 

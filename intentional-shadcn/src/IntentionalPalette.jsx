@@ -7,7 +7,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "./components/ui/command"
-import { useIntentional } from '@intentional-ui/core/src/useIntentional.js';
+import { useIntentional } from '@intentional-ui/core';
 import { useIntentionalDialogController } from './useIntentionalDialogController.js';
 import { useMemo } from "react";
 import { File } from "lucide-react";

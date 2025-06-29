@@ -1,17 +1,19 @@
 {
   "name": "@intentional-ui/intentional-shadcn",
   "version": "0.0.1",
-  "private": true,
   "type": "module",
   "main": "./dist/intentional-shadcn.js",
   "module": "./dist/intentional-shadcn.js",
   "exports": {
     ".": {
-      "import": "./src/index.js",
-      "require": "./dist/intentional-shadcn.js"
+      "import": "./dist/intentional-shadcn.js",
+      "types": "./dist/intentional-shadcn.d.ts"
     },
     "./styles.css": "./dist/styles.css"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "vite build",
     "dev": "vite --config vite.dev.config.js",

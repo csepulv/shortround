@@ -1,5 +1,5 @@
 import { makeValidator, requiredAlphanumericDashUnderscoreSpace } from './validation-utils.js';
-import { SystemIntentIds } from '@intentional-ui/core/src/utils.js';
+import { SystemIntentIds } from '@intentional-ui/core';
 
 export const saveItemIntent = {
   id: 'save::start-build',

@@ -1,4 +1,4 @@
-import { SystemIntentIds } from '@intentional-ui/core/src/utils.js';
+import { SystemIntentIds } from '@intentional-ui/core';
 
 export const helpIntent = {
   id: 'help',
