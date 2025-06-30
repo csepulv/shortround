@@ -1,7 +1,7 @@
 {
   "name": "@shortround/core",
-  "version": "0.0.1",
-  "description": "Core utilities for Shortround, a command palette and intentional UI library.",
+  "version": "0.0.0",
+  "description": "Core library for ShortRound, providing the main hooks and functionality for command palette and voice interaction.",
   "keywords": ["shortround", "command palette", "intentional ui", "react", "hooks"],
   "author": "Chris Sepulveda <chris@example.com>",
   "license": "MIT",
