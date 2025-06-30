@@ -97,6 +97,9 @@ echo "-----------------------"
 
 # --- Cleanup ---
 echo ""
+echo "Cleaning up excluded files before switching branches..."
+git clean -fd
+
 echo "Switching back to the '$MAIN_BRANCH' branch."
 git checkout "$MAIN_BRANCH"
 

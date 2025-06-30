@@ -1,8 +1,14 @@
 {
   "name": "@shortround/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Core library for ShortRound, providing the main hooks and functionality for command palette and voice interaction.",
-  "keywords": ["shortround", "command palette", "intentional ui", "react", "hooks"],
+  "keywords": [
+    "shortround",
+    "command palette",
+    "intentional ui",
+    "react",
+    "hooks"
+  ],
   "author": "Chris Sepulveda <chris@example.com>",
   "license": "MIT",
   "repository": {

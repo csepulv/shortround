@@ -1,8 +1,15 @@
 {
   "name": "@shortround/mui",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Material UI components for Shortround, a command palette and intentional UI library.",
-  "keywords": ["shortround", "command palette", "intentional ui", "react", "material ui", "mui"],
+  "keywords": [
+    "shortround",
+    "command palette",
+    "intentional ui",
+    "react",
+    "material ui",
+    "mui"
+  ],
   "author": "Chris Sepulveda <chris@example.com>",
   "license": "MIT",
   "repository": {
