@@ -54,9 +54,20 @@ echo "Merging changes from '$MAIN_BRANCH'...
 "
 git merge --squash --allow-unrelated-histories "$MAIN_BRANCH"
 
-echo "Excluding release guide from public commit..."
-git rm --cached DEV.md
-git rm --cached -r .changeset
+echo "Excluding files listed in .publicignore from public commit..."
+# Always exclude the .publicignore file itself
+git rm --cached .publicignore || true
+
+if [ -f ".publicignore" ]; then
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        # Skip empty lines and comments
+        [[ -z "$line" || "${line:0:1}" == "#" ]] && continue
+        echo "Excluding: $line"
+        git rm --cached -r "$line" || true # Use || true to prevent script from exiting if file is not found
+    done < .publicignore
+else
+    echo "Warning: .publicignore file not found. No files will be excluded based on it."
+fi
 
 echo "Committing squashed changes..."
 git commit -m "$COMMIT_MESSAGE"
