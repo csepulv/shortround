@@ -1,0 +1,18 @@
+{
+  "name": "@shortround/storybook",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:storybook": "echo 'dev storybook'"
+  },
+  "dependencies": {
+    "@shortround/core": "workspace:*",
+    "@shortround/mui": "workspace:*",
+    "@shortround/shadcn-ui": "workspace:*"
+  },
+  "devDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}

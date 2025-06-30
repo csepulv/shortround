@@ -1,0 +1,31 @@
+{
+  "name": "shortround",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{js,jsx,md}\"",
+    "release": "scripts/release.sh",
+    "cs:add": "changeset add",
+    "cs:version": "changeset version",
+    "cs:tag": "changeset tag",
+    "cs:publish": "changeset publish",
+    "dev:watch": "turbo watch build",
+    "dev:yalc": "chokidar \"packages/*/dist/**/*\" -c \"pnpm --filter \\\"$(echo {path} | sed -E 's|packages/(.*)/dist/.*|\\\\./packages/\\\\1|')\\\" exec yalc publish --push --no-scripts\""
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.5",
+    "chokidar-cli": "^3.0.0",
+    "eslint": "latest",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "globals": "^16.2.0",
+    "prettier": "latest",
+    "turbo": "latest"
+  },
+  "packageManager": "pnpm@8.6.0"
+}

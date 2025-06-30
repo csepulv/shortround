@@ -1,0 +1,243 @@
+import { act, renderHook } from '@testing-library/react';
+import { beforeEach, describe, test } from 'vitest';
+import { BACK_INTENTION, CANCEL_INTENTION, useShortRound } from '../useShortRound.js';
+
+import { NO_OP, SystemIntentionIds } from '../utils.js';
+
+const makeIntention = ({
+  id,
+  title,
+  group,
+  aliases = [],
+  action = NO_OP,
+  disabled,
+  disableInputMatching
+}) => ({
+  id,
+  title,
+  group: group || title,
+  aliases,
+  action,
+  disabled,
+  disableInputMatching
+});
+
+describe('useShortRound', () => {
+  let defaultIntentions, intentions;
+  let first, second, third;
+  let hook;
+  beforeEach(async () => {
+    first = { id: 'abc', title: 'Search', group: 'Actions', aliases: ['fetch items', 'find'] };
+    second = { id: 'def', title: 'Read', group: 'Other', aliases: ['scan', 'find'] };
+    third = { id: 'ghi', title: 'Write', group: 'Actions', aliases: ['scribe', 'pen'] };
+
+    defaultIntentions = [first, second, third];
+    intentions = [makeIntention({ id: '123' }), makeIntention({ id: '456' })];
+    hook = renderHook(() => useShortRound({ defaultIntentions }));
+  });
+  describe('handle input changes', () => {
+    test('should use fuzzy matching, title, group and aliases (preserve order)', async () => {
+      act(() => {
+        hook.result.current.updateInputValue('ea');
+      });
+      expect(hook.result.current.intentions).toEqual([first, second]);
+
+      act(() => {
+        hook.result.current.updateInputValue('act');
+      });
+      expect(hook.result.current.intentions).toEqual([first, third]);
+
+      act(() => {
+        hook.result.current.updateInputValue('scri');
+      });
+      expect(hook.result.current.intentions).toEqual([third]);
+    });
+    test('should not match on id', async () => {
+      act(() => {
+        hook.result.current.updateInputValue('abc');
+      });
+      expect(hook.result.current.intentions).toEqual([]);
+    });
+    test('should not match if input matching is disabled', async () => {
+      second.action = vi.fn().mockResolvedValue({ intentions, disableInputMatching: true });
+
+      await act(async () => {
+        await hook.result.current.dispatch(second.id);
+      });
+      expect(hook.result.current.intentions).toEqual(intentions);
+      act(() => {
+        hook.result.current.updateInputValue('doest change intentions');
+      });
+      expect(hook.result.current.intentions).toEqual(intentions);
+    });
+  });
+  describe('dispatch', () => {
+    describe('intentions', () => {
+      test('should only match on current intentions', async () => {
+        await expect(
+          act(async () => {
+            await hook.result.current.dispatch('bad-id');
+          })
+        ).rejects.toThrow('Invariant failed: Unknown intention id: bad-id');
+      });
+      test('should handle new intentions, clear input', async () => {
+        second.action = vi.fn().mockResolvedValue({ intentions, sideEffects: 'the side effect' });
+        act(() => {
+          hook.result.current.updateInputValue('foo');
+        });
+        expect(hook.result.current.inputValue).toEqual('foo');
+
+        await act(async () => {
+          await hook.result.current.dispatch(second.id);
+        });
+
+        expect(second.action).toHaveBeenCalledWith('foo');
+        expect(hook.result.current.intentions).toEqual(intentions);
+        expect(hook.result.current.inputValue).toEqual('');
+        expect(hook.result.current.sideEffects).toEqual('the side effect');
+      });
+      test('should include back, cancel as requested', async () => {
+        second.action = () => ({
+          intentions,
+          systemIntentions: [SystemIntentionIds.BACK, SystemIntentionIds.CANCEL]
+        });
+        await act(async () => {
+          await hook.result.current.dispatch(second.id);
+        });
+        expect(hook.result.current.intentions).toEqual([
+          CANCEL_INTENTION,
+          BACK_INTENTION,
+          ...intentions
+        ]);
+      });
+      test('should include system intentions if input doesnt match', async () => {
+        second.action = () => ({
+          intentions,
+          systemIntentions: [SystemIntentionIds.BACK]
+        });
+        await act(async () => {
+          await hook.result.current.dispatch(second.id);
+        });
+        act(() => {
+          hook.result.current.updateInputValue('does not match anything in list');
+        });
+        expect(hook.result.current.intentions).toEqual([BACK_INTENTION]);
+      });
+      test('should match on new intentions', async () => {
+        second.action = () => ({ intentions });
+        await act(async () => {
+          await hook.result.current.dispatch(second.id);
+        });
+        act(() => {
+          hook.result.current.updateInputValue('not in list');
+        });
+        expect(hook.result.current.intentions).toEqual([]);
+      });
+    });
+    test('should set first non system intent as selected (if none is specified)', () => {});
+    test('should manage breadcrumb trail', () => {});
+  });
+  describe('handle disabled and validation', () => {
+    test('should intention.validate() on input change', () => {
+      first.disabled = true;
+      first.validate = vi.fn().mockImplementation(() => ({ valid: true }));
+      third.disabled = true;
+      third.validate = vi.fn().mockImplementation(() => ({ valid: false, message: 'Not Valid' }));
+
+      act(() => {
+        hook.result.current.updateInputValue(''); // triggering validate
+      });
+      expect(first.validate).toHaveBeenCalled();
+      expect(hook.result.current.intentions[0].disabled).toBeFalse();
+
+      expect(third.validate).toHaveBeenCalled();
+      expect(hook.result.current.intentions[2].disabled).toBeTrue();
+      expect(hook.result.current.intentions[2].subtitle).toEqual('Not Valid');
+    });
+    test('should not dispatch a disabled intention', async () => {
+      second.disabled = true;
+      second.action = () => ({ intentions });
+      const before = hook.result.current.intentions;
+      await act(async () => {
+        await hook.result.current.dispatch(second.id);
+      });
+      expect(hook.result.current.intentions).toEqual(before);
+    });
+  });
+  describe('back, cancel', () => {
+    let secondIntentions, thirdIntentions;
+    const dispatchSecondAndThirdIntentions = async (intentionsForThird = defaultIntentions) => {
+      secondIntentions = [intentions[0], third];
+      first.action = () => ({ shouldReset: true });
+      thirdIntentions = intentionsForThird;
+      second.action = () => ({
+        intentions: secondIntentions,
+        sideEffects: 'the side effect',
+        systemIntentions: [SystemIntentionIds.BACK, SystemIntentionIds.CANCEL]
+      });
+      third.action = () => ({
+        intentions: thirdIntentions,
+        systemIntentions: [SystemIntentionIds.BACK, SystemIntentionIds.CANCEL]
+      });
+      await act(async () => {
+        await hook.result.current.dispatch(second.id);
+      });
+      expect(hook.result.current.intentions.length).toEqual(4);
+      expect(hook.result.current.sideEffects).toEqual('the side effect');
+      await act(async () => {
+        await hook.result.current.dispatch(third.id);
+      });
+      expect(hook.result.current.intentions.length).toEqual(intentionsForThird.length + 2); // + system
+      expect(hook.result.current.sideEffects).toBeOneOf([null, undefined]);
+    };
+    test('should reset back to home', async () => {
+      const itention = makeIntention({ id: 'be-done', action: () => ({ shouldReset: true }) });
+      await dispatchSecondAndThirdIntentions([itention]);
+
+      await act(async () => {
+        await hook.result.current.dispatch(itention.id);
+      });
+      expect(hook.result.current.intentions).toEqual(defaultIntentions);
+    });
+    test('should handle back intention', async () => {
+      await dispatchSecondAndThirdIntentions();
+      await act(async () => {
+        await hook.result.current.dispatch(SystemIntentionIds.BACK);
+      });
+      expect(hook.result.current.intentions).toEqual([
+        CANCEL_INTENTION,
+        BACK_INTENTION,
+        ...secondIntentions
+      ]);
+      expect(hook.result.current.intentionStack).toEqual([second]);
+    });
+    test('should handle back hook call', async () => {
+      await dispatchSecondAndThirdIntentions();
+      await act(async () => {
+        await hook.result.current.back();
+      });
+      expect(hook.result.current.intentions).toEqual([
+        CANCEL_INTENTION,
+        BACK_INTENTION,
+        ...secondIntentions
+      ]);
+      expect(hook.result.current.intentionStack).toEqual([second]);
+    });
+    test('should handle cancel intention', async () => {
+      await dispatchSecondAndThirdIntentions();
+      await act(async () => {
+        await hook.result.current.dispatch(SystemIntentionIds.CANCEL);
+      });
+      expect(hook.result.current.intentions).toEqual(defaultIntentions);
+      expect(hook.result.current.intentionStack).toEqual([]);
+    });
+    test('should handle cancel hook call', async () => {
+      await dispatchSecondAndThirdIntentions();
+      await act(async () => {
+        await hook.result.current.cancel();
+      });
+      expect(hook.result.current.intentions).toEqual(defaultIntentions);
+      expect(hook.result.current.intentionStack).toEqual([]);
+    });
+  });
+});
