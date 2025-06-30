@@ -8,6 +8,8 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@shortround/shadcn-ui"
+    "@shortround/shadcn-ui",
+    "@shortround/storybook",
+    "@shortround/sample-todo-app"
   ]
 }
