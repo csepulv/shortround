@@ -57,6 +57,7 @@ The process is designed to publish clean, squashed commits to the public reposit
     ```bash
     # Example command printed by the script:
     git push origin --tags --force
+    git push origin latest
     ```
 
 7.  **Publish to npm (Optional):**
