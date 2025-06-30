@@ -9,7 +9,7 @@
   "dependencies": {
     "@shortround/core": "workspace:*",
     "@shortround/mui": "workspace:*",
-    "@shortround/shadcnui": "workspace:*"
+    "@shortround/shadcn-ui": "workspace:*"
   },
   "devDependencies": {
     "react": "^18.2.0",

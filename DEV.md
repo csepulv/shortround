@@ -90,7 +90,7 @@ This setup uses `turbo` to watch and rebuild your packages, and `chokidar-cli` t
         ```bash
         yalc add @shortround/core
         yalc add @shortround/mui
-        yalc add @shortround/shadcnui
+        yalc add @shortround/shadcn-ui
         # Add any other shortround packages you are testing
         ```
     *   Install any necessary peer dependencies in your test application (e.g., `react`, `@mui/material`).

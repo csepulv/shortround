@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { ShortRoundDialog, ShortRoundPalette, useShortRoundSidekick } from '@shortround/shadcnui';
+import { ShortRoundDialog, useShortRoundSidekick } from '@shortround/shadcn-ui';
 import { helpIntent } from '@/help-intent.js';
 import { saveItemIntent } from '@/save-item-intent.js';
 

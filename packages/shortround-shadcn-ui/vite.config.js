@@ -21,7 +21,7 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/index.js'),
       name: 'ShortRoundShadcnUI',
-      fileName: 'shadcnui',
+      fileName: 'shadcn-ui',
       formats: ['es']
     },
     rollupOptions: {

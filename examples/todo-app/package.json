@@ -12,7 +12,7 @@
     "@emotion/styled": "^11.14.0",
     "@shortround/core": "workspace:*",
     "@shortround/mui": "workspace:*",
-    "@shortround/shadcnui": "workspace:*",
+    "@shortround/shadcn-ui": "workspace:*",
     "@mui/icons-material": "^7.1.2",
     "@mui/material": "^7.1.2",
     "@radix-ui/react-slot": "^1.2.3",

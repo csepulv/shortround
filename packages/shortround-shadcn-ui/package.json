@@ -1,13 +1,13 @@
 {
-  "name": "@shortround/shadcnui",
+  "name": "@shortround/shadcn-ui",
   "version": "0.0.1",
   "type": "module",
-  "main": "./dist/shadcnui.js",
-  "module": "./dist/shadcnui.js",
+  "main": "./dist/shadcn-ui.js",
+  "module": "./dist/shadcn-ui.js",
   "exports": {
     ".": {
-      "import": "./dist/shadcnui.js",
-      "types": "./dist/shadcnui.d.ts"
+      "import": "./dist/shadcn-ui.js",
+      "types": "./dist/shadcn-ui.d.ts"
     },
     "./styles.css": "./dist/styles.css"
   },

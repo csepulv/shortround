@@ -47,7 +47,7 @@ importers:
       '@shortround/mui':
         specifier: workspace:*
         version: link:../../packages/shortround-mui
-      '@shortround/shadcnui':
+      '@shortround/shadcn-ui':
         specifier: workspace:*
         version: link:../../packages/shortround-shadcn-ui
     devDependencies:
@@ -81,7 +81,7 @@ importers:
       '@shortround/mui':
         specifier: workspace:*
         version: link:../../packages/shortround-mui
-      '@shortround/shadcnui':
+      '@shortround/shadcn-ui':
         specifier: workspace:*
         version: link:../../packages/shortround-shadcn-ui
       class-variance-authority:

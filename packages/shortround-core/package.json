@@ -1,6 +1,19 @@
 {
   "name": "@shortround/core",
   "version": "0.0.1",
+  "description": "Core utilities for Shortround, a command palette and intentional UI library.",
+  "keywords": ["shortround", "command palette", "intentional ui", "react", "hooks"],
+  "author": "Chris Sepulveda <chris@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/csepulv/shortround.git",
+    "directory": "packages/shortround-core"
+  },
+  "bugs": {
+    "url": "https://github.com/csepulv/shortround/issues"
+  },
+  "homepage": "https://github.com/csepulv/shortround#readme",
   "type": "module",
   "main": "./dist/core.js",
   "module": "./dist/core.js",
