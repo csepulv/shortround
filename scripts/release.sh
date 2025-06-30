@@ -55,7 +55,7 @@ echo "Merging changes from '$MAIN_BRANCH'...
 git merge --squash "$MAIN_BRANCH"
 
 echo "Excluding release guide from public commit..."
-git rm --cached RELEASES.md
+git rm --cached DEV.md
 git rm --cached -r .changeset
 
 echo "Committing squashed changes..."

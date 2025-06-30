@@ -11,10 +11,13 @@
     "cs:add": "changeset add",
     "cs:version": "changeset version",
     "cs:tag": "changeset tag",
-    "cs:publish": "changeset publish"
+    "cs:publish": "changeset publish",
+    "dev:watch": "turbo watch build",
+    "dev:yalc": "chokidar \"packages/*/dist/**/*\" -c \"pnpm --filter \\\"$(echo {path} | sed -E 's|packages/(.*)/dist/.*|\\\\./packages/\\\\1|')\\\" exec yalc publish --push --no-scripts\""
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.5",
+    "chokidar-cli": "^3.0.0",
     "eslint": "latest",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
