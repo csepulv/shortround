@@ -2,10 +2,10 @@ import { Box, Paper } from '@mui/material';
 import { motion } from 'framer-motion';
 
 import { ANIMATION_DURATION } from './mui-styles.js';
-import { useShortRoundDialogController } from './useShortRoundDialogController.js';
+import { useShortRoundSidekick } from './useShortRoundSidekick.js';
 
 export function SidecarDrawer() {
-  const { showSidecar, renderSidecar, height, sidecarWidth } = useShortRoundDialogController();
+  const { showSidecar, renderSidecar, height, sidecarWidth } = useShortRoundSidekick();
 
   const variants = {
     open: { width: sidecarWidth, pointerEvents: 'auto' },

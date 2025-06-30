@@ -1,17 +1,13 @@
 import { Box, Paper, Portal } from '@mui/material';
 import { motion } from 'framer-motion';
 
-import { IntentionalPaletteFrame } from './IntentionalPaletteFrame.jsx';
+import { ShortRoundPaletteFrame } from './ShortRoundPaletteFrame.jsx';
 import { ANIMATION_DURATION } from './mui-styles.js';
 import { SidecarDrawer } from './SidecarDrawer.jsx';
-import {
-  IntentionalProvider,
-  useShortRoundDialogController
-} from './useShortRoundDialogController.js';
+import { ShortRoundProvider, useShortRoundSidekick } from './useShortRoundSidekick.js';
 
-function IntentionalDialogContent({ title, defaultIntentions }) {
-  const { isOpen, anchorPosition, anchorOrigin, height, totalWidth } =
-    useShortRoundDialogController();
+function ShortRoundDialogContent({ title, defaultIntentions }) {
+  const { isOpen, anchorPosition, anchorOrigin, height, totalWidth } = useShortRoundSidekick();
   if (!isOpen) return null;
 
   return (
@@ -44,7 +40,7 @@ function IntentionalDialogContent({ title, defaultIntentions }) {
               flexDirection: anchorOrigin?.toLowerCase()?.endsWith('right') ? 'row-reverse' : 'row'
             }}
           >
-            <IntentionalPaletteFrame title={title} defaultIntentions={defaultIntentions} />
+            <ShortRoundPaletteFrame title={title} defaultIntentions={defaultIntentions} />
             <SidecarDrawer />
           </Box>
         </Paper>
@@ -53,10 +49,10 @@ function IntentionalDialogContent({ title, defaultIntentions }) {
   );
 }
 
-export function IntentionalDialog({ title, defaultIntentions }) {
+export function ShortRoundDialog({ title, defaultIntentions }) {
   return (
-    <IntentionalProvider>
-      <IntentionalDialogContent title={title} defaultIntentions={defaultIntentions} />
-    </IntentionalProvider>
+    <ShortRoundProvider>
+      <ShortRoundDialogContent title={title} defaultIntentions={defaultIntentions} />
+    </ShortRoundProvider>
   );
 }

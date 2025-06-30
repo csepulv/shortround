@@ -1,10 +1,7 @@
 import { Popover, PopoverContent, PopoverTrigger } from './components/ui/popover';
 
-import {
-  IntentionalProvider,
-  useShortRoundDialogController
-} from './useShortRoundDialogController.js';
-import { IntentionalPaletteFrame } from './IntentionalPaletteFrame';
+import { ShortRoundProvider, useShortRoundSidekick } from './useShortRoundSidekick.js';
+import { ShortRoundPaletteFrame } from './ShortRoundPaletteFrame.jsx';
 import { cn } from './lib/utils';
 import { SidecarDrawer } from './SidecarDrawer';
 import { motion } from 'framer-motion';
@@ -24,7 +21,7 @@ const sizeClasses = {
 };
 
 function DialogContent({ title, defaultIntentions }) {
-  const { isOpen, setIsOpen, anchor, size, totalWidth } = useShortRoundDialogController();
+  const { isOpen, setIsOpen, anchor, size, totalWidth } = useShortRoundSidekick();
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen} modal={false}>
@@ -41,7 +38,7 @@ function DialogContent({ title, defaultIntentions }) {
           transition={{ duration: 0.3, ease: 'easeInOut' }}
           className="flex h-full"
         >
-          <IntentionalPaletteFrame title={title} defaultIntentions={defaultIntentions} />
+          <ShortRoundPaletteFrame title={title} defaultIntentions={defaultIntentions} />
           <SidecarDrawer />
         </motion.div>
       </PopoverContent>
@@ -49,10 +46,10 @@ function DialogContent({ title, defaultIntentions }) {
   );
 }
 
-export function IntentionalDialog({ title, defaultIntentions }) {
+export function ShortRoundDialog({ title, defaultIntentions }) {
   return (
-    <IntentionalProvider>
+    <ShortRoundProvider>
       <DialogContent title={title} defaultIntentions={defaultIntentions} />
-    </IntentionalProvider>
+    </ShortRoundProvider>
   );
 }

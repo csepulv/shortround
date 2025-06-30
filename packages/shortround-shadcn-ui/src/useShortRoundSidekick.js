@@ -2,9 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 
 const NO_PROVIDER = Symbol('NO_PROVIDER_YET');
 
-const IntentionalContext = createContext(NO_PROVIDER);
+const ShortRoundContext = createContext(NO_PROVIDER);
 
-export const useShortRoundDialogController = () => useContext(IntentionalContext);
+export const useShortRoundSidekick = () => useContext(ShortRoundContext);
 
 const useShortRoundKeyboardShortcuts = (setIsOpen, installKeyboardShortcuts = true) => {
   return useEffect(() => {
@@ -90,12 +90,12 @@ function DialogContextProvider({
     closeSidecar,
     renderSidecar
   };
-  return <IntentionalContext.Provider value={value}>{children}</IntentionalContext.Provider>;
+  return <ShortRoundContext.Provider value={value}>{children}</ShortRoundContext.Provider>;
 }
 
-export function IntentionalProvider(props) {
+export function ShortRoundProvider(props) {
   const { children, ...rest } = props;
-  const existing = useShortRoundDialogController();
+  const existing = useShortRoundSidekick();
   if (existing !== NO_PROVIDER) {
     return children;
   }

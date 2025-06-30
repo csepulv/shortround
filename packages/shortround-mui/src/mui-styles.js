@@ -31,7 +31,7 @@ export function CommandIcon({ iconName }) {
   return <IconComponent sx={{ fontSize: 18, color: 'action.active' }} />;
 }
 
-export function makeIntentionalPaletteStyles(theme) {
+export function makeShortRoundPaletteStyles(theme) {
   return {
     root: {
       '& [cmdk-input]': {

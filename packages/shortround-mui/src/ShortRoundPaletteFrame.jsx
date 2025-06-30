@@ -13,9 +13,9 @@ import {
   TbBoxMargin as AnchorCenterIcon
 } from 'react-icons/tb';
 
-import { IntentionalPalette } from './IntentionalPalette.jsx';
+import { ShortRoundPalette } from './ShortRoundPalette.jsx';
 import { ANIMATION_DURATION } from './mui-styles.js';
-import { useShortRoundDialogController } from './useShortRoundDialogController.js';
+import { useShortRoundSidekick } from './useShortRoundSidekick.js';
 
 const anchorIcons = {
   center: AnchorCenterIcon,
@@ -34,7 +34,7 @@ function ChangeAnchorPosition({ onCycleAnchorOrigin, position }) {
   );
 }
 
-function IntentionalPaletteWrapper({ width, height, defaultIntentions }) {
+function ShortRoundPaletteWrapper({ width, height, defaultIntentions }) {
   return (
     <Paper
       elevation={8}
@@ -46,14 +46,14 @@ function IntentionalPaletteWrapper({ width, height, defaultIntentions }) {
         overflow: 'hidden'
       }}
     >
-      <IntentionalPalette defaultIntentions={defaultIntentions} />
+      <ShortRoundPalette defaultIntentions={defaultIntentions} />
     </Paper>
   );
 }
 
-export function IntentionalPaletteFrame({ title, defaultIntentions }) {
+export function ShortRoundPaletteFrame({ title, defaultIntentions }) {
   const { onClose, setSize, anchorOrigin, cycleAnchorOrigin, height, size, commandWidth } =
-    useShortRoundDialogController();
+    useShortRoundSidekick();
   return (
     <motion.div layout transition={{ duration: ANIMATION_DURATION, ease: 'easeInOut' }}>
       <Paper
@@ -104,7 +104,7 @@ export function IntentionalPaletteFrame({ title, defaultIntentions }) {
         </Box>
         {size !== 'minimized' && (
           <Box sx={{ overflow: 'hidden', height: 'calc(100% - 49px)' }}>
-            <IntentionalPaletteWrapper
+            <ShortRoundPaletteWrapper
               height={height}
               width={commandWidth}
               defaultIntentions={defaultIntentions}

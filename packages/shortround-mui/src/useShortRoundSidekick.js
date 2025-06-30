@@ -33,9 +33,9 @@ export const heightMap = {
 
 const NO_PROVIDER = Symbol('NO_PROVIDER_YET');
 
-const IntentionalContext = createContext(NO_PROVIDER);
+const ShortRoundContext = createContext(NO_PROVIDER);
 
-export const useShortRoundDialogController = () => useContext(IntentionalContext);
+export const useShortRoundSidekick = () => useContext(ShortRoundContext);
 
 const useShortRoundKeyboardShortcuts = (setIsOpen, installKeyboardShortcuts = true) => {
   return useEffect(() => {
@@ -151,16 +151,16 @@ function DialogContextProvider({
     showToast
   };
   return (
-    <IntentionalContext.Provider value={value}>
+    <ShortRoundContext.Provider value={value}>
       {children}
       <Toast toastData={toastData} closeToast={closeToast} />
-    </IntentionalContext.Provider>
+    </ShortRoundContext.Provider>
   );
 }
 
-export function IntentionalProvider(props) {
+export function ShortRoundProvider(props) {
   const { children, ...rest } = props;
-  const existing = useShortRoundDialogController();
+  const existing = useShortRoundSidekick();
   if (existing !== NO_PROVIDER) {
     return children;
   }

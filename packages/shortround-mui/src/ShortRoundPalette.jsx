@@ -3,8 +3,8 @@ import { alpha, Box, Chip, Typography, useTheme } from '@mui/material';
 import { Command as CmdkCommand } from 'cmdk';
 import { useMemo } from 'react';
 
-import { CommandIcon, makeIntentionalPaletteStyles } from './mui-styles.js';
-import { useShortRoundDialogController } from './useShortRoundDialogController.js';
+import { CommandIcon, makeShortRoundPaletteStyles } from './mui-styles.js';
+import { useShortRoundSidekick } from './useShortRoundSidekick.js';
 import { useShortRound } from '@shortround/core';
 
 function ShortcutChip({ shortcut }) {
@@ -33,14 +33,14 @@ function ShortcutChip({ shortcut }) {
   );
 }
 
-export function IntentionalPalette({ defaultIntentions }) {
+export function ShortRoundPalette({ defaultIntentions }) {
   const { inputValue, updateInputValue, intentions, dispatch } = useShortRound({
     defaultIntentions
   });
-  const { height, setSidecarRenderer, closeSidecar, showToast } = useShortRoundDialogController();
+  const { height, setSidecarRenderer, closeSidecar, showToast } = useShortRoundSidekick();
   const theme = useTheme();
 
-  const styles = makeIntentionalPaletteStyles(theme);
+  const styles = makeShortRoundPaletteStyles(theme);
 
   const intentionGroups = useMemo(() => {
     return intentions.reduce((acc, intention) => {

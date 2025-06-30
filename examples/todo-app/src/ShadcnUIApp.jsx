@@ -1,14 +1,10 @@
 import { Button } from '@/components/ui/button';
-import {
-  IntentionalDialog,
-  IntentionalPalette,
-  useShortRoundDialogController
-} from '@shortround/shadcnui';
+import { ShortRoundDialog, ShortRoundPalette, useShortRoundSidekick } from '@shortround/shadcnui';
 import { helpIntent } from '@/help-intent.js';
 import { saveItemIntent } from '@/save-item-intent.js';
 
 function ToggleIntentionPalette() {
-  const { setIsOpen, isOpen } = useShortRoundDialogController();
+  const { setIsOpen, isOpen } = useShortRoundSidekick();
   return <Button onClick={() => setIsOpen(!isOpen)}>Click Me</Button>;
 }
 
@@ -17,7 +13,7 @@ function ShadcnUIApp() {
     <div className="m-auto">
       <ToggleIntentionPalette />
       <div className="m-auto">
-        <IntentionalDialog defaultIntentions={[helpIntent, saveItemIntent]} />
+        <ShortRoundDialog defaultIntentions={[helpIntent, saveItemIntent]} />
       </div>
     </div>
   );

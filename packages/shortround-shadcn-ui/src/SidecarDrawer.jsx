@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useShortRoundDialogController } from './useShortRoundDialogController.js';
+import { useShortRoundSidekick } from './useShortRoundSidekick.js';
 
 export function SidecarDrawer() {
-  const { showSidecar, renderSidecar, sidecarWidth } = useShortRoundDialogController();
+  const { showSidecar, renderSidecar, sidecarWidth } = useShortRoundSidekick();
 
   return (
     <AnimatePresence>

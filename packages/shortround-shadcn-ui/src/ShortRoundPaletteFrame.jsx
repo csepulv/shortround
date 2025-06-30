@@ -3,11 +3,11 @@ import { Maximize, Minimize, PanelTop, X, Move } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from './components/ui/toggle-group';
 
-import { useShortRoundDialogController } from './useShortRoundDialogController.js';
-import { IntentionalPalette } from './IntentionalPalette';
+import { useShortRoundSidekick } from './useShortRoundSidekick.js';
+import { ShortRoundPalette } from './ShortRoundPalette.jsx';
 
-export function IntentionalPaletteFrame({ title, defaultIntentions }) {
-  const { onClose, setSize, cycleAnchor, size } = useShortRoundDialogController();
+export function ShortRoundPaletteFrame({ title, defaultIntentions }) {
+  const { onClose, setSize, cycleAnchor, size } = useShortRoundSidekick();
 
   return (
     <div className="bg-background flex flex-col overflow-hidden h-full">
@@ -33,7 +33,7 @@ export function IntentionalPaletteFrame({ title, defaultIntentions }) {
       </div>
       {size !== 'minimized' && (
         <div className="overflow-hidden h-full">
-          <IntentionalPalette defaultIntentions={defaultIntentions} />
+          <ShortRoundPalette defaultIntentions={defaultIntentions} />
         </div>
       )}
     </div>

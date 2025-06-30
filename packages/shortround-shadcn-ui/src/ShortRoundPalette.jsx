@@ -8,15 +8,15 @@ import {
   CommandSeparator
 } from './components/ui/command';
 import { useShortRound } from '@shortround/core';
-import { useShortRoundDialogController } from './useShortRoundDialogController.js';
+import { useShortRoundSidekick } from './useShortRoundSidekick.js';
 import { useMemo } from 'react';
 import { File } from 'lucide-react';
 
-export function IntentionalPalette({ defaultIntentions }) {
+export function ShortRoundPalette({ defaultIntentions }) {
   const { inputValue, updateInputValue, intentions, dispatch } = useShortRound({
     defaultIntentions
   });
-  const { setSidecarRenderer, closeSidecar } = useShortRoundDialogController();
+  const { setSidecarRenderer, closeSidecar } = useShortRoundSidekick();
 
   const intentionGroups = useMemo(() => {
     return intentions.reduce((acc, intention) => {
