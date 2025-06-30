@@ -1,5 +1,5 @@
 {
-  "name": "intentional",
+  "name": "shortround",
   "private": true,
   "scripts": {
     "build": "turbo build",
