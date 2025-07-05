@@ -5,7 +5,19 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src')
+      '@': path.resolve(__dirname, 'src'),
+      '@shortround/core': path.resolve(
+        __dirname,
+        '../../packages/shortround-core/src/index.dev.js'
+      ),
+      '@shortround/mui': path.resolve(
+        __dirname,
+        '../../packages/shortround-mui/src/index.js'
+      ),
+      '@shortround/shadcn-ui': path.resolve(
+        __dirname,
+        '../../packages/shortround-shadcn-ui/src/index.js'
+      )
     },
     conditions: ['development', 'import', 'module', 'browser', 'default']
   },

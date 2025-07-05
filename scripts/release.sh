@@ -43,8 +43,8 @@ fi
 echo "Found release tags:"
 echo "$RELEASE_TAGS"
 
-# Create a release commit message from the tags
-COMMIT_MESSAGE=$(echo -e "feat: Release\n\n$(echo "$RELEASE_TAGS" | sed 's/^/- /')")
+# Create a release commit message from the last commit on the main branch.
+COMMIT_MESSAGE=$(git log -1 --pretty=%B "$MAIN_BRANCH")
 
 # --- Perform Release ---
 echo "Switching to the '$RELEASE_BRANCH' branch..."

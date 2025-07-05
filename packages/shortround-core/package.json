@@ -1,6 +1,6 @@
 {
   "name": "@shortround/core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Core library for ShortRound, providing the main hooks and functionality for command palette and voice interaction.",
   "keywords": [
     "shortround",
@@ -21,13 +21,13 @@
   },
   "homepage": "https://github.com/csepulv/shortround#readme",
   "type": "module",
-  "main": "./dist/core.js",
-  "module": "./dist/core.js",
+  "main": "./dist/core.es.js",
+  "module": "./dist/core.es.js",
   "exports": {
     ".": {
-      "development": "./src/index.dev.js",
-      "import": "./dist/core.js",
-      "types": "./src/index.d.ts"
+      "types": "./src/index.d.ts",
+      "import": "./dist/core.es.js",
+      "default": "./dist/core.es.js"
     }
   },
   "files": [

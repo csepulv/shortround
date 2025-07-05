@@ -23,8 +23,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.js'),
-      name: 'ShortRoundCore',
-      fileName: 'core',
+      fileName: (format) => `core.${format}.js`,
       formats: ['es']
     },
     rollupOptions: {

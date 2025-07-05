@@ -8,6 +8,7 @@
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{js,jsx,md}\"",
     "release": "scripts/release.sh",
+    "release:reset": "scripts/reset-release-state.sh",
     "cs:add": "changeset add",
     "cs:version": "changeset version",
     "cs:tag": "changeset tag",

@@ -12,8 +12,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.js'),
-      name: 'ShortRoundMui',
-      fileName: 'mui',
+      fileName: (format) => `mui.${format}.js`,
       formats: ['es']
     },
     rollupOptions: {

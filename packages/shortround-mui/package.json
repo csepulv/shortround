@@ -1,6 +1,6 @@
 {
   "name": "@shortround/mui",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Material UI components for Shortround, a command palette and intentional UI library.",
   "keywords": [
     "shortround",
@@ -22,13 +22,13 @@
   },
   "homepage": "https://github.com/csepulv/shortround#readme",
   "type": "module",
-  "main": "./dist/mui.js",
-  "module": "./dist/mui.js",
+  "main": "./dist/mui.es.js",
+  "module": "./dist/mui.es.js",
   "exports": {
     ".": {
-      "development": "./src/index.dev.js",
-      "import": "./dist/mui.js",
-      "types": "./dist/mui.d.ts"
+      "types": "./dist/mui.d.ts",
+      "import": "./dist/mui.es.js",
+      "default": "./dist/mui.es.js"
     }
   },
   "files": [

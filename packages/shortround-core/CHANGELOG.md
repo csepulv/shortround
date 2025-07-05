@@ -1,5 +1,11 @@
 # @shortround/core
 
+## 0.2.1
+
+### Patch Changes
+
+- Added simple docs and exported types.
+
 ## 0.2.0
 
 ### Minor Changes
