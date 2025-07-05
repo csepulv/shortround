@@ -4,7 +4,7 @@ const NO_PROVIDER = Symbol('NO_PROVIDER_YET');
 
 const ShortRoundContext = createContext(NO_PROVIDER);
 
-export const useShortRoundSidekick = () => useContext(ShortRoundContext);
+export const useShortRoundShadcnSidekick = () => useContext(ShortRoundContext);
 
 const useShortRoundKeyboardShortcuts = (setIsOpen, installKeyboardShortcuts = true) => {
   return useEffect(() => {
@@ -38,7 +38,7 @@ function DialogContextProvider({
   installKeyboardShortcuts = true
 }) {
   const [internalSidecarRenderer, setInternalSidecarRenderer] = useState();
-  const [showSidecar, setShowSidecar] = useState(false);
+  const [isSidecarOpen, setIsSidecarOpen] = useState(false);
   const [size, setSize] = useState('compact');
   const [anchor, setAnchor] = useState(initialAnchor);
   const [totalWidth, setTotalWidth] = useState(commandWidth);
@@ -55,7 +55,7 @@ function DialogContextProvider({
 
   const setSidecarRenderer = (renderer) => {
     setInternalSidecarRenderer(() => renderer);
-    setShowSidecar(true);
+    setIsSidecarOpen(true);
     setTotalWidth(maxTotalWidth);
   };
 
@@ -64,7 +64,7 @@ function DialogContextProvider({
   }, [internalSidecarRenderer]);
 
   const closeSidecar = () => {
-    setShowSidecar(false);
+    setIsSidecarOpen(false);
     setInternalSidecarRenderer(null);
     setTotalWidth(commandWidth);
   };
@@ -82,7 +82,7 @@ function DialogContextProvider({
     setSize,
     anchor,
     cycleAnchor,
-    showSidecar,
+    isSidecarOpen,
     setSidecarRenderer,
     totalWidth,
     commandWidth,
@@ -95,7 +95,7 @@ function DialogContextProvider({
 
 export function ShortRoundProvider(props) {
   const { children, ...rest } = props;
-  const existing = useShortRoundSidekick();
+  const existing = useShortRoundShadcnSidekick();
   if (existing !== NO_PROVIDER) {
     return children;
   }

@@ -1,4 +1,4 @@
 import './index.css';
 
 export { ShortRoundDialog } from './ShortRoundDialog.jsx';
-export { useShortRoundSidekick, ShortRoundProvider } from './useShortRoundSidekick.js';
+export { useShortRoundShadcnSidekick, ShortRoundProvider } from './useShortRoundShadcnSidekick.js';

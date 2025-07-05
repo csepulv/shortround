@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/button';
-import { ShortRoundDialog, useShortRoundSidekick } from '@shortround/shadcn-ui';
+import { ShortRoundDialog, useShortRoundShadcnSidekick } from '@shortround/shadcn-ui';
 import { helpIntent } from '@/help-intent.js';
 import { saveItemIntent } from '@/save-item-intent.js';
 
 function ToggleIntentionPalette() {
-  const { setIsOpen, isOpen } = useShortRoundSidekick();
+  const { setIsOpen, isOpen } = useShortRoundShadcnSidekick();
   return <Button onClick={() => setIsOpen(!isOpen)}>Click Me</Button>;
 }
 

@@ -3,11 +3,11 @@ import { Maximize, Minimize, PanelTop, X, Move } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from './components/ui/toggle-group';
 
-import { useShortRoundSidekick } from './useShortRoundSidekick.js';
+import { useShortRoundShadcnSidekick } from './useShortRoundShadcnSidekick.js';
 import { ShortRoundPalette } from './ShortRoundPalette.jsx';
 
 export function ShortRoundPaletteFrame({ title, defaultIntentions }) {
-  const { onClose, setSize, cycleAnchor, size } = useShortRoundSidekick();
+  const { onClose, setSize, cycleAnchor, size } = useShortRoundShadcnSidekick();
 
   return (
     <div className="bg-background flex flex-col overflow-hidden h-full">

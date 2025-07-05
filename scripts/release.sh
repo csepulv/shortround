@@ -50,9 +50,27 @@ COMMIT_MESSAGE=$(echo -e "feat: Release\n\n$(echo "$RELEASE_TAGS" | sed 's/^/- /
 echo "Switching to the '$RELEASE_BRANCH' branch..."
 git checkout "$RELEASE_BRANCH"
 
-echo "Merging changes from '$MAIN_BRANCH'...
-"
-git merge --squash --allow-unrelated-histories "$MAIN_BRANCH"
+# --- Robust Squash Commit Strategy ---
+# The standard `git merge --squash` can fail if the branches have diverged
+# significantly with unrelated histories, causing conflicts on files like .gitignore.
+# This method avoids a merge altogether by resetting the branch state, which is more reliable.
+
+echo "Creating a squashed commit from '$MAIN_BRANCH'..."
+
+# 1. Store the original commit of the release branch before we modify it.
+ORIGINAL_RELEASE_COMMIT=$(git rev-parse HEAD)
+
+# 2. Temporarily hard reset to the main branch. This brings all the files and commit history from main
+#    into the release branch, overwriting its current state.
+git reset --hard "$MAIN_BRANCH"
+
+# 3. Soft reset back to the original release commit.
+#    - This moves the branch pointer (HEAD) back to where it was.
+#    - Crucially, `--soft` leaves all the file changes from the main branch in the staging area (index).
+#    - The result is identical to a successful `git merge --squash`, with all changes staged for a single commit.
+git reset --soft "$ORIGINAL_RELEASE_COMMIT"
+
+# The script can now proceed to the next steps. All changes from main are staged and ready to be filtered and committed.
 
 echo "Excluding files listed in .publicignore from public commit..."
 # Always exclude the .publicignore file itself

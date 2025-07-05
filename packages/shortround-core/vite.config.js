@@ -20,11 +20,6 @@ export default defineConfig({
     },
     react()
   ],
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src')
-    }
-  },
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.js'),
@@ -33,10 +28,11 @@ export default defineConfig({
       formats: ['es']
     },
     rollupOptions: {
-      external: ['react', 'fuzzysort', 'tiny-invariant'],
+      external: ['react', 'react-dom', 'fuzzysort', 'tiny-invariant', 'cmdk', 'framer-motion'],
       output: {
         globals: {
-          react: 'React'
+          react: 'React',
+          'react-dom': 'ReactDOM'
         }
       }
     }

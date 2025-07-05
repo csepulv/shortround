@@ -1,23 +1,38 @@
 import { Box, Button } from '@mui/material';
-import { ShortRoundDialog, ShortRoundProvider, useShortRoundSidekick } from '@shortround/mui';
+import { MuiSidekickComponents, MuiToastProvider, useMuiToast } from '@shortround/mui';
 import { helpIntent } from '@/help-intent.js';
 import { saveItemIntent } from '@/save-item-intent.js';
+import { ShortRoundSidekick, SidekickStoreProvider, useSidekick } from '@shortround/core';
 
 function ToggleIntentionPalette() {
-  const { setIsOpen, isOpen } = useShortRoundSidekick();
+  const { setIsOpen, isOpen } = useSidekick();
   return <Button onClick={() => setIsOpen(!isOpen)}>Click Me</Button>;
+}
+
+function SidekickWrapper() {
+  const { showToast } = useMuiToast();
+  return (
+    <ShortRoundSidekick
+      title="Short Round"
+      defaultIntentions={[helpIntent, saveItemIntent]}
+      SidekickComponents={MuiSidekickComponents}
+      showToast={showToast}
+    />
+  );
 }
 
 function MuiApp() {
   return (
-    <ShortRoundProvider>
+    <SidekickStoreProvider initial={{ isOpen: false }}>
       <Box sx={{ m: 'auto' }}>
         <ToggleIntentionPalette />
         <Box sx={{ m: 'auto' }}>
-          <ShortRoundDialog defaultIntentions={[helpIntent, saveItemIntent]} />
+          <MuiToastProvider>
+            <SidekickWrapper />
+          </MuiToastProvider>
         </Box>
       </Box>
-    </ShortRoundProvider>
+    </SidekickStoreProvider>
   );
 }
 

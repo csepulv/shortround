@@ -12,8 +12,6 @@ import {
 } from 'lucide-react';
 import { alpha } from '@mui/material';
 
-export const ANIMATION_DURATION = 0.5;
-
 export function CommandIcon({ iconName }) {
   const iconMap = {
     search: SearchIcon,
@@ -58,7 +56,7 @@ export function makeShortRoundPaletteStyles(theme) {
         },
         '&::-webkit-scrollbar-thumb': {
           background: alpha(theme.palette.text.primary, 0.1),
-          borderRadius: '4px',
+          borderRadius: theme.shape.borderRadius,
           '&:hover': {
             background: alpha(theme.palette.text.primary, 0.2)
           }
@@ -77,7 +75,8 @@ export function makeShortRoundPaletteStyles(theme) {
       '& [cmdk-item]': {
         cursor: 'pointer',
         height: 'auto',
-        borderRadius: '8px',
+        margin: theme.spacing(0.5),
+        borderRadius: theme.shape.borderRadius,
         fontSize: '14px',
         display: 'flex',
         alignItems: 'center',
@@ -106,7 +105,7 @@ export function makeShortRoundPaletteStyles(theme) {
             width: '3px',
             height: '60%',
             background: theme.palette.primary.main,
-            borderRadius: '0 2px 2px 0'
+            borderRadius: theme.shape.borderRadius
           }
         },
         '&:active': {
@@ -132,9 +131,17 @@ export function makeShortRoundPaletteStyles(theme) {
         margin: '4px 0'
       }
     },
-    frame: {
+    inputFrame: {
+      width: '100%',
       display: 'flex',
       alignItems: 'center',
+      borderColor: 'divider',
+      bgcolor: alpha(theme.palette.primary.main, 0.02)
+    },
+    inputArea: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'flex-start',
       px: 2,
       py: 1.5,
       borderBottom: 1,
@@ -142,6 +149,7 @@ export function makeShortRoundPaletteStyles(theme) {
       bgcolor: alpha(theme.palette.primary.main, 0.02)
     },
     input: {
+      marginLeft: '8px',
       border: 'none',
       outline: 'none',
       background: 'transparent',

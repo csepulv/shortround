@@ -6,7 +6,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src')
-    }
+    },
+    conditions: ['development', 'import', 'module', 'browser', 'default']
   },
   plugins: [
     {
@@ -26,6 +27,7 @@ export default defineConfig({
   ],
   optimizeDeps: {
     force: true,
+    exclude: ['@shortround/core', '@shortround/mui', '@shortround/shadcn-ui'],
     esbuildOptions: {
       loader: {
         '.js': 'jsx'

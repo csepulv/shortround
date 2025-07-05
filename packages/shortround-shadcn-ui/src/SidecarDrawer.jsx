@@ -1,12 +1,12 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useShortRoundSidekick } from './useShortRoundSidekick.js';
+import { useShortRoundShadcnSidekick } from './useShortRoundShadcnSidekick.js';
 
 export function SidecarDrawer() {
-  const { showSidecar, renderSidecar, sidecarWidth } = useShortRoundSidekick();
+  const { isSidecarOpen, renderSidecar, sidecarWidth } = useShortRoundShadcnSidekick();
 
   return (
     <AnimatePresence>
-      {showSidecar && (
+      {isSidecarOpen && (
         <motion.div
           initial={{ width: 0, opacity: 0 }}
           animate={{ width: sidecarWidth, opacity: 1 }}

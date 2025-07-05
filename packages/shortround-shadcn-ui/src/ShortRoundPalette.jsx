@@ -8,15 +8,15 @@ import {
   CommandSeparator
 } from './components/ui/command';
 import { useShortRound } from '@shortround/core';
-import { useShortRoundSidekick } from './useShortRoundSidekick.js';
+import { useShortRoundShadcnSidekick } from './useShortRoundShadcnSidekick.js';
 import { useMemo } from 'react';
 import { File } from 'lucide-react';
 
 export function ShortRoundPalette({ defaultIntentions }) {
-  const { inputValue, updateInputValue, intentions, dispatch } = useShortRound({
+  const { inputValue, onInputChange, intentions, dispatch } = useShortRound({
     defaultIntentions
   });
-  const { setSidecarRenderer, closeSidecar } = useShortRoundSidekick();
+  const { setSidecarRenderer, closeSidecar } = useShortRoundShadcnSidekick();
 
   const intentionGroups = useMemo(() => {
     return intentions.reduce((acc, intention) => {
@@ -34,7 +34,7 @@ export function ShortRoundPalette({ defaultIntentions }) {
   return (
     <Command shouldFilter={false} className="h-full">
       <CommandInput
-        onValueChange={updateInputValue}
+        onValueChange={onInputChange}
         placeholder="Type a intention or search..."
         value={inputValue}
       />

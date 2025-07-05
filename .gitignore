@@ -76,3 +76,4 @@ local.properties
 .serverless
 jd-es*.json
 .turbo
+.npmrc

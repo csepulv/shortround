@@ -1,4 +1,4 @@
-import { SystemIntentionIds } from '@shortround/core';
+import { RevertIntentionIds } from '@shortround/core';
 
 export const helpIntent = {
   id: 'help',
@@ -11,7 +11,7 @@ export const helpIntent = {
         return 'THIS IS THE HELP CONTENT';
       }
     },
-    systemIntentions: [SystemIntentionIds.BACK],
+    includeRevertIntentions: [RevertIntentionIds.BACK],
     intentions: [
       {
         id: 'help::using-app',
@@ -20,7 +20,7 @@ export const helpIntent = {
         icon: 'help',
         group: 'Help',
         action: () => ({
-          systemIntentions: [SystemIntentionIds.BACK],
+          includeRevertIntentions: [RevertIntentionIds.BACK],
           sideEffects: {
             sidecarRenderer: () => {
               return 'Guidance on app usage';
@@ -35,7 +35,7 @@ export const helpIntent = {
         icon: 'help',
         group: 'Help',
         action: () => ({
-          systemIntentions: [SystemIntentionIds.BACK],
+          includeRevertIntentions: [RevertIntentionIds.BACK],
           sideEffects: {
             sidecarRenderer: () => {
               return 'Common questions (and answers)';

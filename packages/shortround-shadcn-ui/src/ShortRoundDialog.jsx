@@ -1,6 +1,6 @@
 import { Popover, PopoverContent, PopoverTrigger } from './components/ui/popover';
 
-import { ShortRoundProvider, useShortRoundSidekick } from './useShortRoundSidekick.js';
+import { ShortRoundProvider, useShortRoundShadcnSidekick } from './useShortRoundShadcnSidekick.js';
 import { ShortRoundPaletteFrame } from './ShortRoundPaletteFrame.jsx';
 import { cn } from './lib/utils';
 import { SidecarDrawer } from './SidecarDrawer';
@@ -21,7 +21,7 @@ const sizeClasses = {
 };
 
 function DialogContent({ title, defaultIntentions }) {
-  const { isOpen, setIsOpen, anchor, size, totalWidth } = useShortRoundSidekick();
+  const { isOpen, setIsOpen, anchor, size, totalWidth } = useShortRoundShadcnSidekick();
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen} modal={false}>

@@ -1,5 +1,16 @@
 # @shortround/mui
 
+## 0.2.0
+
+### Minor Changes
+
+- Added simple docs and typedefs
+
+### Patch Changes
+
+- Updated dependencies
+  - @shortround/core@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes
