@@ -31,11 +31,14 @@ function SidekickContent({
 
   const { Sidekick, SidecarContent } = SidekickComponents;
 
+  // TODO: might allow for custom shortcuts
+
   useShortRoundKeyboardShortcuts({
     onOpen,
     onClose,
     installKeyboardShortcuts
   });
+
   if (!isOpen) return null;
 
   return (
@@ -81,15 +84,13 @@ export function ShortRoundSidekick({
 }) {
   return (
     <SidekickStoreProvider store={sidekickStore} initial={initialSidekickState}>
-      <SidekickComponents.ThemeProvider>
-        <SidekickContent
-          title={title}
-          defaultIntentions={defaultIntentions}
-          SidekickComponents={SidekickComponents}
-          showToast={showToast}
-          installKeyboardShortcuts={installKeyboardShortcuts}
-        />
-      </SidekickComponents.ThemeProvider>
+      <SidekickContent
+        title={title}
+        defaultIntentions={defaultIntentions}
+        SidekickComponents={SidekickComponents}
+        showToast={showToast}
+        installKeyboardShortcuts={installKeyboardShortcuts}
+      />
     </SidekickStoreProvider>
   );
 }

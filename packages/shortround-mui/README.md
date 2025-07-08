@@ -64,7 +64,6 @@ import { MuiSidekickComponents } from '@shortround/mui';
 // - IntentionPalette.Item, Input, Group, Frame, NoMatches
 // - Sidekick.ControlBar, Frame, Popover  
 // - SidecarContent
-// - ThemeProvider
 ```
 
 ### Toast Integration
@@ -103,40 +102,37 @@ function MyComponent() {
 
 ### Custom Theme
 
+`@shortround/mui` simply consumes whatever MUI theme is already present in your React tree.  
+This keeps things predictable—just customize the theme exactly the same way you would in any MUI-only project.
+
 ```jsx
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { ShortRoundSidekick } from '@shortround/core';
 import { MuiSidekickComponents } from '@shortround/mui';
 
-const customTheme = createTheme({
+// Your application theme
+const myTheme = createTheme({
   palette: {
-    primary: {
-      main: '#1976d2',
-    },
+    primary: { main: '#546570' },
   },
-  shape: {
-    borderRadius: 8,
-  },
+  spacing: 4,
+  shape: { borderRadius: 4 }
 });
-
-// Override the default theme
-const CustomSidekickComponents = {
-  ...MuiSidekickComponents,
-  ThemeProvider: ({ children }) => (
-    <ThemeProvider theme={customTheme}>
-      {children}
-    </ThemeProvider>
-  ),
-};
 
 function App() {
   return (
-    <ShortRoundSidekick 
-      SidekickComponents={CustomSidekickComponents}
-      // ... other props
-    />
+    <ThemeProvider theme={myTheme}>
+      <ShortRoundSidekick
+        title="Short Round"
+        SidekickComponents={MuiSidekickComponents}
+        // ...other props
+      />
+    </ThemeProvider>
   );
 }
 ```
+
+For a working reference see [`examples/todo-app/src/MuiApp.jsx`](../../examples/todo-app/src/MuiApp.jsx).
 
 ### Custom Components
 

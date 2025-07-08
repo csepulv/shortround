@@ -1,5 +1,11 @@
 # @shortround/core
 
+## 0.2.2
+
+### Minor Changes
+
+- Allow some style customizations (use muiName)
+
 ## 0.2.1
 
 ### Patch Changes

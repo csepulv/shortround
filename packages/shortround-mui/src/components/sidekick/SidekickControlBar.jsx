@@ -2,6 +2,7 @@ import {
   alpha,
   Box,
   IconButton,
+  styled,
   ToggleButton,
   ToggleButtonGroup,
   toggleButtonGroupClasses,
@@ -40,6 +41,20 @@ function ChangeAnchorPosition({ onCycleAnchorOrigin, position }) {
   );
 }
 
+const ControlBarBox = styled('div', {
+  name: 'ShortRoundSidekickControlBar',
+  slot: 'root'
+})(({ theme }) => ({
+  display: 'flex',
+  flex: '0 0 auto',
+  alignItems: 'center',
+  px: 2,
+  py: 1,
+  borderBottom: '1px solid',
+  borderColor: theme.palette.divider,
+  backgroundColor: alpha(theme.palette.primary.main, 0.02)
+}));
+
 export function SidekickControlBar({
   title,
   cycleAnchorOrigin,
@@ -49,21 +64,11 @@ export function SidekickControlBar({
   size
 }) {
   const theme = useTheme();
+
   const onSizeChange = (event, newVal) => setSize(newVal);
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flex: '0 0 auto',
-        alignItems: 'center',
-        px: 2,
-        py: 1,
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-        backgroundColor: alpha(theme.palette.primary.main, 0.02)
-      }}
-    >
+    <ControlBarBox>
       <ChangeAnchorPosition onCycleAnchorOrigin={cycleAnchorOrigin} position={anchorOrigin} />
       <Typography
         component="div"
@@ -72,7 +77,6 @@ export function SidekickControlBar({
       >
         {title}
       </Typography>
-
       <ToggleButtonGroup
         sx={{
           mr: 2,
@@ -99,10 +103,9 @@ export function SidekickControlBar({
           <FullscreenIcon fontSize="small" />
         </ToggleButton>
       </ToggleButtonGroup>
-
       <IconButton onClick={onClose} size="small">
         <CloseIcon fontSize="small" />
       </IconButton>
-    </Box>
+    </ControlBarBox>
   );
 }

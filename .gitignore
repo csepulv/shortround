@@ -77,3 +77,6 @@ local.properties
 jd-es*.json
 .turbo
 .npmrc
+
+*storybook.log
+storybook-static

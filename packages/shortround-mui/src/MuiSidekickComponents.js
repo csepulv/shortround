@@ -8,15 +8,6 @@ import { SidekickControlBar } from './components/sidekick/SidekickControlBar.jsx
 
 import { SidekickFrame } from './components/sidekick/SidekickFrame.jsx';
 import { SidekickPopover } from './components/sidekick/SidekickPopover.jsx';
-import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material';
-
-export const theme = createTheme({
-  shape: { borderRadius: 2 }
-});
-
-function ThemeProvider({ children }) {
-  return <MuiThemeProvider theme={theme}>{children}</MuiThemeProvider>;
-}
 
 export const MuiSidekickComponents = {
   IntentionPalette: {
@@ -31,6 +22,5 @@ export const MuiSidekickComponents = {
     Frame: SidekickFrame,
     Popover: SidekickPopover
   },
-  SidecarContent,
-  ThemeProvider
+  SidecarContent
 };
