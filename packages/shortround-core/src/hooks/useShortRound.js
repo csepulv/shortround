@@ -31,12 +31,12 @@ export function useShortRound({ defaultIntentions }) {
       case RevertIntentionIds.RESET:
         setDispatchedStack([]);
         return { intentions: [...defaultIntentions] };
-      case RevertIntentionIds.BACK:
-        dispatchedStack.pop();
-        setDispatchedStack(dispatchedStack);
-        const prev =
-          dispatchedStack.length > 0 ? dispatchedStack[dispatchedStack.length - 1] : null;
+      case RevertIntentionIds.BACK: {
+        const remaining = dispatchedStack.slice(0, -1);
+        setDispatchedStack(remaining);
+        const prev = remaining.at(-1);
         return prev ? prev.result : { intentions: [...defaultIntentions] };
+      }
       default:
         return {};
     }
@@ -63,7 +63,7 @@ export function useShortRound({ defaultIntentions }) {
         return;
       }
 
-      result = await intention.action(inputValue);
+      result = (await intention.action(inputValue)) ?? {};
       setDispatchedStack([...dispatchedStack, { intention, result }]);
     }
 
@@ -73,6 +73,7 @@ export function useShortRound({ defaultIntentions }) {
 
     setDisableInputMatching(result.disableInputMatching);
     setInputValue('');
+    setInputMessage(undefined);
     if (result.shouldReset) {
       resetIntentions();
     }
@@ -109,7 +110,7 @@ export function useShortRound({ defaultIntentions }) {
       });
     }
     const text = Array.from(messages).join(', ');
-    if (text) setInputMessage({ type: 'error', text });
+    setInputMessage(text ? { type: 'error', text } : undefined);
   };
 
   const availableIntentions = disableInputMatching ? currentIntentions : matchingIntentions;

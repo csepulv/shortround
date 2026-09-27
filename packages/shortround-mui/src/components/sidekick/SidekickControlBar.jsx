@@ -10,26 +10,32 @@ import {
   useTheme
 } from '@mui/material';
 import {
+  ArrowDown,
+  ArrowDownLeft,
+  ArrowDownRight,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  ArrowUpLeft,
+  ArrowUpRight,
   CircleX as CloseIcon,
+  Crosshair,
   Grip as ViewCompactIcon,
   Maximize as FullscreenIcon,
   Minimize as MinimizeIcon
 } from 'lucide-react';
-import {
-  TbBoxAlignBottomLeftFilled as AnchorBottomLeftIcon,
-  TbBoxAlignBottomRightFilled as AnchorBottomRightIcon,
-  TbBoxAlignTopLeftFilled as AnchorTopLeftIcon,
-  TbBoxAlignTopRightFilled as AnchorTopRightIcon,
-  TbBoxMargin as AnchorCenterIcon
-} from 'react-icons/tb';
 import { AnchorPositions } from '@shortround/core';
 
 const anchorIcons = {
-  [AnchorPositions.CENTER]: AnchorCenterIcon,
-  [AnchorPositions.TOP_LEFT]: AnchorTopLeftIcon,
-  [AnchorPositions.TOP_RIGHT]: AnchorTopRightIcon,
-  [AnchorPositions.BOTTOM_LEFT]: AnchorBottomLeftIcon,
-  [AnchorPositions.BOTTOM_RIGHT]: AnchorBottomRightIcon
+  [AnchorPositions.CENTER]: Crosshair,
+  [AnchorPositions.TOP_LEFT]: ArrowUpLeft,
+  [AnchorPositions.TOP]: ArrowUp,
+  [AnchorPositions.TOP_RIGHT]: ArrowUpRight,
+  [AnchorPositions.RIGHT]: ArrowRight,
+  [AnchorPositions.BOTTOM_RIGHT]: ArrowDownRight,
+  [AnchorPositions.BOTTOM]: ArrowDown,
+  [AnchorPositions.BOTTOM_LEFT]: ArrowDownLeft,
+  [AnchorPositions.LEFT]: ArrowLeft
 };
 
 function ChangeAnchorPosition({ onCycleAnchorOrigin, position }) {
@@ -65,7 +71,11 @@ export function SidekickControlBar({
 }) {
   const theme = useTheme();
 
-  const onSizeChange = (event, newVal) => setSize(newVal);
+  // An exclusive ToggleButtonGroup emits null when the selected button is clicked again.
+  const onSizeChange = (event, newVal) => {
+    if (newVal === null) return;
+    setSize(newVal);
+  };
 
   return (
     <ControlBarBox>

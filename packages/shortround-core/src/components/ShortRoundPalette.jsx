@@ -38,7 +38,7 @@ export function ShortRoundPalette({ defaultIntentions, IntentionPalette, showToa
 
     setIncludedRevertIntentions(makeRevertIntentionsFor(result?.includeRevertIntentions));
 
-    if (result.shouldReset) {
+    if (result?.shouldReset) {
       onClose();
     }
   };
@@ -54,7 +54,7 @@ export function ShortRoundPalette({ defaultIntentions, IntentionPalette, showToa
 
         <CmdkCommand.List
           style={{
-            height: `calc(${height} - 107px`, // not sure why 107 works
+            height: `calc(${height} - 107px)`, // not sure why 107 works
             overflowY: 'auto',
             padding: '8px 0'
           }}

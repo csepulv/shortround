@@ -26,8 +26,7 @@ export default defineConfig({
         '@shortround/core',
         'cmdk',
         'framer-motion',
-        'lucide-react',
-        'react-icons'
+        'lucide-react'
       ],
       output: {
         globals: {

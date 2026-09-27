@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "test": "vitest"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -36,6 +36,6 @@
     "tailwindcss": "^4.0.0",
     "tw-animate-css": "^1.3.4",
     "vite": "^7.0.0",
-    "vitest": "latest"
+    "vitest": "^3.2.4"
   }
 }

@@ -17,36 +17,41 @@ npm install @mui/material @emotion/react @emotion/styled @mui/icons-material luc
 
 ```jsx
 import { ShortRoundSidekick } from '@shortround/core';
-import { MuiSidekickComponents, useMuiToast } from '@shortround/mui';
+import { MuiSidekickComponents, MuiToastProvider, useMuiToast } from '@shortround/mui';
 
 const intentions = [
   {
     id: 'search',
     title: 'Search Items',
     group: 'Actions',
-    icon: 'search', // Uses Lucide React icons
+    icon: 'search', // see Icons below
     action: async (input) => {
       return { intentions: searchResults };
     }
   }
 ];
 
-function App() {
-  const { showToast, ToastProvider } = useMuiToast();
+// useMuiToast() must be called inside MuiToastProvider
+function Sidekick() {
+  const { showToast } = useMuiToast();
 
   return (
-    <ToastProvider>
-      <div>
-        <h1>My App</h1>
-        <ShortRoundSidekick 
-          title="Command Palette"
-          defaultIntentions={intentions}
-          SidekickComponents={MuiSidekickComponents}
-          showToast={showToast}
-          installKeyboardShortcuts={true}
-        />
-      </div>
-    </ToastProvider>
+    <ShortRoundSidekick
+      title="Command Palette"
+      defaultIntentions={intentions}
+      SidekickComponents={MuiSidekickComponents}
+      showToast={showToast}
+      installKeyboardShortcuts={true}
+    />
+  );
+}
+
+function App() {
+  return (
+    <MuiToastProvider>
+      <h1>My App</h1>
+      <Sidekick />
+    </MuiToastProvider>
   );
 }
 ```
@@ -68,31 +73,40 @@ import { MuiSidekickComponents } from '@shortround/mui';
 
 ### Toast Integration
 
+An action that returns a `message` shows it as a toast. `useMuiToast()` reads the provider's context, so call it in
+a component rendered *inside* `MuiToastProvider`:
+
 ```jsx
-import { useMuiToast, MuiToastProvider } from '@shortround/mui';
+import { ShortRoundSidekick } from '@shortround/core';
+import { MuiSidekickComponents, MuiToastProvider, useMuiToast } from '@shortround/mui';
 
-function MyComponent() {
+const saveIntention = {
+  id: 'save',
+  title: 'Save Item',
+  action: async (input) => {
+    // ... save logic
+    return {
+      message: 'Item saved successfully!',
+      shouldReset: true
+    };
+  }
+};
+
+function Sidekick() {
   const { showToast } = useMuiToast();
-  
-  // Use in intention actions
-  const intention = {
-    id: 'save',
-    title: 'Save Item',
-    action: async (input) => {
-      // ... save logic
-      return { 
-        message: 'Item saved successfully!',
-        shouldReset: true 
-      };
-    }
-  };
+  return (
+    <ShortRoundSidekick
+      defaultIntentions={[saveIntention]}
+      SidekickComponents={MuiSidekickComponents}
+      showToast={showToast}
+    />
+  );
+}
 
+function App() {
   return (
     <MuiToastProvider>
-      <ShortRoundSidekick 
-        showToast={showToast}
-        // ... other props
-      />
+      <Sidekick />
     </MuiToastProvider>
   );
 }
@@ -153,17 +167,15 @@ const CustomComponents = {
 
 ## Icons
 
-Icons use Lucide React by default. Supported icon names include:
-- `search`, `settings`, `user`, `home`, `back`, `cancel`
-- Any valid Lucide React icon name
+Intention icons use Lucide React. The `icon` field accepts one of these names:
+`search`, `settings`, `home`, `person`, `folder`, `file`, `code`, `palette`, `dashboard`, `notification`.
+Any other value, or no value, shows the search icon.
 
-Custom icon mapping:
 ```jsx
-// In your intention
 {
-  id: 'custom',
-  title: 'Custom Action',
-  icon: 'star', // Maps to Lucide's Star icon
+  id: 'open-settings',
+  title: 'Open Settings',
+  icon: 'settings',
   action: async () => ({ shouldReset: true })
 }
 ```

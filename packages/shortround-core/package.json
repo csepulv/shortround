@@ -1,7 +1,7 @@
 {
   "name": "@shortround/core",
-  "version": "0.2.2",
-  "description": "Core library for ShortRound, providing the main hooks and functionality for command palette and voice interaction.",
+  "version": "0.2.3",
+  "description": "Core library for ShortRound, providing the main hooks and functionality for a command palette.",
   "keywords": [
     "shortround",
     "command palette",
@@ -9,7 +9,7 @@
     "react",
     "hooks"
   ],
-  "author": "Chris Sepulveda <chris@example.com>",
+  "author": "Chris Sepulveda <csepulv@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -36,7 +36,7 @@
   ],
   "scripts": {
     "build": "vite build",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

@@ -16,7 +16,7 @@ export function IntentionPaletteFrame({ children, height }) {
           overflow: 'hidden'
         }}
       >
-        <Box sx={styles.root}>{children}</Box>;
+        <Box sx={styles.root}>{children}</Box>
       </Paper>
     </Box>
   );

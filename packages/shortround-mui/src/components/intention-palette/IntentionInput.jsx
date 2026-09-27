@@ -27,7 +27,7 @@ export function IntentionInput({ inputValue, inputMessage, onInputChange }) {
           autoFocus
         />
       </Box>
-      <InputErrorMessage message={inputMessage} />
+      <InputErrorMessage message={inputMessage?.text} />
     </Box>
   );
 }

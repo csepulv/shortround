@@ -71,20 +71,21 @@ describe('useShortRound', () => {
       expect(hook.result.current.intentions).toEqual(intentions);
     });
   });
-  test('should changing defaultIntentions resets state', async () => {
-    second.action = vi.fn().mockResolvedValue({ intentions, disableInputMatching: true });
-    await act(async () => {
-      await hook.result.current.dispatch(second.id);
+  test('replacing defaultIntentions shows them and clears the input', async () => {
+    const replaceable = renderHook((props) => useShortRound(props), {
+      initialProps: { defaultIntentions }
     });
-    expect(hook.result.current.intentions).toEqual(intentions);
     act(() => {
-      hook.result.current.onInputChange('some value');
+      replaceable.result.current.onInputChange('some value');
     });
 
-    hook = renderHook(() => useShortRound({ defaultIntentions: [first] }));
-    expect(hook.result.current.intentions).toEqual([first]);
-    expect(hook.result.current.inputValue).toEqual('');
+    replaceable.rerender({ defaultIntentions: [first] });
+
+    expect(replaceable.result.current.intentions).toEqual([first]);
+    expect(replaceable.result.current.inputValue).toEqual('');
   });
+  // SL-22: whether history, disableInputMatching and the message also reset is undecided (refresh decision 12).
+  test.todo('replacing defaultIntentions resets the whole workflow');
   describe('dispatch', () => {
     describe('intentions', () => {
       test('should only match on current intentions', async () => {
@@ -133,8 +134,18 @@ describe('useShortRound', () => {
         expect(hook.result.current.intentions).toEqual([]);
       });
     });
-    test('should set first non system intent as selected (if none is specified)', () => {});
-    test('should manage breadcrumb trail', () => {});
+    test('an action that returns nothing leaves the intentions unchanged', async () => {
+      second.action = () => undefined;
+      const before = hook.result.current.intentions;
+
+      await act(async () => {
+        await hook.result.current.dispatch(second.id);
+      });
+
+      expect(hook.result.current.intentions).toEqual(before);
+    });
+    test.todo('should set first non system intent as selected (if none is specified)');
+    test.todo('should manage breadcrumb trail');
   });
   describe('handle disabled and validation', () => {
     test('should intention.validate() on input change', () => {
@@ -154,6 +165,33 @@ describe('useShortRound', () => {
       expect(third.validate).toHaveBeenCalled();
       expect(hook.result.current.intentions[2].disabled).toBeTrue();
       expect(hook.result.current.inputMessage).toEqual({ type: 'error', text: 'Not Valid' });
+    });
+    test('clears the message once the input is valid', () => {
+      third.validate = (value) =>
+        value === 'ok' ? { valid: true } : { valid: false, message: 'Not Valid' };
+
+      act(() => {
+        hook.result.current.onInputChange('bad');
+      });
+      expect(hook.result.current.inputMessage).toEqual({ type: 'error', text: 'Not Valid' });
+
+      act(() => {
+        hook.result.current.onInputChange('ok');
+      });
+      expect(hook.result.current.inputMessage).toBeUndefined();
+    });
+    test('clears the message on dispatch', async () => {
+      third.validate = () => ({ valid: false, message: 'Not Valid' });
+      second.action = () => ({ intentions });
+      act(() => {
+        hook.result.current.onInputChange('bad');
+      });
+
+      await act(async () => {
+        await hook.result.current.dispatch(second.id);
+      });
+
+      expect(hook.result.current.inputMessage).toBeUndefined();
     });
     test('should not dispatch a disabled intention', async () => {
       second.disabled = true;
@@ -211,6 +249,17 @@ describe('useShortRound', () => {
       expect(hook.result.current.dispatchedStack).toEqual([
         { intention: second, result: secondActionResult }
       ]);
+    });
+    test('back leaves the previous history array unchanged', async () => {
+      await dispatchSecondAndThirdIntentions();
+      const historyBeforeBack = hook.result.current.dispatchedStack;
+
+      await act(async () => {
+        await hook.result.current.back();
+      });
+
+      expect(historyBeforeBack).toHaveLength(2);
+      expect(hook.result.current.dispatchedStack).toHaveLength(1);
     });
     test('should handle back hook call', async () => {
       await dispatchSecondAndThirdIntentions();

@@ -86,21 +86,11 @@ An intention is a command that users can execute:
 ```jsx
 {
   id: 'unique-id',
-    title
-:
-  'Display Name',
-    group
-:
-  'Category',
-    aliases
-:
-  ['alternative', 'search', 'terms'],
-    icon
-:
-  'icon-name',
-    action
-:
-  async (input) => {
+  title: 'Display Name',
+  group: 'Category',
+  aliases: ['alternative', 'search', 'terms'],
+  icon: 'icon-name',
+  action: async (input) => {
     // Return new intentions, show sidecar, etc.
     return { intentions: newIntentions };
   }

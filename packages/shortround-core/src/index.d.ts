@@ -61,6 +61,7 @@ export interface UseSidekickResult extends SidekickStoreState {
   onClose: () => void;
   height: string;
   setSize: (val: string) => void;
+  setAnchorOrigin: (origin: AnchorPosition) => void;
   cycleAnchorOrigin: () => void;
   setSidecarRenderer: (renderer: () => ReactNode) => void;
   commandWidth: string;
@@ -112,7 +113,7 @@ export interface SidekickComponents {
     renderSidecar: () => ReactNode | undefined;
     height: string;
   }>;
-  ThemeProvider: React.ComponentType<{ children: ReactNode }>;
+  ThemeProvider?: React.ComponentType<{ children: ReactNode }>;
 }
 
 export type IntentionActionResult = {
@@ -144,7 +145,7 @@ export interface UseShortRoundResult {
   dispatch: (id: string) => Promise<IntentionActionResult>;
   reset: () => Promise<IntentionActionResult>;
   back: () => Promise<IntentionActionResult>;
-  dispatchedStack: Intention[];
+  dispatchedStack: { intention: Intention; result: IntentionActionResult }[];
 }
 
 export function useShortRound(opts: { defaultIntentions: Intention[] }): UseShortRoundResult;

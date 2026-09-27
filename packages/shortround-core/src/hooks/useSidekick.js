@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import invariant from 'tiny-invariant';
 import {
   AnchorPositionDetails,
   AnchorPositions,
@@ -42,40 +43,46 @@ export const useShortRoundKeyboardShortcuts = ({
   onClose,
   installKeyboardShortcuts = true
 }) => {
-  return useEffect(() => {
-    if (installKeyboardShortcuts) {
-      const handleKeyDown = (event) => {
-        if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
-          // event.preventDefault();
-          onOpen();
-        }
+  const callbacks = useRef({ onOpen, onClose });
+  callbacks.current = { onOpen, onClose };
 
-        if (event.key === 'Escape') {
-          onClose();
-        }
-      };
+  useEffect(() => {
+    if (!installKeyboardShortcuts) return;
 
-      document.addEventListener('keydown', handleKeyDown, { capture: true });
-      document.addEventListener('keypress', handleKeyDown);
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-        document.removeEventListener('keypress', handleKeyDown);
-      };
-    }
-  }, []);
+    const handleKeyDown = (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+        // event.preventDefault();
+        callbacks.current.onOpen();
+      }
+
+      if (event.key === 'Escape') {
+        callbacks.current.onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => document.removeEventListener('keydown', handleKeyDown, { capture: true });
+  }, [installKeyboardShortcuts]);
 };
 
 export const SidekickStoreContext = createContext(null);
 
 export const useSidekickStore = () => useContext(SidekickStoreContext);
 
+// Precedence: explicit store, then an ancestor provider's store, then one owned by this provider.
 export function SidekickStoreProvider({ store: existingStore, initial, children }) {
-  const store = existingStore || useSidekickStore({ initial }) || createSidekickStore(initial);
+  const ancestorStore = useSidekickStore();
+  const ownStore = useRef(null);
+  if (!existingStore && !ancestorStore && !ownStore.current) {
+    ownStore.current = createSidekickStore(initial);
+  }
+  const store = existingStore ?? ancestorStore ?? ownStore.current;
   return <SidekickStoreContext.Provider value={store}>{children}</SidekickStoreContext.Provider>;
 }
 
 export function useSidekick(opts = {}) {
-  let store = opts.store || useSidekickStore();
+  const contextStore = useSidekickStore();
+  let store = opts.store || contextStore;
   const localRef = useRef(null);
   if (!store) {
     if (!localRef.current) localRef.current = createSidekickStore(opts.initial);
@@ -131,7 +138,10 @@ export function useSidekick(opts = {}) {
         store.set({ isOpen: false });
       },
       height,
-      setSize: (val) => store.set({ size: val }),
+      setSize: (val) => {
+        invariant(SizeDetails[val], `Unknown size: ${val}`);
+        store.set({ size: val });
+      },
       setAnchorOrigin,
       cycleAnchorOrigin,
       setSidecarRenderer,
