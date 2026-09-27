@@ -1,0 +1,35 @@
+{
+  "name": "shortround",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "dev": "pnpm run yalc:clean && turbo dev",
+    "storybook": "pnpm run yalc:clean && turbo dev:storybook",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{js,jsx,md}\"",
+    "cs:add": "changeset add",
+    "cs:version": "changeset version",
+    "cs:tag": "changeset tag",
+    "cs:publish": "changeset publish",
+    "dev:watch": "turbo watch build",
+    "build:all": "pnpm -r --filter @shortround/* run build",
+    "yalc:clean": "pnpm -F examples/todo-app exec yalc remove --all && pnpm -F examples/todo-app install",
+    "yalc:push": "chokidar \"packages/*/dist/**/*\" -c \"cd packages/shortround-core && yalc publish --push --no-scripts && cd ../shortround-mui && yalc publish --push --no-scripts\"",
+    "dev:yalc": "pnpm run yalc:clean && concurrently \"pnpm run dev:watch\" \"pnpm run yalc:push\" \"turbo dev\""
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.5",
+    "chokidar-cli": "^3.0.0",
+    "concurrently": "^9.2.0",
+    "eslint": "latest",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "globals": "^16.2.0",
+    "prettier": "latest",
+    "turbo": "latest"
+  },
+  "packageManager": "pnpm@8.6.0"
+}
