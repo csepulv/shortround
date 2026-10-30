@@ -1,0 +1,50 @@
+{
+  "name": "@shortround/catalog",
+  "version": "0.3.0",
+  "description": "Builds ShortRound intentions, and an input resolver, from a declarative catalog.",
+  "keywords": [
+    "shortround",
+    "command palette",
+    "intentional ui",
+    "catalog"
+  ],
+  "author": "Chris Sepulveda <csepulv@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/csepulv/shortround.git",
+    "directory": "packages/shortround-catalog"
+  },
+  "bugs": {
+    "url": "https://github.com/csepulv/shortround/issues"
+  },
+  "homepage": "https://github.com/csepulv/shortround#readme",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "types": "./src/index.d.ts",
+  "files": [
+    "src/*.js",
+    "src/index.d.ts",
+    "README.md",
+    "ADOPTING-A-CATALOG.md"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "types:check": "tsc -p types-check"
+  },
+  "dependencies": {
+    "yaml": "^2.9.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@shortround/core": "workspace:*",
+    "@types/react": "19.1.8",
+    "typescript": "5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,47 @@
+version: 2
+app: app
+pickers:
+  activeFilter:
+    from: app.search.activeFilterRows
+    empty: No filters
+  sortOption:
+    from: app.search.sortRows
+    empty: No sort options
+  facetValue:
+    from: app.search.facetValueRows
+    empty: No {title} values
+facets:
+  tags: { title: Tag }
+states:
+  browsing:
+    start: true
+    commands:
+      search:
+        title: Search
+        ask: { text: Search for the typed words }
+        run: app.search.merge
+        args: [{ terms: $value }]
+      drop:
+        title: Drop filter
+        ask: { choose: activeFilter }
+        run: app.search.drop
+        args: [$value.facet, $value.value]
+      matchAll:
+        title: Match all
+        run: app.search.setMatch
+        args: [all]
+      price:
+        title: Price note
+        run: app.search.note
+        args: ['$price', 3, { label: plain }]
+      sort:
+        title: Sort
+        ask: { choose: sortOption }
+        run: app.search.setSort
+      facet:
+        forEach: facets
+        ask: { choose: facetValue }
+        run: app.search.addFacetValue
+      clear:
+        title: Clear filters
+        run: app.search.clearFilters

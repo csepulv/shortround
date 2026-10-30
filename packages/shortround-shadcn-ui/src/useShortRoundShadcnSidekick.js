@@ -6,8 +6,8 @@ const ShortRoundContext = createContext(NO_PROVIDER);
 
 export const useShortRoundShadcnSidekick = () => useContext(ShortRoundContext);
 
-const useShortRoundKeyboardShortcuts = (setIsOpen, installKeyboardShortcuts = true) => {
-  return useEffect(() => {
+const useShortRoundKeyboardShortcuts = (setIsOpen, installKeyboardShortcuts = true) =>
+  useEffect(() => {
     if (installKeyboardShortcuts) {
       const handleKeyDown = (event) => {
         if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
@@ -25,7 +25,6 @@ const useShortRoundKeyboardShortcuts = (setIsOpen, installKeyboardShortcuts = tr
       };
     }
   }, [installKeyboardShortcuts, setIsOpen]);
-};
 
 export const positionAnchors = ['center', 'top-left', 'top-right', 'bottom-left', 'bottom-right'];
 
@@ -60,7 +59,9 @@ function DialogContextProvider({
   };
 
   const renderSidecar = useCallback(() => {
-    if (internalSidecarRenderer) return internalSidecarRenderer();
+    if (internalSidecarRenderer) {
+      return internalSidecarRenderer();
+    }
   }, [internalSidecarRenderer]);
 
   const closeSidecar = () => {

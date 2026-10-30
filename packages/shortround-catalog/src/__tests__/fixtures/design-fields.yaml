@@ -1,0 +1,63 @@
+version: 2
+app: tracker
+pickers:
+  issue:
+    from: tracker.issues.rows
+    empty: No issues
+  label:
+    planned: true
+    empty: No labels
+states:
+  browsing:
+    start: true
+    tier: common
+    review: Should filters be their own path?
+    commands:
+      openIssue:
+        title: Open issue
+        ask: { choose: issue }
+        run: tracker.issues.open
+        then: viewing
+      newIssue:
+        planned: true
+        title: New issue
+        summary: File a new issue, one field at a time
+        then: adding
+      settings:
+        planned: true
+        title: Go to settings
+        tier: full
+        run: tracker.settings.open
+  viewing:
+    panel: sidecar
+    commands:
+      addLabel:
+        planned: true
+        title: Add label
+        ask: { choose: label }
+      back:
+        title: Back to the list
+        run: tracker.issues.closeIssue
+        then: browsing
+  adding:
+    planned: true
+    summary: Filing a new issue
+    steps:
+      - ask: { text: Title }
+      - ask: { choose: label }
+      - run: tracker.issues.create
+        then: browsing
+  savedViews:
+    planned: true
+    commands:
+      restore:
+        title: Restore view
+        then: browsing
+workflows:
+  triage:
+    title: Morning triage
+    steps:
+      - question: What came in?
+        state: browsing
+        do: open issue
+        then: [decide, or next]

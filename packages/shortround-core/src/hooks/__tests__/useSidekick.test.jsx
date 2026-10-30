@@ -88,7 +88,9 @@ describe('useShortRoundKeyboardShortcuts', () => {
 
   test('stops listening after unmount', () => {
     const onOpen = vi.fn();
-    const { unmount } = renderHook(() => useShortRoundKeyboardShortcuts({ onOpen, onClose: vi.fn() }));
+    const { unmount } = renderHook(() =>
+      useShortRoundKeyboardShortcuts({ onOpen, onClose: vi.fn() })
+    );
 
     unmount();
     pressCtrlK();

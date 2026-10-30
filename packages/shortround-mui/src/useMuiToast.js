@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from 'react';
+
 import { Toast } from './components/Toast.jsx';
 
 const NO_PROVIDER = Symbol('NO_PROVIDER_YET');
@@ -34,7 +35,7 @@ function DialogContextProvider({ children }) {
   return (
     <ShortRoundContext.Provider value={value}>
       {children}
-      <Toast toastData={toastData} closeToast={closeToast} />
+      <Toast closeToast={closeToast} toastData={toastData} />
     </ShortRoundContext.Provider>
   );
 }

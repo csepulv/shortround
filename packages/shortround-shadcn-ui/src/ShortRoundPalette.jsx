@@ -1,3 +1,7 @@
+import { useShortRound } from '@shortround/core';
+import { File } from 'lucide-react';
+import { useMemo } from 'react';
+
 import {
   Command,
   CommandEmpty,
@@ -7,10 +11,7 @@ import {
   CommandList,
   CommandSeparator
 } from './components/ui/command';
-import { useShortRound } from '@shortround/core';
 import { useShortRoundShadcnSidekick } from './useShortRoundShadcnSidekick.js';
-import { useMemo } from 'react';
-import { File } from 'lucide-react';
 
 export function ShortRoundPalette({ defaultIntentions }) {
   const { inputValue, onInputChange, intentions, dispatch } = useShortRound({
@@ -18,21 +19,23 @@ export function ShortRoundPalette({ defaultIntentions }) {
   });
   const { setSidecarRenderer, closeSidecar } = useShortRoundShadcnSidekick();
 
-  const intentionGroups = useMemo(() => {
-    return intentions.reduce((acc, intention) => {
-      const groupName = intention.group;
-      let group = acc.find((g) => g.name === groupName);
-      if (!group) {
-        group = { name: groupName, intentions: [] };
-        acc.push(group);
-      }
-      group.intentions.push(intention);
-      return acc;
-    }, []);
-  }, [intentions]);
+  const intentionGroups = useMemo(
+    () =>
+      intentions.reduce((acc, intention) => {
+        const groupName = intention.group;
+        let group = acc.find((g) => g.name === groupName);
+        if (!group) {
+          group = { name: groupName, intentions: [] };
+          acc.push(group);
+        }
+        group.intentions.push(intention);
+        return acc;
+      }, []),
+    [intentions]
+  );
 
   return (
-    <Command shouldFilter={false} className="h-full">
+    <Command className="h-full" shouldFilter={false}>
       <CommandInput
         onValueChange={onInputChange}
         placeholder="Type a intention or search..."
@@ -41,7 +44,7 @@ export function ShortRoundPalette({ defaultIntentions }) {
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         {intentionGroups.map((group) => (
-          <CommandGroup key={group.name} heading={group.name}>
+          <CommandGroup heading={group.name} key={group.name}>
             {group.intentions.map((intention) => (
               <CommandItem
                 key={intention.id}

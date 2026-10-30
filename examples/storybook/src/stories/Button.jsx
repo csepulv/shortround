@@ -1,8 +1,6 @@
-import React from 'react';
+import './button.css';
 
 import PropTypes from 'prop-types';
-
-import './button.css';
 
 /** Primary UI component for user interaction */
 export const Button = ({
@@ -15,9 +13,9 @@ export const Button = ({
   const mode = primary ? 'storybook-button--primary' : 'storybook-button--secondary';
   return (
     <button
-      type="button"
       className={['storybook-button', `storybook-button--${size}`, mode].join(' ')}
       style={backgroundColor && { backgroundColor }}
+      type="button"
       {...props}
     >
       {label}
@@ -35,5 +33,5 @@ Button.propTypes = {
   /** Button contents */
   label: PropTypes.string.isRequired,
   /** Optional click handler */
-  onClick: PropTypes.func,
+  onClick: PropTypes.func
 };

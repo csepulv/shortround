@@ -1,0 +1,42 @@
+{
+  "name": "@shortround/conformance",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The ShortRound theme contract as a test suite: run it from a theme package's tests.",
+  "keywords": [
+    "shortround",
+    "theme",
+    "conformance"
+  ],
+  "author": "Chris Sepulveda <csepulv@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/csepulv/shortround.git",
+    "directory": "packages/shortround-conformance"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@shortround/core": "*",
+    "@testing-library/react": "^16.3.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "vitest": "^3.2.4"
+  },
+  "devDependencies": {
+    "@shortround/core": "workspace:*",
+    "@testing-library/react": "^16.3.0",
+    "@vitejs/plugin-react": "^4.6.0",
+    "jsdom": "^26.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "vite": "^7.3.6",
+    "vitest": "^3.2.4"
+  }
+}

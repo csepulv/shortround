@@ -1,7 +1,6 @@
-import { Box, Paper, Portal, useTheme } from '@mui/material';
+import { Box, Paper, Portal } from '@mui/material';
 
 export function SidekickPopover({ children, anchorPosition, anchorOrigin, height, totalWidth }) {
-  const theme = useTheme();
   return (
     <Portal>
       <Paper
@@ -13,7 +12,7 @@ export function SidekickPopover({ children, anchorPosition, anchorOrigin, height
           height,
           width: totalWidth,
           backgroundColor: 'transparent',
-          borderRadius: theme.shape.borderRadius
+          borderRadius: 1
         }}
       >
         <Box

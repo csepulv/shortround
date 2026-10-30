@@ -3,3 +3,17 @@ packages:
   - 'examples/*'
   - '!./.prettierrc.json'
   - '!./eslint.config.js' 
+
+# pnpm 11+ runs no install scripts unless allowed (strictDepBuilds). Both install native binaries: esbuild for Vite,
+# oxide for Tailwind (shadcn-ui); pnpm 8 ran them without asking.
+allowBuilds:
+  esbuild: true
+  '@tailwindcss/oxide': true
+
+# Scripts (including `pnpm verify`) fail when dependencies are out of step, instead of installing
+# silently (pnpm 11+ defaults to `install`, which would repair the lockfile before the gate checks it).
+verifyDepsBeforeRun: error
+
+# Installs fail on a Node older than package.json's engines.node. Without this, pnpm 12 ignores the root's engines
+# field entirely (no warning). Also makes dependencies' engines binding.
+engineStrict: true

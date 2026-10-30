@@ -30,6 +30,6 @@ export function useFuzzyMatcher({ inputValue, intentions = [] }) {
 
     matches.sort((a, b) => a.obj.index - b.obj.index);
     return matches.map((m) => m.obj.intention);
-  }, [inputValue, fuzzyOptions]);
+  }, [inputValue, intentions, fuzzyOptions]);
   return matchingIntentions;
 }

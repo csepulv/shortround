@@ -1,8 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, test } from 'vitest';
-import { useShortRound } from '../useShortRound.js';
 
 import { NO_OP, RevertIntentionIds } from '../../utils.js';
+import { useShortRound } from '../useShortRound.js';
 
 const makeIntention = ({
   id,
@@ -202,6 +202,47 @@ describe('useShortRound', () => {
       });
       expect(hook.result.current.intentions).toEqual(before);
     });
+    test('rejecting a disabled intention says why and keeps the input', async () => {
+      second.disabled = true;
+      second.action = vi.fn();
+      act(() => {
+        hook.result.current.onInputChange('typed');
+      });
+
+      let result;
+      await act(async () => {
+        result = await hook.result.current.dispatch(second.id);
+      });
+
+      expect(result).toEqual({ isRejected: true });
+      expect(second.action).not.toHaveBeenCalled();
+      expect(hook.result.current.inputValue).toEqual('typed');
+      expect(hook.result.current.inputMessage).toEqual({
+        type: 'error',
+        text: 'Not available right now'
+      });
+    });
+    test('validates against the current input before running, even without an input change', async () => {
+      const needsText = {
+        id: 'needs-text',
+        title: 'Name it',
+        action: vi.fn(),
+        validate: (value) => (value ? { valid: true } : { valid: false, message: 'Type a name' })
+      };
+      second.action = () => ({ intentions: [needsText], disableInputMatching: true });
+      await act(async () => {
+        await hook.result.current.dispatch(second.id);
+      });
+
+      let result;
+      await act(async () => {
+        result = await hook.result.current.dispatch(needsText.id);
+      });
+
+      expect(result).toEqual({ isRejected: true });
+      expect(needsText.action).not.toHaveBeenCalled();
+      expect(hook.result.current.inputMessage).toEqual({ type: 'error', text: 'Type a name' });
+    });
   });
   describe('back, reset', () => {
     let secondIntentions, thirdIntentions;
@@ -288,6 +329,180 @@ describe('useShortRound', () => {
       });
       expect(hook.result.current.intentions).toEqual(defaultIntentions);
       expect(hook.result.current.dispatchedStack).toEqual([]);
+    });
+  });
+  describe('input resolver', () => {
+    const kindRow = {
+      id: 'kind::library',
+      title: 'Kind: library',
+      group: 'Refine',
+      action: vi.fn(() => ({}))
+    };
+    const resolveKind = (text) => (text.startsWith('kind') ? [kindRow] : []);
+    const renderWithResolver = (resolveDefaultInput = resolveKind) =>
+      renderHook(() => useShortRound({ defaultIntentions, resolveDefaultInput }));
+
+    test('shows resolved rows first, then the fuzzy matches', () => {
+      const resolving = renderWithResolver((text) => (text === 'read' ? [kindRow] : []));
+
+      act(() => {
+        resolving.result.current.onInputChange('read');
+      });
+
+      expect(resolving.result.current.intentions).toEqual([kindRow, second]);
+    });
+
+    test('adds no rows while the input is empty', () => {
+      const resolving = renderWithResolver(() => [kindRow]);
+
+      expect(resolving.result.current.intentions).toEqual(defaultIntentions);
+    });
+
+    test('a resolved row can be dispatched', async () => {
+      const resolving = renderWithResolver();
+      act(() => {
+        resolving.result.current.onInputChange('kind lib');
+      });
+
+      await act(async () => {
+        await resolving.result.current.dispatch(kindRow.id);
+      });
+
+      expect(kindRow.action).toHaveBeenCalledWith('kind lib');
+    });
+
+    test('a new list brings its own resolver, or none', async () => {
+      const resolving = renderWithResolver();
+      const nextRow = { id: 'next', title: 'Next', action: vi.fn() };
+      second.action = () => ({ intentions, resolveInput: () => [nextRow] });
+      third.action = () => ({ intentions });
+
+      await act(async () => {
+        await resolving.result.current.dispatch(second.id);
+      });
+      act(() => {
+        resolving.result.current.onInputChange('kind');
+      });
+      expect(resolving.result.current.intentions[0]).toBe(nextRow);
+
+      await act(async () => {
+        await resolving.result.current.dispatch(RevertIntentionIds.RESET);
+      });
+      await act(async () => {
+        await resolving.result.current.dispatch(third.id);
+      });
+      act(() => {
+        resolving.result.current.onInputChange('kind');
+      });
+      expect(resolving.result.current.intentions).not.toContain(kindRow);
+    });
+
+    test('Back restores the resolver of the previous list, Cancel the default one', async () => {
+      const resolving = renderWithResolver();
+      const nextRow = { id: 'next', title: 'Next', action: vi.fn() };
+      second.action = () => ({ intentions, resolveInput: () => [nextRow] });
+      const deeper = makeIntention({
+        id: 'deeper',
+        title: 'Deeper',
+        action: () => ({ intentions: [first] })
+      });
+      intentions.push(deeper);
+
+      await act(async () => {
+        await resolving.result.current.dispatch(second.id);
+      });
+      await act(async () => {
+        await resolving.result.current.dispatch(deeper.id);
+      });
+      await act(async () => {
+        await resolving.result.current.dispatch(RevertIntentionIds.BACK);
+      });
+      act(() => {
+        resolving.result.current.onInputChange('kind');
+      });
+      expect(resolving.result.current.intentions[0]).toBe(nextRow);
+
+      await act(async () => {
+        await resolving.result.current.dispatch(RevertIntentionIds.RESET);
+      });
+      act(() => {
+        resolving.result.current.onInputChange('kind');
+      });
+      expect(resolving.result.current.intentions[0]).toBe(kindRow);
+    });
+
+    test('rows follow the app data when it changes, without retyping', () => {
+      const data = { rows: [] };
+      const resolving = renderWithResolver(() => data.rows);
+      act(() => {
+        resolving.result.current.onInputChange('kind ');
+      });
+
+      data.rows = [kindRow];
+      resolving.rerender();
+
+      expect(resolving.result.current.intentions[0]).toBe(kindRow);
+    });
+
+    test('a resolver that throws adds no rows and logs why, instead of breaking the palette', () => {
+      const logError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const resolving = renderWithResolver(() => {
+        throw new Error('no aggregations yet');
+      });
+
+      act(() => {
+        resolving.result.current.onInputChange('read');
+      });
+
+      expect(resolving.result.current.intentions).toEqual([second]);
+      expect(logError).toHaveBeenCalledWith(
+        expect.stringContaining('resolveInput'),
+        expect.objectContaining({ message: 'no aggregations yet' })
+      );
+      logError.mockRestore();
+    });
+
+    test('a resolved row with the id of a listed row appears once, as the resolved row', () => {
+      const resolvedSecond = { ...second, title: 'Read: now' };
+      const resolving = renderWithResolver(() => [resolvedSecond]);
+
+      act(() => {
+        resolving.result.current.onInputChange('read');
+      });
+
+      expect(resolving.result.current.intentions).toEqual([resolvedSecond]);
+    });
+
+    test('a new default resolver resets the list and the input, like new default intentions', () => {
+      const resetting = renderHook((props) => useShortRound(props), {
+        initialProps: { defaultIntentions, resolveDefaultInput: () => [] }
+      });
+      act(() => {
+        resetting.result.current.onInputChange('some value');
+      });
+
+      resetting.rerender({ defaultIntentions, resolveDefaultInput: () => [] });
+
+      expect(resetting.result.current.inputValue).toEqual('');
+      expect(resetting.result.current.intentions).toEqual(defaultIntentions);
+    });
+
+    test('adds no rows during a typed-text step', async () => {
+      const resolving = renderWithResolver(() => [kindRow]);
+      second.action = () => ({
+        intentions,
+        disableInputMatching: true,
+        resolveInput: () => [kindRow]
+      });
+
+      await act(async () => {
+        await resolving.result.current.dispatch(second.id);
+      });
+      act(() => {
+        resolving.result.current.onInputChange('kind');
+      });
+
+      expect(resolving.result.current.intentions).toEqual(intentions);
     });
   });
 });

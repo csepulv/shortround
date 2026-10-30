@@ -1,5 +1,8 @@
 import { JSX, ReactNode } from 'react';
-import { SidekickComponents } from '@shortround/core';
+import { ShortRoundTheme, SidekickComponents } from '@shortround/core';
+
+/** MUI's theme for `ShortRoundProvider`: its slots and its Toast view. */
+export const muiTheme: ShortRoundTheme;
 
 export const MuiSidekickComponents: SidekickComponents;
 

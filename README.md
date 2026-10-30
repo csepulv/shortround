@@ -10,7 +10,7 @@ ShortRound provides a flexible command palette system where:
 - **Intentions** are commands that users can search and execute
   - Intentions can have `aliases` to enable fuzzy matching 
   - An `intention` can perform an `action`
-    -**Action**: save a file, change a setting, display `Sidekick` content, and provide the next set of `intentions` (allows for state machines, sub pages, ...) 
+    - **Action**: save a file, change a setting, display `Sidekick` content, and provide the next set of `intentions` (allows for state machines, sub pages, ...) 
 - **Sidekick** a drawer that can display additional content next to the command palette (intention list).
 - user input is "fuzzy matched"
 
@@ -20,9 +20,23 @@ ShortRound provides a flexible command palette system where:
 npm install @shortround/core @shortround/mui
 ```
 
+Choose the theme once, at your app's root:
+
+```jsx
+import { ShortRoundProvider } from '@shortround/core';
+import { muiTheme } from '@shortround/mui';
+
+root.render(
+  <ShortRoundProvider theme={muiTheme}>
+    <App />
+  </ShortRoundProvider>
+);
+```
+
+Everything below the root uses only `@shortround/core`:
+
 ```jsx
 import { ShortRoundSidekick } from '@shortround/core';
-import { MuiSidekickComponents } from '@shortround/mui';
 
 const intentions = [
   {
@@ -52,7 +66,6 @@ function App() {
       <ShortRoundSidekick
         title="Short Round"
         defaultIntentions={intentions}
-        SidekickComponents={MuiSidekickComponents}
         installKeyboardShortcuts={true}
       />
     </div>
@@ -60,12 +73,15 @@ function App() {
 }
 ```
 
-Press `Cmd+K` (or `Ctrl+K`) to open the command palette.
+Press `Cmd+K` (or `Ctrl+K`) to open the command palette. Switching to another theme changes only the root.
 
 ## Packages
 
 - **[@shortround/core](packages/shortround-core)** - Core hooks and functionality
 - **[@shortround/mui](packages/shortround-mui)** - Material-UI themed components
+- **[@shortround/catalog](packages/shortround-catalog)** - Builds a palette from a YAML catalog of your app's states
+  and commands, including typed lines such as `sort created newest` (new in 0.3.0). The
+  [`catalog-discovery` skill](skills/catalog-discovery) helps a coding agent map an existing app into a catalog
 - **@shortround/shadcn-ui** - shadcn/ui themed components _(coming soon)_
 
 ## Examples
@@ -118,6 +134,9 @@ For detailed API documentation and advanced usage, see the individual package RE
 
 - [Core Package Documentation](packages/shortround-core/README.md)
 - [MUI Package Documentation](packages/shortround-mui/README.md)
+- [Catalog Package Documentation](packages/shortround-catalog/README.md)
+
+Upgrading? [MIGRATING.md](MIGRATING.md) lists what each release asks of your app, release by release.
 
 ## License
 

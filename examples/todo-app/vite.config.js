@@ -1,6 +1,6 @@
-import { defineConfig, transformWithEsbuild } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { defineConfig, transformWithEsbuild } from 'vite';
 
 export default defineConfig({
   resolve: {
@@ -10,10 +10,7 @@ export default defineConfig({
         __dirname,
         '../../packages/shortround-core/src/index.dev.js'
       ),
-      '@shortround/mui': path.resolve(
-        __dirname,
-        '../../packages/shortround-mui/src/index.js'
-      ),
+      '@shortround/mui': path.resolve(__dirname, '../../packages/shortround-mui/src/index.js'),
       '@shortround/shadcn-ui': path.resolve(
         __dirname,
         '../../packages/shortround-shadcn-ui/src/index.js'

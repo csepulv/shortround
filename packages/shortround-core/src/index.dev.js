@@ -7,6 +7,8 @@ export {
 } from './hooks/useSidekick.js';
 export { useFuzzyMatcher } from './hooks/useFuzzyMatcher.js';
 export { RevertIntentionIds } from './utils.js';
+export { useShortRoundToast } from './hooks/useShortRoundTheme.js';
 export { ShortRoundSidekick } from './components/ShortRoundSidekick.jsx';
+export { ShortRoundProvider } from './components/ShortRoundProvider.jsx';
 
 export * from './utils.js';

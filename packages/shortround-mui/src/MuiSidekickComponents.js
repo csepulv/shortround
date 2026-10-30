@@ -1,11 +1,10 @@
-import { IntentionItem } from './components/intention-palette/IntentionItem.jsx';
-import { NoMatches } from './components/intention-palette/NoMatches.jsx';
-import { IntentionInput } from './components/intention-palette/IntentionInput.jsx';
 import { IntentionGroup } from './components/intention-palette/IntentionGroup.jsx';
+import { IntentionInput } from './components/intention-palette/IntentionInput.jsx';
+import { IntentionItem } from './components/intention-palette/IntentionItem.jsx';
 import { IntentionPaletteFrame } from './components/intention-palette/IntentionPaletteFrame.jsx';
+import { NoMatches } from './components/intention-palette/NoMatches.jsx';
 import { SidecarContent } from './components/SidecarContent.jsx';
 import { SidekickControlBar } from './components/sidekick/SidekickControlBar.jsx';
-
 import { SidekickFrame } from './components/sidekick/SidekickFrame.jsx';
 import { SidekickPopover } from './components/sidekick/SidekickPopover.jsx';
 

@@ -13,11 +13,17 @@ npm install @shortround/core @shortround/mui
 npm install @mui/material @emotion/react @emotion/styled @mui/icons-material lucide-react
 ```
 
+Upgrading from an earlier version? Upgrade `@shortround/core` and `@shortround/mui` together, and see the
+[migration guide](https://github.com/csepulv/shortround/blob/main/MIGRATING.md).
+
 ## Quick Start
 
+Hand `muiTheme` to `ShortRoundProvider` once, at your app's root, inside your MUI `ThemeProvider` if you have one. Below it, app
+code imports only `@shortround/core`.
+
 ```jsx
-import { ShortRoundSidekick } from '@shortround/core';
-import { MuiSidekickComponents, MuiToastProvider, useMuiToast } from '@shortround/mui';
+import { ShortRoundProvider, ShortRoundSidekick } from '@shortround/core';
+import { muiTheme } from '@shortround/mui';
 
 const intentions = [
   {
@@ -31,36 +37,38 @@ const intentions = [
   }
 ];
 
-// useMuiToast() must be called inside MuiToastProvider
-function Sidekick() {
-  const { showToast } = useMuiToast();
-
-  return (
-    <ShortRoundSidekick
-      title="Command Palette"
-      defaultIntentions={intentions}
-      SidekickComponents={MuiSidekickComponents}
-      showToast={showToast}
-      installKeyboardShortcuts={true}
-    />
-  );
-}
-
+// App code: no MUI-specific ShortRound imports.
 function App() {
   return (
-    <MuiToastProvider>
+    <>
       <h1>My App</h1>
-      <Sidekick />
-    </MuiToastProvider>
+      <ShortRoundSidekick
+        title="Command Palette"
+        defaultIntentions={intentions}
+        installKeyboardShortcuts={true}
+      />
+    </>
   );
 }
+
+// The root: the one place the theme is chosen.
+root.render(
+  <ShortRoundProvider theme={muiTheme}>
+    <App />
+  </ShortRoundProvider>
+);
 ```
 
 ## Components
 
+### muiTheme
+
+The theme for `ShortRoundProvider`: `{ components: MuiSidekickComponents, Toast }`, where `Toast` draws the
+provider's toasts as a MUI Snackbar that hides itself after 4 seconds (or on a click elsewhere).
+
 ### MuiSidekickComponents
 
-Pre-built Material-UI components for the sidekick interface:
+Pre-built Material-UI components for the sidekick interface (the theme's `components`):
 
 ```jsx
 import { MuiSidekickComponents } from '@shortround/mui';
@@ -73,12 +81,11 @@ import { MuiSidekickComponents } from '@shortround/mui';
 
 ### Toast Integration
 
-An action that returns a `message` shows it as a toast. `useMuiToast()` reads the provider's context, so call it in
-a component rendered *inside* `MuiToastProvider`:
+An action that returns a `message` shows it as a toast, drawn by `muiTheme`'s Toast. App code can show its own
+toasts with core's `useShortRoundToast()`, anywhere below `ShortRoundProvider`:
 
 ```jsx
-import { ShortRoundSidekick } from '@shortround/core';
-import { MuiSidekickComponents, MuiToastProvider, useMuiToast } from '@shortround/mui';
+import { ShortRoundSidekick, useShortRoundToast } from '@shortround/core';
 
 const saveIntention = {
   id: 'save',
@@ -93,24 +100,18 @@ const saveIntention = {
 };
 
 function Sidekick() {
-  const { showToast } = useMuiToast();
+  const { showToast } = useShortRoundToast();
   return (
-    <ShortRoundSidekick
-      defaultIntentions={[saveIntention]}
-      SidekickComponents={MuiSidekickComponents}
-      showToast={showToast}
-    />
-  );
-}
-
-function App() {
-  return (
-    <MuiToastProvider>
-      <Sidekick />
-    </MuiToastProvider>
+    <>
+      <button onClick={() => showToast({ message: 'Hello' })}>Say hello</button>
+      <ShortRoundSidekick defaultIntentions={[saveIntention]} />
+    </>
   );
 }
 ```
+
+Apps written for 0.2.x, which pass `SidekickComponents={MuiSidekickComponents}` and a `showToast` from
+`useMuiToast()` inside `MuiToastProvider`, keep working: those props override the provider.
 
 ## Theming
 
@@ -119,10 +120,12 @@ function App() {
 `@shortround/mui` simply consumes whatever MUI theme is already present in your React tree.  
 This keeps things predictable—just customize the theme exactly the same way you would in any MUI-only project.
 
+MUI's `ThemeProvider` goes above `ShortRoundProvider`, so the palette and its toasts both use your theme.
+
 ```jsx
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { ShortRoundSidekick } from '@shortround/core';
-import { MuiSidekickComponents } from '@shortround/mui';
+import { ShortRoundProvider } from '@shortround/core';
+import { muiTheme } from '@shortround/mui';
 
 // Your application theme
 const myTheme = createTheme({
@@ -133,37 +136,41 @@ const myTheme = createTheme({
   shape: { borderRadius: 4 }
 });
 
-function App() {
-  return (
-    <ThemeProvider theme={myTheme}>
-      <ShortRoundSidekick
-        title="Short Round"
-        SidekickComponents={MuiSidekickComponents}
-        // ...other props
-      />
-    </ThemeProvider>
-  );
-}
+root.render(
+  <ThemeProvider theme={myTheme}>
+    <ShortRoundProvider theme={muiTheme}>
+      <App />
+    </ShortRoundProvider>
+  </ThemeProvider>
+);
 ```
 
-For a working reference see [`examples/todo-app/src/MuiSidekickDemo.jsx`](../../examples/todo-app/src/MuiSidekickDemo.jsx).
+For a working reference see [`examples/todo-app/src/MuiSidekickDemo.jsx`](../../examples/todo-app/src/MuiSidekickDemo.jsx)
+(the root) and [`SidekickPalette.jsx`](../../examples/todo-app/src/SidekickPalette.jsx) (app code).
 
 ### Custom Components
 
-You can replace individual components:
+You can replace individual components and hand the result to `ShortRoundProvider`:
 
 ```jsx
-import { MuiSidekickComponents } from '@shortround/mui';
+import { muiTheme } from '@shortround/mui';
 import { MyCustomInput } from './MyCustomInput';
 
-const CustomComponents = {
-  ...MuiSidekickComponents,
-  IntentionPalette: {
-    ...MuiSidekickComponents.IntentionPalette,
-    Input: MyCustomInput,
+const customTheme = {
+  ...muiTheme,
+  components: {
+    ...muiTheme.components,
+    IntentionPalette: {
+      ...muiTheme.components.IntentionPalette,
+      Input: MyCustomInput,
+    },
   },
 };
 ```
+
+Slots only draw: an Input receives `input` (ShortRound's input element) to place, an Item draws inside
+ShortRound's row, and the ControlBar applies the names in `labels`. The props for each slot are in
+`@shortround/core`'s README ("Custom UI Components") and types; `@shortround/conformance` checks a custom slot.
 
 ## Icons
 
@@ -182,7 +189,8 @@ Any other value, or no value, shows the search icon.
 
 ## Keyboard Shortcuts
 
-The MUI components support keyboard shortcuts displayed in the interface:
+An intention's `shortcut` is shown on its row, as a hint. ShortRound doesn't bind the keys; if the shortcut should
+work outside the palette, the app handles it:
 
 ```jsx
 {
@@ -223,25 +231,36 @@ const intention = {
 
 ## Validation
 
-Show validation messages in the input:
+Show validation messages in the input. The input also filters the list, so ask for free text in a step of its own,
+with matching turned off (`disableInputMatching`); otherwise a name that doesn't match the row's title hides the row:
 
 ```jsx
 {
   id: 'create-item',
   title: 'Create New Item',
-  validate: (input) => {
-    if (!input.trim()) {
-      return { valid: false, message: 'Name is required' };
-    }
-    if (input.length < 3) {
-      return { valid: false, message: 'Name must be at least 3 characters' };
-    }
-    return { valid: true };
-  },
-  action: async (input) => {
-    // Create item logic
-    return { message: `Created "${input}"`, shouldReset: true };
-  }
+  action: () => ({
+    intentions: [
+      {
+        id: 'create-item::name',
+        title: 'Create',
+        subtitle: 'Type a name',
+        validate: (input) => {
+          if (!input.trim()) {
+            return { valid: false, message: 'Name is required' };
+          }
+          if (input.length < 3) {
+            return { valid: false, message: 'Name must be at least 3 characters' };
+          }
+          return { valid: true };
+        },
+        action: async (input) => {
+          // Create item logic
+          return { message: `Created "${input}"`, shouldReset: true };
+        }
+      }
+    ],
+    disableInputMatching: true
+  })
 }
 ```
 

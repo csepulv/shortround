@@ -74,7 +74,6 @@ project.xcworkspace
 .gradle
 local.properties
 .serverless
-jd-es*.json
 .turbo
 .npmrc
 

@@ -1,14 +1,16 @@
 import { TextField } from '@mui/material';
-import getCaretCoordinates from 'textarea-caret';
-import * as Popover from '@radix-ui/react-popover';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import * as Popover from '@radix-ui/react-popover';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import getCaretCoordinates from 'textarea-caret';
 
 function useCaretPosition(textareaRef) {
   const [coords, setCoords] = useState(null);
 
   const update = useCallback(() => {
-    if (!textareaRef.current) return;
+    if (!textareaRef.current) {
+      return;
+    }
     const pos = textareaRef.current.selectionStart || 0;
     const { top, left, height } = getCaretCoordinates(textareaRef.current, pos);
     const box = textareaRef.current.getBoundingClientRect();
@@ -21,7 +23,9 @@ function useCaretPosition(textareaRef) {
   useLayoutEffect(() => {
     update(); // run once on mount
     const el = textareaRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     el.addEventListener('keyup', update);
     el.addEventListener('click', update);
     el.addEventListener('scroll', update); // keep in sync when scrolling
@@ -30,14 +34,16 @@ function useCaretPosition(textareaRef) {
       el.removeEventListener('click', update);
       el.removeEventListener('scroll', update);
     };
-  }, [update]);
+  }, [update, textareaRef]);
 
   return coords;
 }
 
 function useVirtualElement(coords) {
   return useMemo(() => {
-    if (!coords) return null;
+    if (!coords) {
+      return null;
+    }
     return {
       getBoundingClientRect: () => new DOMRect(coords.x, coords.y, 0, 0)
     };
@@ -46,7 +52,7 @@ function useVirtualElement(coords) {
 
 export default function CaretDropdown() {
   const textareaRef = useRef(null);
-  const [open, setOpen] = useState(false);
+  const [, setOpen] = useState(false);
   const [text, setText] = useState('');
 
   const caretCoords = useCaretPosition(textareaRef);
@@ -70,18 +76,18 @@ export default function CaretDropdown() {
 
   return (
     <>
-      <Popover.Root open={true} onOpenChange={setOpen} modal={false}>
+      <Popover.Root modal={false} onOpenChange={setOpen} open={true}>
         <Popover.Trigger asChild>
           <TextField
             autoFocus
             inputRef={textareaRef}
-            sx={{ width: 600 }}
             label="Intention ..."
             multiline
-            rows={4}
-            onKeyDown={handleKeyDown}
-            value={text}
             onChange={(event) => setText(event.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={4}
+            sx={{ width: 600 }}
+            value={text}
           />
         </Popover.Trigger>
 
@@ -89,17 +95,19 @@ export default function CaretDropdown() {
 
         <Popover.Portal>
           <Popover.Content
-            sideOffset={4}
             align="start"
             onEscapeKeyDown={close}
             onPointerDownOutside={close}
+            sideOffset={4}
           >
             <DropdownMenu.Root defaultOpen>
               <DropdownMenu.Content
-                onEscapeKeyDown={close}
                 onBlurCapture={(e) => {
-                  if (!e.currentTarget.contains(e.relatedTarget)) close();
+                  if (!e.currentTarget.contains(e.relatedTarget)) {
+                    close();
+                  }
                 }}
+                onEscapeKeyDown={close}
               >
                 <DropdownMenu.Item
                   onSelect={() => {

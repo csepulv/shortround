@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import invariant from 'tiny-invariant';
+
 import {
   AnchorPositionDetails,
   AnchorPositions,
@@ -38,25 +39,21 @@ export function createSidekickStore(init = {}) {
   };
 }
 
-export const useShortRoundKeyboardShortcuts = ({
-  onOpen,
-  onClose,
-  installKeyboardShortcuts = true
-}) => {
-  const callbacks = useRef({ onOpen, onClose });
-  callbacks.current = { onOpen, onClose };
+// The global shortcut: Cmd/Ctrl+K from anywhere. Escape is not global: the sidekick's dialog handles it,
+// so Escape in the page (an app's own dialog or field) stays the page's.
+export const useShortRoundKeyboardShortcuts = ({ onOpen, installKeyboardShortcuts = true }) => {
+  const callbacks = useRef({ onOpen });
+  callbacks.current = { onOpen };
 
   useEffect(() => {
-    if (!installKeyboardShortcuts) return;
+    if (!installKeyboardShortcuts) {
+      return;
+    }
 
     const handleKeyDown = (event) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         // event.preventDefault();
         callbacks.current.onOpen();
-      }
-
-      if (event.key === 'Escape') {
-        callbacks.current.onClose();
       }
     };
 
@@ -85,7 +82,9 @@ export function useSidekick(opts = {}) {
   let store = opts.store || contextStore;
   const localRef = useRef(null);
   if (!store) {
-    if (!localRef.current) localRef.current = createSidekickStore(opts.initial);
+    if (!localRef.current) {
+      localRef.current = createSidekickStore(opts.initial);
+    }
     store = localRef.current;
   }
 
@@ -125,7 +124,9 @@ export function useSidekick(opts = {}) {
     };
 
     const renderSidecar = () => {
-      if (internalSidecarRenderer) return internalSidecarRenderer();
+      if (internalSidecarRenderer) {
+        return internalSidecarRenderer();
+      }
     };
 
     return {

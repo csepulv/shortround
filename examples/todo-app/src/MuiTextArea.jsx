@@ -1,12 +1,16 @@
+// The 2025 freeform prototype: its UI below is commented out, so several values are unused on purpose. Kept as a
+// reference for the intentions-and-actions epic ("what the freeform prototype already solved").
+/* eslint-disable no-unused-vars */
+import { autoUpdate, useFloating } from '@floating-ui/react';
 import { Box, Divider, List, ListItem, Paper, Popper } from '@mui/material';
 import { useShortRound } from '@shortround/core';
-import { helpIntent } from '@/help-intent.js';
-import { saveItemIntent } from '@/save-item-intent.js';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { autoUpdate, useFloating } from '@floating-ui/react';
 import debounce from 'lodash.debounce';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import getCaretCoordinates from 'textarea-caret';
+
+import { helpIntent } from '@/help-intent.js';
 import CaretDropdown from '@/MuiFreeform.jsx';
+import { saveItemIntent } from '@/save-item-intent.js';
 
 const defaultIntentions = [helpIntent, saveItemIntent];
 
@@ -18,7 +22,7 @@ function IntentionList({ intentions, anchorEl, onClose, onSelect, selectedIndex,
   console.log('selectedIndex', selectedIndex);
 
   return (
-    <Popper open={!!anchorEl} anchorEl={anchorEl} placement="bottom-start" style={floatingStyles}>
+    <Popper anchorEl={anchorEl} open={!!anchorEl} placement="bottom-start" style={floatingStyles}>
       <Paper>
         <List>
           {intentions.map((intention, index) => {

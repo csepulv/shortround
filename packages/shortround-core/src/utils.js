@@ -62,18 +62,32 @@ const cycleNext = (current, includeCenter = true, positionKeys) => {
   return items[(idx + 1) % items.length || 0];
 };
 
-export const cycleCorners = (current, includeCenter) => {
-  return cycleNext(current, includeCenter, cornerPositionKeys);
-};
+export const cycleCorners = (current, includeCenter) =>
+  cycleNext(current, includeCenter, cornerPositionKeys);
 
-export const cycleMiddlePositions = (current, includeCenter) => {
-  return cycleNext(current, includeCenter, middlePositionKeys);
-};
+export const cycleMiddlePositions = (current, includeCenter) =>
+  cycleNext(current, includeCenter, middlePositionKeys);
 
 export const Sizes = Object.freeze({
   COMPACT: 'compact',
   MEDIUM: 'medium',
   FULL: 'full'
+});
+
+// The sidekick's accessible name when the app gives it no title.
+export const DEFAULT_SIDEKICK_NAME = 'ShortRound';
+
+// The accessible names of the control bar's controls. Core decides them, so switching theme can't change
+// what a screen reader announces or what an app's tests find by name; themes apply them.
+export const ControlLabels = Object.freeze({
+  close: 'Close',
+  anchor: 'Move palette',
+  size: 'Palette size',
+  sizes: Object.freeze({
+    [Sizes.COMPACT]: 'Compact',
+    [Sizes.MEDIUM]: 'Medium',
+    [Sizes.FULL]: 'Full'
+  })
 });
 
 export const SizeDetails = Object.freeze({

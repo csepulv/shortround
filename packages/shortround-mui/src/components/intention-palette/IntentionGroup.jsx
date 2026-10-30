@@ -1,4 +1,5 @@
 import { Box, Typography, useTheme } from '@mui/material';
+
 import { makeShortRoundPaletteStyles } from '../mui-styles.js';
 
 export function IntentionGroup({ name }) {

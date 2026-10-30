@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+
 import { ANIMATION_DURATION } from '../utils.js';
 
 export function SidecarDrawer({ isOpen, renderSidecar, height, width, Content }) {
@@ -14,7 +15,7 @@ export function SidecarDrawer({ isOpen, renderSidecar, height, width, Content })
       transition={{ duration: ANIMATION_DURATION, ease: 'easeInOut' }}
       variants={variants}
     >
-      <Content isOpen={isOpen} renderSidecar={renderSidecar} height={height} />
+      <Content height={height} isOpen={isOpen} renderSidecar={renderSidecar} />
     </motion.div>
   );
 }

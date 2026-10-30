@@ -1,6 +1,6 @@
 {
   "name": "@shortround/core",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Core library for ShortRound, providing the main hooks and functionality for a command palette.",
   "keywords": [
     "shortround",
@@ -45,7 +45,7 @@
     "jest-extended": "^6.0.0",
     "jsdom": "^26.1.0",
     "react": "^18.2.0",
-    "vite": "^7.0.0",
+    "vite": "^7.3.6",
     "vitest": "^3.2.4"
   },
   "peerDependencies": {

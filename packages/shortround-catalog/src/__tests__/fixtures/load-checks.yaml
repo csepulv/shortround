@@ -1,0 +1,30 @@
+version: 2
+app: app
+pickers:
+  sortOption:
+    from: app.sortOptions.rows
+    empty: No sort options
+facets:
+  tags: { title: Tag }
+states:
+  browsing:
+    start: true
+    commands:
+      clearSearch:
+        title: Clear search
+        run: app.search.clearSearch
+      sort:
+        title: Sort
+        ask: { choose: sortOption }
+        run: app.search.setSort
+        then: previewing
+      facet:
+        forEach: facets
+        run: app.search.addFacetValue
+  previewing:
+    panel: sidecar
+    commands:
+      openInService:
+        title: Open in service
+        when: app.searchResults.previewedHasServiceLink
+        run: app.searchResults.openInService

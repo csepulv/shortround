@@ -1,4 +1,5 @@
 import { Box, Paper, useTheme } from '@mui/material';
+
 import { makeShortRoundPaletteStyles } from '../mui-styles.js';
 
 export function IntentionPaletteFrame({ children, height }) {

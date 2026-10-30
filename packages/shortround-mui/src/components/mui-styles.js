@@ -1,3 +1,4 @@
+import { alpha } from '@mui/material';
 import {
   BellRing as NotificationIcon,
   Code as CodeIcon,
@@ -10,7 +11,6 @@ import {
   Settings as SettingsIcon,
   User as PersonIcon
 } from 'lucide-react';
-import { alpha } from '@mui/material';
 
 export function CommandIcon({ iconName }) {
   const iconMap = {
@@ -33,7 +33,9 @@ export function makeShortRoundPaletteStyles(theme) {
   return {
     root: {
       '& [cmdk-input]': {
-        fontFamily: 'inherit',
+        marginLeft: '8px',
+        fontFamily: theme.typography.fontFamily,
+        color: theme.palette.text.primary,
         border: 'none',
         outline: 'none',
         background: 'transparent',
@@ -45,6 +47,11 @@ export function makeShortRoundPaletteStyles(theme) {
         }
       },
       '& [cmdk-list]': {
+        // cmdk's list takes focus on a mouse click (tabIndex -1) but is never a keyboard target, so its ring
+        // tells nobody anything; keyboard focus stays on the input.
+        '&:focus': {
+          outline: 'none'
+        },
         overflowY: 'auto',
         overscrollBehavior: 'contain',
         transition: 'height 100ms ease',
@@ -56,7 +63,8 @@ export function makeShortRoundPaletteStyles(theme) {
         },
         '&::-webkit-scrollbar-thumb': {
           background: alpha(theme.palette.text.primary, 0.1),
-          borderRadius: theme.shape.borderRadius,
+          // These styles are applied through sx, where a number is a multiple of the theme radius.
+          borderRadius: 1,
           '&:hover': {
             background: alpha(theme.palette.text.primary, 0.2)
           }
@@ -76,7 +84,7 @@ export function makeShortRoundPaletteStyles(theme) {
         cursor: 'pointer',
         height: 'auto',
         margin: theme.spacing(0.5),
-        borderRadius: theme.shape.borderRadius,
+        borderRadius: 1,
         fontSize: '14px',
         display: 'flex',
         alignItems: 'center',
@@ -105,7 +113,7 @@ export function makeShortRoundPaletteStyles(theme) {
             width: '3px',
             height: '60%',
             background: theme.palette.primary.main,
-            borderRadius: theme.shape.borderRadius
+            borderRadius: 1
           }
         },
         '&:active': {
@@ -147,16 +155,6 @@ export function makeShortRoundPaletteStyles(theme) {
       borderBottom: 1,
       borderColor: 'divider',
       bgcolor: alpha(theme.palette.primary.main, 0.02)
-    },
-    input: {
-      marginLeft: '8px',
-      border: 'none',
-      outline: 'none',
-      background: 'transparent',
-      fontSize: '16px',
-      width: '100%',
-      color: theme.palette.text.primary,
-      fontFamily: theme.typography.fontFamily
     },
     group: {
       px: 2,

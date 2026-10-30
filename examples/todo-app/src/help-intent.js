@@ -7,9 +7,7 @@ export const helpIntent = {
   icon: 'help',
   action: () => ({
     sideEffects: {
-      sidecarRenderer: () => {
-        return 'THIS IS THE HELP CONTENT';
-      }
+      sidecarRenderer: () => 'THIS IS THE HELP CONTENT'
     },
     includeRevertIntentions: [RevertIntentionIds.BACK],
     intentions: [
@@ -22,9 +20,7 @@ export const helpIntent = {
         action: () => ({
           includeRevertIntentions: [RevertIntentionIds.BACK],
           sideEffects: {
-            sidecarRenderer: () => {
-              return 'Guidance on app usage';
-            }
+            sidecarRenderer: () => 'Guidance on app usage'
           }
         })
       },
@@ -37,9 +33,7 @@ export const helpIntent = {
         action: () => ({
           includeRevertIntentions: [RevertIntentionIds.BACK],
           sideEffects: {
-            sidecarRenderer: () => {
-              return 'Common questions (and answers)';
-            }
+            sidecarRenderer: () => 'Common questions (and answers)'
           }
         })
       }

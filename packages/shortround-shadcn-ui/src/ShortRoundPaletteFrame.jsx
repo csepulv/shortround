@@ -1,10 +1,9 @@
-import { Maximize, Minimize, PanelTop, X, Move } from 'lucide-react';
+import { Maximize, Minimize, Move, PanelTop, X } from 'lucide-react';
 
 import { Button } from './components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from './components/ui/toggle-group';
-
-import { useShortRoundShadcnSidekick } from './useShortRoundShadcnSidekick.js';
 import { ShortRoundPalette } from './ShortRoundPalette.jsx';
+import { useShortRoundShadcnSidekick } from './useShortRoundShadcnSidekick.js';
 
 export function ShortRoundPaletteFrame({ title, defaultIntentions }) {
   const { onClose, setSize, cycleAnchor, size } = useShortRoundShadcnSidekick();
@@ -12,11 +11,11 @@ export function ShortRoundPaletteFrame({ title, defaultIntentions }) {
   return (
     <div className="bg-background flex flex-col overflow-hidden h-full">
       <div className="flex items-center px-2 py-1 border-b">
-        <Button variant="ghost" size="icon" onClick={cycleAnchor}>
+        <Button onClick={cycleAnchor} size="icon" variant="ghost">
           <Move className="h-4 w-4" />
         </Button>
         <h3 className="flex-grow font-semibold px-2">{title}</h3>
-        <ToggleGroup type="single" size="sm" value={size} onValueChange={(value) => setSize(value)}>
+        <ToggleGroup onValueChange={(value) => setSize(value)} size="sm" type="single" value={size}>
           <ToggleGroupItem value="minimized">
             <Minimize className="h-4 w-4" />
           </ToggleGroupItem>
@@ -27,7 +26,7 @@ export function ShortRoundPaletteFrame({ title, defaultIntentions }) {
             <Maximize className="h-4 w-4" />
           </ToggleGroupItem>
         </ToggleGroup>
-        <Button variant="ghost" size="icon" onClick={onClose}>
+        <Button onClick={onClose} size="icon" variant="ghost">
           <X className="h-4 w-4" />
         </Button>
       </div>

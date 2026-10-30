@@ -1,10 +1,12 @@
-import { alpha, Box, Chip, Typography, useTheme } from '@mui/material';
-import { makeShortRoundPaletteStyles } from '../mui-styles.js';
+import { Box, Typography, useTheme } from '@mui/material';
 import { Search as SearchIcon } from 'lucide-react';
-import { Command as CmdkCommand } from 'cmdk';
+
+import { makeShortRoundPaletteStyles } from '../mui-styles.js';
 
 function InputErrorMessage({ message }) {
-  if (!message) return null;
+  if (!message) {
+    return null;
+  }
   return (
     <Typography sx={{ fontSize: '0.75em', ml: 4, mt: 1, mb: 0, color: 'red' }}>
       {message}
@@ -12,20 +14,15 @@ function InputErrorMessage({ message }) {
   );
 }
 
-export function IntentionInput({ inputValue, inputMessage, onInputChange }) {
+// Places core's input (styled through `[cmdk-input]` in the palette frame) beside a search icon.
+export function IntentionInput({ input, inputMessage }) {
   const theme = useTheme();
   const styles = makeShortRoundPaletteStyles(theme);
   return (
     <Box sx={styles.inputArea}>
       <Box sx={styles.inputFrame}>
         <SearchIcon />
-        <CmdkCommand.Input
-          onValueChange={onInputChange}
-          placeholder="Type a intention or search..."
-          style={styles.input}
-          value={inputValue}
-          autoFocus
-        />
+        {input}
       </Box>
       <InputErrorMessage message={inputMessage?.text} />
     </Box>
