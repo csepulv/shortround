@@ -1,6 +1,6 @@
 {
   "name": "@shortround/catalog",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Builds ShortRound intentions, and an input resolver, from a declarative catalog.",
   "keywords": [
     "shortround",

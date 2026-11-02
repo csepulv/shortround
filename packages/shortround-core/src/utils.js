@@ -21,35 +21,17 @@ export const AnchorPositions = Object.freeze({
   LEFT: 'left'
 });
 
+// Where the sidekick sits for each anchor origin, in CSS alone: it follows the window as it resizes, and reading this
+// module needs no browser.
 export const AnchorPositionDetails = Object.freeze({
-  center: {
-    top: window.innerHeight / 2,
-    left: window.innerWidth / 2,
-    transform: 'translate(-50%, -50%)'
-  },
+  center: { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
   'top-left': { top: 0, left: 0 },
-  top: {
-    left: window.innerHeight / 2,
-    top: 0,
-    transform: 'translate(-25%, 0)'
-  },
-  left: {
-    top: window.innerHeight / 2,
-    left: 0,
-    transform: 'translate(0, -50%)'
-  },
+  top: { top: 0, left: '50%', transform: 'translateX(-50%)' },
+  left: { top: '50%', left: 0, transform: 'translateY(-50%)' },
   'top-right': { top: 0, right: 0 },
-  right: {
-    top: window.innerHeight / 2,
-    right: 0,
-    transform: 'translate(0, -50%)'
-  },
+  right: { top: '50%', right: 0, transform: 'translateY(-50%)' },
   'bottom-right': { bottom: 0, right: 0 },
-  bottom: {
-    left: window.innerHeight / 2,
-    bottom: 0,
-    transform: 'translate(-25%,0)'
-  },
+  bottom: { bottom: 0, left: '50%', transform: 'translateX(-50%)' },
   'bottom-left': { bottom: 0, left: 0 }
 });
 
@@ -96,21 +78,28 @@ export const SizeDetails = Object.freeze({
   full: { height: FULL_HEIGHT_POPOVER }
 });
 
+// Back and Cancel's own group, kept apart from any app group (an app group may be called "Actions" too).
+export const NAVIGATE_GROUP = 'Navigate';
+
 const BACK_INTENTION = Object.freeze({
   id: RevertIntentionIds.BACK,
   title: 'Back',
-  group: 'Actions',
+  group: NAVIGATE_GROUP,
   icon: 'back'
 });
 
 const RESET_INTENTION = Object.freeze({
   id: RevertIntentionIds.RESET,
   title: 'Cancel',
-  group: 'Actions',
+  group: NAVIGATE_GROUP,
   icon: 'cancel'
 });
 
 const revertIntentions = Object.freeze([RESET_INTENTION, BACK_INTENTION]);
+
+// A step in the dispatched stack that brought a list. Back moves between these; a step that only showed a message or
+// changed the side panel left the list as it was.
+export const bringsList = (step) => Boolean(step.result.intentions);
 
 export const makeRevertIntentionsFor = (ids) =>
   ids ? revertIntentions.filter((int) => ids.includes(int.id)) : [];

@@ -48,6 +48,10 @@ export const BROKEN_THEMES = {
     )
   }),
 
+  // The icon it is given is left out.
+  // eslint-disable-next-line no-unused-vars -- `icon` is taken out of the props on purpose
+  'item-icon': withPalette({ Item: ({ icon, ...props }) => <Item {...props} /> }),
+
   // Group headings are left out.
   'group-name': withPalette({ Group: () => null }),
 

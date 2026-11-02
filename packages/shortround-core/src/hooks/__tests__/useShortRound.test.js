@@ -331,6 +331,64 @@ describe('useShortRound', () => {
       expect(hook.result.current.dispatchedStack).toEqual([]);
     });
   });
+  describe('Back after steps that bring no list', () => {
+    const { BACK, RESET } = RevertIntentionIds;
+    const subRow = { id: 'sub-row', title: 'Sub row', group: 'Sub', action: () => ({}) };
+    const deepRow = { id: 'deep-row', title: 'Deep row', group: 'Deep', action: () => ({}) };
+    const messageOnly = (id) => ({
+      id,
+      title: id,
+      group: 'G',
+      action: () => ({ message: 'done' })
+    });
+    const opensList = (id, rows) => ({
+      id,
+      title: id,
+      group: 'G',
+      action: () => ({ intentions: rows, includeRevertIntentions: [BACK, RESET] })
+    });
+
+    const run = async (current, ...ids) => {
+      for (const id of ids) {
+        await act(async () => {
+          await current.result.current.dispatch(id);
+        });
+      }
+    };
+    const shownIds = (current) => current.result.current.intentions.map(({ id }) => id);
+
+    test('a step with no list before a list does not count: Back goes to the start list', async () => {
+      const startList = [messageOnly('msg'), opensList('ask', [subRow])];
+      const current = renderHook(() => useShortRound({ defaultIntentions: startList }));
+
+      await run(current, 'msg', 'ask', BACK);
+
+      expect(shownIds(current)).toEqual(['msg', 'ask']);
+    });
+
+    test('a step with no list inside a list: one Back leaves that list', async () => {
+      const startList = [opensList('ask', [messageOnly('note')])];
+      const current = renderHook(() => useShortRound({ defaultIntentions: startList }));
+
+      await run(current, 'ask', 'note', BACK);
+
+      expect(shownIds(current)).toEqual(['ask']);
+      expect(current.result.current.dispatchedStack).toEqual([]);
+    });
+
+    test('deeper down, Back returns to the list before the current one', async () => {
+      const sub = opensList('sub', [messageOnly('note'), deepRow]);
+      const startList = [opensList('ask', [sub, subRow])];
+      const current = renderHook(() => useShortRound({ defaultIntentions: startList }));
+
+      await run(current, 'ask', 'sub', 'note', BACK);
+
+      expect(shownIds(current)).toEqual(['sub', 'sub-row']);
+      expect(current.result.current.dispatchedStack.map(({ intention }) => intention.id)).toEqual([
+        'ask'
+      ]);
+    });
+  });
   describe('input resolver', () => {
     const kindRow = {
       id: 'kind::library',

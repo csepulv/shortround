@@ -1,6 +1,6 @@
 {
   "name": "@shortround/core",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Core library for ShortRound, providing the main hooks and functionality for a command palette.",
   "keywords": [
     "shortround",
@@ -36,7 +36,8 @@
   ],
   "scripts": {
     "build": "vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:node-import": "node scripts/check-node-import.js"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

@@ -6,7 +6,8 @@ import { useShortRoundTheme } from '../hooks/useShortRoundTheme.js';
 import {
   SidekickStoreProvider,
   useShortRoundKeyboardShortcuts,
-  useSidekick
+  useSidekick,
+  useSidekickStore
 } from '../hooks/useSidekick.js';
 import { ANIMATION_DURATION, DEFAULT_SIDEKICK_NAME } from '../utils.js';
 import { ShortRoundPaletteFrame } from './ShortRoundPaletteFrame.jsx';
@@ -24,6 +25,30 @@ function useCloseNotification(isOpen, notifyClose) {
     }
     wasOpen.current = isOpen;
   }, [isOpen]);
+}
+
+// The side panel's lifetime: the app's reducer decides every change but a close. A close, however it happened,
+// clears it (the panel never outlives the palette); an open proposes the start list's panel, or none.
+function useSidecarLifecycle(store, isOpen, { sidecarReducer, defaultSidecarRenderer }) {
+  const latestReducer = useRef(sidecarReducer);
+  latestReducer.current = sidecarReducer;
+  const wasOpen = useRef(false);
+
+  useLayoutEffect(() => {
+    store.setSidecarReducer((...args) =>
+      (latestReducer.current ?? ((_, proposed) => proposed))(...args)
+    );
+    return () => store.setSidecarReducer(undefined);
+  }, [store]);
+
+  useLayoutEffect(() => {
+    if (isOpen && !wasOpen.current) {
+      store.changeSidecar({ renderer: defaultSidecarRenderer ?? null }, 'open');
+    } else if (!isOpen && wasOpen.current) {
+      store.clearSidecar();
+    }
+    wasOpen.current = isOpen;
+  }, [store, isOpen, defaultSidecarRenderer]);
 }
 
 // A size change can unmount what had focus (compact size removes the input), dropping focus to the page's
@@ -74,10 +99,13 @@ function SidekickContent({
   title,
   defaultIntentions,
   resolveDefaultInput,
+  resolveDefaultFallbackInput,
   SidekickComponents,
   showToast,
   installKeyboardShortcuts,
-  notifyClose
+  notifyClose,
+  sidecarReducer,
+  defaultSidecarRenderer
 }) {
   const {
     isSidecarOpen,
@@ -106,6 +134,7 @@ function SidekickContent({
   });
   useFocusKeptOnResize(size, focusInside);
   useCloseNotification(isOpen, notifyClose);
+  useSidecarLifecycle(useSidekickStore(), isOpen, { sidecarReducer, defaultSidecarRenderer });
 
   if (!isOpen) {
     return null;
@@ -129,6 +158,8 @@ function SidekickContent({
           <ShortRoundPaletteFrame
             SidekickComponents={SidekickComponents}
             defaultIntentions={defaultIntentions}
+            defaultSidecarRenderer={defaultSidecarRenderer}
+            resolveDefaultFallbackInput={resolveDefaultFallbackInput}
             resolveDefaultInput={resolveDefaultInput}
             showToast={showToast}
             title={title}
@@ -162,12 +193,15 @@ export function ShortRoundSidekick({
   title,
   defaultIntentions,
   resolveDefaultInput,
+  resolveDefaultFallbackInput,
   SidekickComponents,
   showToast,
   installKeyboardShortcuts,
   sidekickStore,
   initialSidekickState,
-  onClose
+  onClose,
+  sidecarReducer,
+  defaultSidecarRenderer
 }) {
   const theme = useResolvedTheme(SidekickComponents, showToast);
 
@@ -176,10 +210,13 @@ export function ShortRoundSidekick({
       <SidekickContent
         SidekickComponents={theme.components}
         defaultIntentions={defaultIntentions}
+        defaultSidecarRenderer={defaultSidecarRenderer}
         installKeyboardShortcuts={installKeyboardShortcuts}
         notifyClose={onClose}
+        resolveDefaultFallbackInput={resolveDefaultFallbackInput}
         resolveDefaultInput={resolveDefaultInput}
         showToast={theme.showToast}
+        sidecarReducer={sidecarReducer}
         title={title}
       />
     </SidekickStoreProvider>

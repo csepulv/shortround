@@ -9,20 +9,40 @@ import { makeInputResolver } from './resolve-input.js';
 // resolver for the state it shows.
 //
 // The app supplies what the engine cannot know: renderers for panels (`panels.sidecar`) and the id
-// of ShortRound's built-in Back row (`backIntentionId`), so the engine needs no UI package.
-export function buildPalette(catalog, { panels = {}, backIntentionId }) {
-  checkAppSupplies(catalog, { panels, backIntentionId });
-  const { listState, resolverFor } = makeStateLists(catalog, { panels, backIntentionId });
+// of ShortRound's built-in Back row (`backIntentionId`), so the engine needs no UI package. It may
+// name the state the list starts in (`startState`, such as the page the user is on); otherwise it is
+// the catalog's start state. Its `fallback` (optional) adds rows after a state's matches, such as
+// "Send as chat"; pickers and text steps don't get it.
+export function buildPalette(
+  catalog,
+  { panels = {}, backIntentionId, startState = catalog.startState, fallback }
+) {
+  checkAppSupplies(catalog, { panels, backIntentionId, startState });
+  const { listState, resolverFor, fallbackFor } = makeStateLists(catalog, {
+    panels,
+    backIntentionId,
+    fallback
+  });
+  // A start state with a panel opens with it: the app passes it as ShortRoundSidekick's defaultSidecarRenderer.
+  const startPanel = catalog.states[startState].panel;
   return {
-    intentions: listState(catalog.startState),
-    resolveInput: resolverFor(catalog.startState)
+    intentions: listState(startState),
+    resolveInput: resolverFor(startState),
+    ...(fallback && { resolveFallbackInput: fallbackFor(startState) }),
+    ...(startPanel && { sidecarRenderer: panels[startPanel] })
   };
 }
 
-// Fail when the list is built, not when a user reaches a panel state or a picker.
-function checkAppSupplies(catalog, { panels, backIntentionId }) {
+// Fail when the list is built, not when a user reaches a panel state or a picker. A loaded catalog
+// has no planned states, so a planned start state is caught as a missing one.
+function checkAppSupplies(catalog, { panels, backIntentionId, startState }) {
   if (!backIntentionId) {
     throw new Error('buildPalette needs backIntentionId');
+  }
+  if (!catalog.states[startState]) {
+    throw new Error(
+      `buildPalette: start state "${startState}" is not a built state of the catalog`
+    );
   }
   for (const [name, state] of Object.entries(catalog.states)) {
     if (state.panel && !panels[state.panel]) {
@@ -33,7 +53,11 @@ function checkAppSupplies(catalog, { panels, backIntentionId }) {
   }
 }
 
-function makeStateLists(catalog, { panels, backIntentionId }) {
+function makeStateLists(catalog, { panels, backIntentionId, fallback }) {
+  // The app's fallback, told which state's list it is adding to.
+  const fallbackFor = (stateName) =>
+    fallback && ((text, { matches }) => fallback(text, { matches, stateName }));
+
   const listEntries = (stateName) =>
     Object.entries(catalog.states[stateName].commands)
       .flatMap(([name, command]) => expandCommand(name, command))
@@ -101,7 +125,8 @@ function makeStateLists(catalog, { panels, backIntentionId }) {
     }
     return {
       intentions: rows.map((row) => toRowIntention(row, entry, stateName)),
-      includeRevertIntentions: [backIntentionId]
+      includeRevertIntentions: [backIntentionId],
+      listKind: 'picker'
     };
   }
 
@@ -137,31 +162,36 @@ function makeStateLists(catalog, { panels, backIntentionId }) {
       intentions: [step],
       disableInputMatching: true,
       includeRevertIntentions: [backIntentionId],
-      message
+      message,
+      listKind: 'text'
     };
   }
 
   // Called with the command's `args`, or else the forEach key and the asked value (call-args.js). A
-  // run may return { message, isCancelled }: a cancelled run stays in the state it was listed in.
+  // run may return { message, isCancelled, sideEffects }: a cancelled run stays in the state it was
+  // listed in; its side effects apply either way.
   async function runCommand(entry, stateName, askedValue) {
     const outcome = await runOutcome(entry, askedValue);
     const nextState = outcome.isCancelled ? stateName : (entry.command.then ?? stateName);
-    return stateResult(nextState, stateName, outcome.message);
+    return stateResult(nextState, stateName, outcome.message, outcome.sideEffects);
   }
 
   // A line's commands all stay in this state; they run in order, and a cancelled one stops the rest.
+  // The last command that returns side effects decides them.
   async function runLine(steps, stateName) {
     const messages = [];
+    let sideEffects;
     for (const { entry, value } of steps) {
       const outcome = await runOutcome(entry, value);
       if (outcome.message) {
         messages.push(outcome.message);
       }
+      sideEffects = outcome.sideEffects ?? sideEffects;
       if (outcome.isCancelled) {
         break;
       }
     }
-    return stateResult(stateName, stateName, messages.join('; ') || undefined);
+    return stateResult(stateName, stateName, messages.join('; ') || undefined, sideEffects);
   }
 
   async function runOutcome({ command, key }, askedValue) {
@@ -169,11 +199,14 @@ function makeStateLists(catalog, { panels, backIntentionId }) {
     return (await command.run(...args)) ?? {};
   }
 
-  const stateResult = (nextState, fromState, message) => ({
+  // A run's own side effects win over the ones its state's panel would set.
+  const stateResult = (nextState, fromState, message, runSideEffects) => ({
     intentions: listState(nextState),
     resolveInput: resolverFor(nextState),
+    resolveFallbackInput: fallbackFor(nextState),
+    listKind: 'state',
     message,
-    sideEffects: panelEffects(nextState, fromState)
+    sideEffects: runSideEffects ?? panelEffects(nextState, fromState)
   });
 
   function panelEffects(nextState, fromState) {
@@ -187,7 +220,7 @@ function makeStateLists(catalog, { panels, backIntentionId }) {
     return undefined;
   }
 
-  return { listState, resolverFor };
+  return { listState, resolverFor, fallbackFor };
 }
 
 // "No {title} values" reads mid-sentence, so the title is lower case there.

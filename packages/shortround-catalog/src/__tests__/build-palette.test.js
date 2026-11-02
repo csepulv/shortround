@@ -83,6 +83,91 @@ describe('a command without a step', () => {
   });
 });
 
+describe('the fallback, and what kind of list a result brings', () => {
+  const buildWith = (options) =>
+    buildPalette(loadCatalog(CATALOG, setup().bindings), {
+      panels: { sidecar: PANEL },
+      backIntentionId: BACK,
+      ...options
+    });
+  const makeFallback = () => vi.fn(() => []);
+
+  test('the start list gets the fallback, which is told the state', () => {
+    const fallback = makeFallback();
+    const palette = buildWith({ fallback });
+
+    palette.resolveFallbackInput('why', { matches: [] });
+
+    expect(fallback).toHaveBeenCalledWith('why', { matches: [], stateName: 'browsing' });
+  });
+
+  test("every state's result gets it, told its own state", async () => {
+    const fallback = makeFallback();
+    const palette = buildWith({ fallback });
+
+    const result = await choose(palette.intentions, 'Preview', { row: '3. CSS grid guide' });
+    result.resolveFallbackInput('why', { matches: [] });
+
+    expect(fallback).toHaveBeenCalledWith('why', { matches: [], stateName: 'previewing' });
+    expect(result.listKind).toBe('state');
+  });
+
+  test("a picker's and a text step's results get none, and say what they are", async () => {
+    const palette = buildWith({ fallback: makeFallback() });
+
+    const picker = await choose(palette.intentions, 'Sort');
+    const textStep = await choose(palette.intentions, 'Search');
+
+    expect(picker.resolveFallbackInput).toBeUndefined();
+    expect(picker.listKind).toBe('picker');
+    expect(textStep.resolveFallbackInput).toBeUndefined();
+    expect(textStep.listKind).toBe('text');
+  });
+
+  test('without the option, no fallback anywhere', async () => {
+    const palette = buildWith({});
+
+    const result = await choose(palette.intentions, 'Match any');
+
+    expect(palette.resolveFallbackInput).toBeUndefined();
+    expect(result.resolveFallbackInput).toBeUndefined();
+    expect(result.listKind).toBe('state');
+  });
+});
+
+describe('side effects a run returns', () => {
+  const CHAT = () => 'chat';
+
+  test('are passed on, so a command can open the side panel', async () => {
+    const { bindings, intentions } = setup();
+    bindings.app.search.setMatch.mockReturnValue({ sideEffects: { sidecarRenderer: CHAT } });
+
+    const result = await choose(intentions, 'Match any');
+
+    expect(result.sideEffects).toEqual({ sidecarRenderer: CHAT });
+  });
+
+  test("win over the state's own panel", async () => {
+    const { intentions } = setup({ preview: () => ({ sideEffects: { closeSidecar: true } }) });
+
+    const result = await choose(intentions, 'Preview', { row: '3. CSS grid guide' });
+
+    expect(result.sideEffects).toEqual({ closeSidecar: true });
+  });
+
+  test('apply even when the run is cancelled', async () => {
+    const { bindings, intentions } = setup();
+    bindings.app.search.setMatch.mockReturnValue({
+      isCancelled: true,
+      sideEffects: { sidecarRenderer: CHAT }
+    });
+
+    const result = await choose(intentions, 'Match any');
+
+    expect(result.sideEffects).toEqual({ sidecarRenderer: CHAT });
+  });
+});
+
 describe('a command that asks to choose', () => {
   test('lists the picker rows with Back, in the command group and icon', async () => {
     const { intentions } = setup();
@@ -258,6 +343,70 @@ describe('what run returns', () => {
     expect(result.message).toBe('That result is no longer in the list');
     expect(titlesOf(result)).toContain('Sort');
     expect(result.sideEffects).toBeUndefined();
+  });
+});
+
+describe('starting in a state the app names', () => {
+  const buildFrom = (startState) =>
+    buildPalette(loadCatalog(CATALOG, setup().bindings), {
+      panels: { sidecar: PANEL },
+      backIntentionId: BACK,
+      startState
+    });
+
+  // A typed line resolves only commands that ask for a value; Sort does, in browsing only.
+  test("lists that state's commands, and resolves typed lines against them", () => {
+    const palette = buildFrom('previewing');
+
+    expect(palette.intentions.map((item) => item.title)).toEqual(['Next', 'Close preview']);
+    expect(buildFrom(undefined).resolveInput('sort ')).not.toEqual([]);
+    expect(palette.resolveInput('sort ')).toEqual([]);
+  });
+
+  // The app hands it to ShortRoundSidekick as defaultSidecarRenderer, so the palette opens with its panel (FU-8).
+  test("a panel state's palette carries its panel", () => {
+    expect(buildFrom('previewing').sidecarRenderer).toBe(PANEL);
+  });
+
+  test('a start state without a panel carries none', () => {
+    expect(buildFrom(undefined).sidecarRenderer).toBeUndefined();
+  });
+
+  test('moves on from there as from any state', async () => {
+    const palette = buildFrom('previewing');
+
+    const result = await choose(palette.intentions, 'Close preview');
+
+    expect(titlesOf(result)).toContain('Preview');
+  });
+
+  test('a state the catalog does not have throws, naming it', () => {
+    expect(() => buildFrom('reviewing')).toThrow(
+      'buildPalette: start state "reviewing" is not a built state of the catalog'
+    );
+  });
+
+  test('a planned state throws, naming it', () => {
+    const catalog = loadCatalog(
+      [
+        'version: 2',
+        'app: demo',
+        'states:',
+        '  home:',
+        '    start: true',
+        '    commands:',
+        '      go: { title: Go, run: app.go }',
+        '  later:',
+        '    planned: true',
+        '    commands:',
+        '      wait: { title: Wait, planned: true }'
+      ].join('\n'),
+      { app: { go: () => {} } }
+    );
+
+    expect(() => buildPalette(catalog, { backIntentionId: BACK, startState: 'later' })).toThrow(
+      'buildPalette: start state "later" is not a built state of the catalog'
+    );
   });
 });
 

@@ -29,6 +29,47 @@ test('the intention list gets a valid height', () => {
   expect(container.querySelector('[cmdk-list]').style.height).toBe('calc(50vh - 107px)');
 });
 
+test('rows with no group show, with no React key warning', () => {
+  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const action = vi.fn();
+
+  renderPalette([
+    { id: 'loose-1', title: 'Loose one', action },
+    { id: 'loose-2', title: 'Loose two', action },
+    { id: 'save', title: 'Save', group: 'Files', action }
+  ]);
+
+  expect(screen.getByText('Loose one')).toBeInTheDocument();
+  expect(screen.getByText('Save')).toBeInTheDocument();
+  const looseGroup = screen.getByText('Loose one').closest('[cmdk-group]');
+  expect(looseGroup).toContainElement(screen.getByText('Loose two'));
+  expect(looseGroup).not.toContainElement(screen.getByText('Save'));
+  const keyWarnings = consoleError.mock.calls.filter(([message]) =>
+    String(message).includes('unique "key"')
+  );
+  expect(keyWarnings).toEqual([]);
+  consoleError.mockRestore();
+});
+
+test('a row with group null shares the no-group group, with no React key warning', () => {
+  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const action = vi.fn();
+
+  renderPalette([
+    { id: 'loose', title: 'Loose', action },
+    { id: 'null-group', title: 'Null group', group: null, action }
+  ]);
+
+  expect(screen.getByText('Loose').closest('[cmdk-group]')).toContainElement(
+    screen.getByText('Null group')
+  );
+  const keyWarnings = consoleError.mock.calls.filter(([message]) =>
+    String(message).includes('same key')
+  );
+  expect(keyWarnings).toEqual([]);
+  consoleError.mockRestore();
+});
+
 // Choosing an intention runs it asynchronously.
 const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
 

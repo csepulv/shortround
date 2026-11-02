@@ -5,6 +5,7 @@ import type { ComponentProps } from 'react';
 import {
   ControlLabels,
   type Intention,
+  type ResolveFallbackInput,
   type ResolveInput,
   type ShortRoundTheme,
   ShortRoundProvider,
@@ -37,12 +38,16 @@ const bindings = {
 
 const palette = buildPalette(loadCatalog(catalogText, bindings), {
   panels: { sidecar: () => null },
-  backIntentionId: 'back'
+  backIntentionId: 'back',
+  fallback: (text, { matches, stateName }) =>
+    matches.length ? [] : [{ id: `chat::${stateName}`, title: `Send: ${text}`, action: () => ({}) }]
 });
 
 // What the README passes to ShortRoundSidekick.
 export const defaultIntentions: Intention[] = palette.intentions;
 export const resolveDefaultInput: ResolveInput = palette.resolveInput;
+export const resolveDefaultFallbackInput: ResolveFallbackInput | undefined =
+  palette.resolveFallbackInput;
 
 // Themes pass an intention's keywords to cmdk (theme-provider M1).
 export const withKeywords: Intention = {

@@ -3,6 +3,7 @@ import { IntentionInput } from './components/intention-palette/IntentionInput.js
 import { IntentionItem } from './components/intention-palette/IntentionItem.jsx';
 import { IntentionPaletteFrame } from './components/intention-palette/IntentionPaletteFrame.jsx';
 import { NoMatches } from './components/intention-palette/NoMatches.jsx';
+import { MUI_ICONS } from './components/mui-icons.js';
 import { SidecarContent } from './components/SidecarContent.jsx';
 import { SidekickControlBar } from './components/sidekick/SidekickControlBar.jsx';
 import { SidekickFrame } from './components/sidekick/SidekickFrame.jsx';
@@ -21,5 +22,7 @@ export const MuiSidekickComponents = {
     Frame: SidekickFrame,
     Popover: SidekickPopover
   },
-  SidecarContent
+  SidecarContent,
+  // With the slots, so an app passing SidekickComponents without a provider keeps them.
+  icons: MUI_ICONS
 };

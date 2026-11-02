@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import invariant from 'tiny-invariant';
 
-import { RevertIntentionIds } from '../utils.js';
+import { bringsList, RevertIntentionIds } from '../utils.js';
 import { useFuzzyMatcher } from './useFuzzyMatcher.js';
 
 const indexIntentions = (intentions) =>
@@ -21,6 +21,16 @@ function resolveTypedInput(resolveInput, inputValue) {
   }
 }
 
+// A fallback error must not take the palette down either: log it with the input, and add no rows.
+function resolveFallbackRows(resolveFallbackInput, inputValue, matches) {
+  try {
+    return resolveFallbackInput(inputValue, { matches }) ?? [];
+  } catch (error) {
+    console.error(`ShortRound resolveFallbackInput failed for "${inputValue}"`, error);
+    return [];
+  }
+}
+
 // A resolved row replaces a listed row with the same id.
 const withoutIds = (intentions, replacements) => {
   const ids = new Set(replacements.map(({ id }) => id));
@@ -36,15 +46,21 @@ function findRejection(intention, inputValue) {
   return intention.disabled ? UNAVAILABLE_MESSAGE : undefined;
 }
 
-// `resolveDefaultInput` (optional) turns typed text into extra rows for the default list; a result that brings a new
-// list brings its own `resolveInput`, or none.
-export function useShortRound({ defaultIntentions, resolveDefaultInput }) {
+// `resolveDefaultInput` (optional) turns typed text into extra rows for the default list, and
+// `resolveDefaultFallbackInput` (optional) adds rows after the list's matches. A result that brings a new list brings
+// its own of each, or none.
+export function useShortRound({
+  defaultIntentions,
+  resolveDefaultInput,
+  resolveDefaultFallbackInput
+}) {
   const [inputValue, setInputValue] = useState('');
   const [inputMessage, setInputMessage] = useState();
   const [dispatchedStack, setDispatchedStack] = useState([]);
   const [currentIntentions, setCurrentIntentions] = useState(defaultIntentions);
   const [disableInputMatching, setDisableInputMatching] = useState(false);
   const [resolveInput, setResolveInput] = useState(() => resolveDefaultInput);
+  const [resolveFallback, setResolveFallback] = useState(() => resolveDefaultFallbackInput);
   const matchingIntentions = useFuzzyMatcher({ inputValue, intentions: currentIntentions });
 
   const isSystemIntention = (intentionId) => revertIntentionIds.includes(intentionId);
@@ -52,21 +68,32 @@ export function useShortRound({ defaultIntentions, resolveDefaultInput }) {
   useEffect(() => {
     setCurrentIntentions(defaultIntentions);
     setResolveInput(() => resolveDefaultInput);
+    setResolveFallback(() => resolveDefaultFallbackInput);
     setInputValue('');
-  }, [defaultIntentions, resolveDefaultInput]);
+  }, [defaultIntentions, resolveDefaultInput, resolveDefaultFallbackInput]);
 
   // Not memoized: the resolver reads live app data (facet counts, results) that can change while the
   // input doesn't.
+  const isMatchingTypedText = !disableInputMatching && Boolean(inputValue.trim());
   const resolvedIntentions =
-    disableInputMatching || !resolveInput || !inputValue.trim()
-      ? []
-      : resolveTypedInput(resolveInput, inputValue);
+    isMatchingTypedText && resolveInput ? resolveTypedInput(resolveInput, inputValue) : [];
+  const matches = [...resolvedIntentions, ...withoutIds(matchingIntentions, resolvedIntentions)];
+  // After the matches, and never in place of a listed row.
+  const fallbackIntentions =
+    isMatchingTypedText && resolveFallback
+      ? withoutIds(resolveFallbackRows(resolveFallback, inputValue, matches), matches)
+      : [];
 
-  const intentionIndex = indexIntentions([...currentIntentions, ...resolvedIntentions]);
+  const intentionIndex = indexIntentions([
+    ...currentIntentions,
+    ...resolvedIntentions,
+    ...fallbackIntentions
+  ]);
 
   const makeStartResult = () => ({
     intentions: [...defaultIntentions],
     resolveInput: resolveDefaultInput,
+    resolveFallbackInput: resolveDefaultFallbackInput,
     sideEffects: { closeSidecar: true }
   });
 
@@ -75,11 +102,14 @@ export function useShortRound({ defaultIntentions, resolveDefaultInput }) {
       case RevertIntentionIds.RESET:
         setDispatchedStack([]);
         return makeStartResult();
+      // Back leaves the current list: it drops the step that brought it, and any after it, and shows the list of the
+      // last earlier step that brought one.
       case RevertIntentionIds.BACK: {
-        const remaining = dispatchedStack.slice(0, -1);
+        const currentListStep = dispatchedStack.findLastIndex(bringsList);
+        const remaining = currentListStep >= 0 ? dispatchedStack.slice(0, currentListStep) : [];
         setDispatchedStack(remaining);
-        const prev = remaining.at(-1);
-        return prev ? prev.result : makeStartResult();
+        const earlierList = remaining.findLast(bringsList);
+        return earlierList ? earlierList.result : makeStartResult();
       }
       default:
         return {};
@@ -116,6 +146,7 @@ export function useShortRound({ defaultIntentions, resolveDefaultInput }) {
     if (result.intentions) {
       setCurrentIntentions(result.intentions);
       setResolveInput(() => result.resolveInput);
+      setResolveFallback(() => result.resolveFallbackInput);
     }
 
     setDisableInputMatching(result.disableInputMatching);
@@ -164,7 +195,7 @@ export function useShortRound({ defaultIntentions, resolveDefaultInput }) {
 
   const availableIntentions = disableInputMatching
     ? currentIntentions
-    : [...resolvedIntentions, ...withoutIds(matchingIntentions, resolvedIntentions)];
+    : [...matches, ...fallbackIntentions];
   return {
     inputValue,
     inputMessage,

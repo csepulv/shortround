@@ -49,7 +49,7 @@ frames' own check names the cause.
 |---|---|---|---|
 | `IntentionPalette.Frame` | `height`, `children` | Render its children (row styling goes here, through `[cmdk-item]` and `[data-selected]`) | — |
 | `IntentionPalette.Input` | `input`, `inputMessage?` | Place `input` (ShortRound's input element); show `inputMessage.text` | `shortround-input`, put on `input` by ShortRound |
-| `IntentionPalette.Item` | `intention`, `isSelected` | Show the title and subtitle (`isSelected`: whether the row is highlighted, if you need it) | `shortround-item-<id>`, put on the row by ShortRound |
+| `IntentionPalette.Item` | `intention`, `icon?`, `isSelected` | Show the title and subtitle; show `icon` when given, keeping its space when there is none (`isSelected`: whether the row is highlighted, if you need it) | `shortround-item-<id>`, put on the row by ShortRound |
 | `IntentionPalette.Group` | `name` | Show the group's name | — |
 | `IntentionPalette.NoMatches` | `inputValue` | Say nothing matched, naming `inputValue` | `shortround-no-matches` |
 | `Sidekick.Popover` | `anchorPosition`, `anchorOrigin`, `height`, `totalWidth`, `children` | Render its children (in a portal or not) | — |
@@ -57,6 +57,11 @@ frames' own check names the cause.
 | `Sidekick.ControlBar` | `title?`, `labels`, `anchorOrigin`, `size`, `onClose`, `setSize`, `cycleAnchorOrigin` | Show the title; a close control calls `onClose`; size controls call `setSize` with `compact`, `medium` or `full`; a position control calls `cycleAnchorOrigin`; each control, and the group of size controls, is named with `labels` (`aria-label`) | `shortround-close`, `shortround-size-<size>`, `shortround-anchor` |
 | `SidecarContent` | `isOpen`, `renderSidecar`, `height` | Render `renderSidecar()` when the side panel opens (`isOpen`) | — |
 | `Toast` (beside `components`) | `isOpen`, `message`, `onClose` | While `isOpen`, show `message`; otherwise render nothing. `ShortRoundProvider` holds the state; the theme calls `onClose` to dismiss it (not checked) | `shortround-toast` |
+
+A theme's own icons go beside the slots, on `components.icons`, by name, with `back`, `cancel` and `unknown` (the
+placeholder for a name the theme doesn't know). ShortRound chooses each row's icon from them and the app's registry,
+and passes it to `Item` as `icon`. The suite checks that `Item` shows the `icon` it is given (`item-icon`), not
+which icons a theme has.
 
 What ShortRound does, and this suite therefore doesn't check: keyboard and click selection, disabled rows, each
 row's value, the controlled input, focus moving into the sidekick and back, Escape closing it only from inside, and

@@ -81,6 +81,27 @@ describe('ShortRoundSidekick onClose', () => {
   });
 });
 
+describe('ShortRoundSidekick initialSidekickState', () => {
+  test('naming only a corner places the theme Popover there', () => {
+    const Popover = vi.fn(({ children }) => <div>{children}</div>);
+    render(
+      <ShortRoundSidekick
+        SidekickComponents={{
+          ...stubSidekickComponents,
+          Sidekick: { ...stubSidekickComponents.Sidekick, Popover }
+        }}
+        defaultIntentions={[]}
+        initialSidekickState={{ isOpen: true, anchorOrigin: 'bottom-left' }}
+      />
+    );
+
+    expect(Popover.mock.lastCall[0]).toMatchObject({
+      anchorOrigin: 'bottom-left',
+      anchorPosition: { bottom: 0, left: 0 }
+    });
+  });
+});
+
 describe('ShortRoundSidekick resolveDefaultInput', () => {
   test('rows resolved from typed text appear and can be chosen', async () => {
     const choose = vi.fn(() => ({}));
@@ -111,5 +132,70 @@ describe('ShortRoundSidekick resolveDefaultInput', () => {
     });
 
     expect(choose).toHaveBeenCalledWith('kind lib');
+  });
+});
+
+describe('ShortRoundSidekick resolveDefaultFallbackInput', () => {
+  test('rows for unmatched text appear after the list and can be chosen', async () => {
+    const send = vi.fn(() => ({}));
+    const fallback = (text, { matches }) =>
+      matches.length ? [] : [{ id: 'send', title: `Send: ${text}`, group: 'Chat', action: send }];
+    const typingPalette = {
+      ...stubSidekickComponents.IntentionPalette,
+      Input: ({ input }) => input,
+      Item: ({ intention }) => <span data-testid={`item-${intention.id}`} />
+    };
+    render(
+      <ShortRoundSidekick
+        SidekickComponents={{ ...stubSidekickComponents, IntentionPalette: typingPalette }}
+        defaultIntentions={[{ id: 'open', title: 'Open', group: 'Files', action: () => ({}) }]}
+        resolveDefaultFallbackInput={fallback}
+        sidekickStore={createSidekickStore({ isOpen: true })}
+      />
+    );
+
+    fireEvent.change(screen.getByTestId('shortround-input'), { target: { value: 'zzqx' } });
+    await act(async () => {
+      screen.getByTestId('item-send').click();
+    });
+
+    expect(send).toHaveBeenCalledWith('zzqx');
+  });
+
+  // The palette draws rows by group, in the order groups first appear, so where a fallback row is drawn depends on
+  // its group.
+  const drawnOrderAfterTyping = (fallbackGroup) => {
+    const fallback = (text) => [
+      { id: 'chat', title: `Send as chat: ${text}`, group: fallbackGroup, action: () => ({}) }
+    ];
+    render(
+      <ShortRoundSidekick
+        SidekickComponents={{
+          ...stubSidekickComponents,
+          IntentionPalette: {
+            ...stubSidekickComponents.IntentionPalette,
+            Input: ({ input }) => input
+          }
+        }}
+        defaultIntentions={[
+          { id: 'a', title: 'alpha', action: () => ({}) },
+          { id: 'b', title: 'alpha file', group: 'Files', action: () => ({}) }
+        ]}
+        resolveDefaultFallbackInput={fallback}
+        sidekickStore={createSidekickStore({ isOpen: true })}
+      />
+    );
+    fireEvent.change(screen.getByTestId('shortround-input'), { target: { value: 'alpha' } });
+    return screen
+      .getAllByTestId(/^shortround-item-/)
+      .map((row) => row.getAttribute('data-testid').replace('shortround-item-', ''));
+  };
+
+  test('rows in a group of their own are drawn after every match', () => {
+    expect(drawnOrderAfterTyping('Chat')).toEqual(['a', 'b', 'chat']);
+  });
+
+  test("a row with no group, beside an ungrouped match, is drawn in that match's group", () => {
+    expect(drawnOrderAfterTyping(undefined)).toEqual(['a', 'chat', 'b']);
   });
 });

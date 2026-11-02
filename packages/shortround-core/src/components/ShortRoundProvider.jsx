@@ -19,9 +19,10 @@ function requireTheme(theme) {
   }
 }
 
-// The composition root: the one place an app chooses its theme. Below it, ShortRoundSidekick takes
-// its slots from here, and app code shows toasts through useShortRoundToast without naming the theme.
-export function ShortRoundProvider({ theme, children }) {
+// The composition root: the one place an app chooses its theme and, optionally, its own icons. Below it,
+// ShortRoundSidekick takes its slots and icons from here, and app code shows toasts through useShortRoundToast
+// without naming the theme.
+export function ShortRoundProvider({ theme, icons, children }) {
   requireTheme(theme);
   const [toast, setToast] = useState(CLOSED_TOAST);
 
@@ -30,8 +31,8 @@ export function ShortRoundProvider({ theme, children }) {
   const closeToast = useCallback(() => setToast((current) => ({ ...current, isOpen: false })), []);
 
   const value = useMemo(
-    () => ({ components: theme.components, showToast }),
-    [theme.components, showToast]
+    () => ({ components: theme.components, showToast, icons }),
+    [theme.components, showToast, icons]
   );
   const { Toast } = theme;
 

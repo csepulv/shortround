@@ -1,5 +1,29 @@
 # @shortround/mui
 
+## 0.4.0
+
+### Minor Changes
+
+- 34929b7: MUI draws the icon ShortRound chooses, and its own icons look as intended.
+  - **Behaviour change:** a name MUI doesn't know shows a question mark; an intention with no `icon` shows none, and
+    its row keeps the space. Both used to show the search icon.
+  - Back and Cancel have their own icons (they showed the search icon).
+  - Icons render at 18px in the theme's `action.active` colour. Before, MUI's `sx` was passed to Lucide, which ignored
+    it, so icons were 24px in the text colour.
+  - An icon sits level with its title: the small gap below a row's title moved above its subtitle, so single-line rows
+    no longer push the icon down.
+  - MUI's icons are on `MuiSidekickComponents.icons`, so apps passing `SidekickComponents` directly keep them.
+  - `@mui/icons-material` is no longer a peer dependency (it was never used).
+
+### Patch Changes
+
+- Updated dependencies [7391cca]
+- Updated dependencies [53937ec]
+- Updated dependencies [34929b7]
+- Updated dependencies [699cf3e]
+- Updated dependencies [ca97237]
+  - @shortround/core@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

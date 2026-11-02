@@ -11,7 +11,7 @@
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,jsx}\"",
     "format:check": "prettier --check \"**/*.{js,jsx}\"",
-    "verify": "pnpm install --frozen-lockfile && turbo build test && pnpm test:release && pnpm --filter @shortround/catalog types:check && pnpm lint && pnpm format:check && pnpm --filter @shortround/storybook build:storybook",
+    "verify": "pnpm install --frozen-lockfile && turbo build test && pnpm --filter @shortround/core test:node-import && pnpm test:release && pnpm --filter @shortround/catalog types:check && pnpm lint && pnpm format:check && pnpm --filter @shortround/storybook build:storybook",
     "cs:add": "changeset add",
     "cs:version": "node release-tools/check-migration-guide.js && changeset version",
     "cs:tag": "changeset tag",

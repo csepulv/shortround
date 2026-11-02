@@ -18,9 +18,10 @@ function Input({ input, inputMessage }) {
   );
 }
 
-function Item({ intention }) {
+function Item({ intention, icon }) {
   return (
     <div>
+      {icon}
       <span>{intention.title}</span>
       {intention.subtitle && <span>{intention.subtitle}</span>}
     </div>

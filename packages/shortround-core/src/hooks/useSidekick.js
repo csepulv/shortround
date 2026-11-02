@@ -14,16 +14,52 @@ const initialStore = {
   isOpen: false,
   isSidecarOpen: false,
   anchorOrigin: AnchorPositions.CENTER,
-  anchorPosition: AnchorPositionDetails.center,
   maxTotalWidth: '90vw',
   commandWidth: '40vw',
   totalWidth: '40vw',
   size: Sizes.MEDIUM
 };
 
+const applyProposed = (current, proposed) => proposed;
+
 export function createSidekickStore(init = {}) {
   let state = { ...initialStore, ...init };
   const listeners = new Set();
+  let sidecarReducer = applyProposed;
+
+  const set = (updater) => {
+    state =
+      typeof updater === 'function' ? { ...state, ...updater(state) } : { ...state, ...updater };
+    listeners.forEach((listener) => listener());
+  };
+
+  // Nothing is set when nothing changes, so the side panel's content doesn't remount.
+  const applySidecar = (renderer) => {
+    if (renderer === state.internalSidecarRenderer && state.isSidecarOpen === Boolean(renderer)) {
+      return;
+    }
+    set(
+      renderer
+        ? {
+            internalSidecarRenderer: renderer,
+            isSidecarOpen: true,
+            totalWidth: state.maxTotalWidth
+          }
+        : { internalSidecarRenderer: null, isSidecarOpen: false, totalWidth: state.commandWidth }
+    );
+  };
+
+  // Every sidecar change but a close goes through here: core proposes, the app's reducer decides.
+  const changeSidecar = (proposed, reason) => {
+    const answer = sidecarReducer({ renderer: state.internalSidecarRenderer }, proposed, {
+      reason
+    });
+    invariant(
+      answer && 'renderer' in answer,
+      'sidecarReducer must return { renderer } or { renderer: null }'
+    );
+    applySidecar(answer.renderer);
+  };
 
   return {
     get: () => state,
@@ -31,10 +67,14 @@ export function createSidekickStore(init = {}) {
       listeners.add(callback);
       return () => listeners.delete(callback);
     },
-    set: (updater) => {
-      state =
-        typeof updater === 'function' ? { ...state, ...updater(state) } : { ...state, ...updater };
-      listeners.forEach((listener) => listener());
+    set,
+    changeSidecar,
+    openSidecar: (renderer) => changeSidecar({ renderer }, 'app'),
+    closeSidecar: () => changeSidecar({ renderer: null }, 'app'),
+    // A close always clears, whatever the reducer would keep: the side panel never outlives the palette.
+    clearSidecar: () => applySidecar(null),
+    setSidecarReducer: (reducer) => {
+      sidecarReducer = reducer ?? applyProposed;
     }
   };
 }
@@ -94,33 +134,13 @@ export function useSidekick(opts = {}) {
     const { maxTotalWidth, commandWidth, anchorOrigin, internalSidecarRenderer, size } =
       stateSnapshot;
 
-    const closeSidecar = () => {
-      store.set({
-        internalSidecarRenderer: null,
-        isSidecarOpen: false,
-        totalWidth: commandWidth
-      });
-    };
-
     const { height } = SizeDetails[size];
     const sidecarWidth = `calc(${maxTotalWidth} - ${commandWidth})`;
 
-    const setAnchorOrigin = (origin) =>
-      store.set({
-        anchorOrigin: origin,
-        anchorPosition: AnchorPositionDetails[origin]
-      });
+    const setAnchorOrigin = (origin) => store.set({ anchorOrigin: origin });
 
     const cycleAnchorOrigin = () => {
       setAnchorOrigin(cycleCorners(anchorOrigin));
-    };
-
-    const setSidecarRenderer = (renderer) => {
-      store.set({
-        internalSidecarRenderer: renderer,
-        isSidecarOpen: true,
-        totalWidth: maxTotalWidth
-      });
     };
 
     const renderSidecar = () => {
@@ -130,12 +150,15 @@ export function useSidekick(opts = {}) {
     };
 
     return {
+      // Worked out from the origin, so a store created with only `anchorOrigin` opens there; a position stored
+      // beside it (a 0.3.0 workaround) is ignored.
+      anchorPosition: AnchorPositionDetails[anchorOrigin],
       onOpen: () => store.set({ isOpen: true }),
       setIsOpen: (val) => {
         store.set({ isOpen: val });
       },
       onClose: () => {
-        closeSidecar();
+        store.clearSidecar();
         store.set({ isOpen: false });
       },
       height,
@@ -145,10 +168,11 @@ export function useSidekick(opts = {}) {
       },
       setAnchorOrigin,
       cycleAnchorOrigin,
-      setSidecarRenderer,
+      // The app's own calls: through the reducer, with the reason `app`.
+      setSidecarRenderer: store.openSidecar,
       commandWidth,
       sidecarWidth,
-      closeSidecar,
+      closeSidecar: store.closeSidecar,
       renderSidecar
     };
   }, [store, stateSnapshot]);

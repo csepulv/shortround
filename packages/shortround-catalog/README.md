@@ -60,7 +60,12 @@ To add a palette to an app from a catalog (bindings, building the palette, wirin
   picks the command.
 - `checkCatalog(text)` makes every check `loadCatalog` makes except resolving code paths, so a catalog can be checked
   without the app (while it is written or reviewed). It returns the catalog as written, planned items included.
-- `buildPalette(catalog, { panels, backIntentionId })` returns `{ intentions, resolveInput }` for the start state.
+- `buildPalette(catalog, { panels, backIntentionId, startState })` returns `{ intentions, resolveInput }` for the
+  start state, or for `startState` when given (such as the page the user is on; a name with no built state throws),
+  and `sidecarRenderer` when that state has a `panel` (pass it as `ShortRoundSidekick`'s `defaultSidecarRenderer`).
+  With `fallback: (text, { matches, stateName }) => rows`, it also returns `resolveFallbackInput` (pass it as
+  `resolveDefaultFallbackInput`), and every state's list carries the fallback told its own state; a picker's or a text
+  step's list doesn't. Every result that brings a list says which kind: `listKind` is `'state'`, `'picker'` or `'text'`.
   Every state the palette moves to carries its own resolver; a picker's list and a text step use ShortRound's fuzzy
   matching only. The engine has no dependency on React or `@shortround/core`; you pass the Back row id and any panel
   renderers. Memoize the palette: ShortRound resets its list when the intentions or the resolver change.
@@ -70,9 +75,9 @@ To add a palette to an app from a catalog (bindings, building the palette, wirin
 | Field | Meaning |
 |---|---|
 | `states.<name>.start` | The state the palette opens in (exactly one) |
-| `states.<name>.panel: sidecar` | The side panel is open while in this state, and closes on leaving it |
+| `states.<name>.panel: sidecar` | The side panel is open while in this state, and closes on leaving it, unless a command's `run` returns side effects of its own |
 | `commands.<name>.title`, `aliases`, `group`, `icon` | How the row reads; title and aliases are also the words you can type |
-| `run` | The function the command calls, with `args` if given, else with the `forEach` key and the asked value (each only if the command has one). It may return `{ message }`, or `{ message, isCancelled: true }` to stay in the current state |
+| `run` | The function the command calls, with `args` if given, else with the `forEach` key and the asked value (each only if the command has one). It may return `{ message }`, or `{ message, isCancelled: true }` to stay in the current state, and `sideEffects` (`{ sidecarRenderer }` or `{ closeSidecar: true }`) to open or close the side panel; these win over the state's `panel`, apply even when cancelled, and in a line the last command that returns them decides |
 | `args` | The call's arguments, in order, when they aren't just the default. Each is a literal, or a reference: `$key` (the `forEach` facet key), `$value` (the chosen or typed value), `$value.<field>` (a field of an object value). References work inside objects and lists: `args: [{ terms: $value }]`, `args: [$value.facet, $value.value]`, `args: [any]`. Any other string is a literal, except one that starts with `$key` or `$value` without being a reference (`$values`, `$value.0`, `$key.length`): the catalog fails to load, naming the command |
 | `ask: { choose: <picker> }` | A list to pick the value from |
 | `ask: { text, required }` | A typed-text step; `required` asks again with that message on a blank entry |

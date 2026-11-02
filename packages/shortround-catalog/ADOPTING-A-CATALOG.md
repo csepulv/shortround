@@ -65,7 +65,9 @@ Work through the function list:
   line resolves while the user types. Mark a value already in effect `isApplied: true`; it isn't offered again.
 - **Conditions** (`when`) return a boolean, read each time the list is built.
 - **Outcomes:** a `run` may return `{ message }`, or `{ message, isCancelled: true }` to stay in the current state
-  instead of following `then`. A command must change nothing when asked to apply a value already in effect.
+  instead of following `then`. It may also return `sideEffects` (`{ sidecarRenderer }` or `{ closeSidecar: true }`)
+  to open or close the side panel, for example a command that sends a question and shows the chat; they win over the
+  state's `panel`. A command must change nothing when asked to apply a value already in effect.
 - **Missing** functions have to be written in the app before the command can be built. Until then, mark the command
   `planned: true` in the catalog; the palette leaves it out.
 
@@ -90,6 +92,14 @@ const palette = useMemo(
 - `loadCatalog` resolves every path against the bindings. A path your bindings don't provide fails here, naming the
   command and the path.
 - `panels` needs a renderer for each `panel:` the catalog's states use (today, `sidecar`).
+- `startState` (optional) opens the palette in another state, such as the page the user is on:
+  `startState: 'review'`. A name the catalog has no built state for throws when the palette is built. If that
+  state has a `panel`, the palette carries it as `sidecarRenderer` (step 4).
+- `fallback` (optional) adds rows after a state's matches, for example "Send as chat" when nothing matched:
+  `fallback: (text, { matches, stateName }) => (matches.length ? [] : [sendAsChatRow(text)])`, where `sendAsChatRow`
+  is your function returning an intention. Give its rows a `group` of their own (such as `Chat`) to draw them last;
+  see `@shortround/core`'s Typed input. Pickers and text steps never get it. Each result says what kind of list
+  it brings (`listKind`: `'state'`, `'picker'` or `'text'`), for app code that wraps the palette.
 - **Memoize the palette.** ShortRound resets its list and input when the intentions or the resolver change, so a new
   palette on every render clears what the user typed.
 
@@ -99,12 +109,16 @@ const palette = useMemo(
 <ShortRoundSidekick
   defaultIntentions={palette.intentions}
   resolveDefaultInput={palette.resolveInput}
+  resolveDefaultFallbackInput={palette.resolveFallbackInput}
+  defaultSidecarRenderer={palette.sidecarRenderer}
   /* the app's other props, unchanged */
 />
 ```
 
-`intentions` is the start state's list; `resolveInput` turns a typed line into a runnable row. Every state the
-palette moves to brings its own list and resolver.
+`intentions` is the start state's list (or `startState`'s); `resolveInput` turns a typed line into a runnable row;
+`resolveFallbackInput`, when you gave `fallback`, adds its rows after the matches;
+`sidecarRenderer`, when the start state has a panel, shows it when the palette opens, on Back to the start and on
+Cancel. Every state the palette moves to brings its own list and resolver.
 
 ## 5. Test it
 

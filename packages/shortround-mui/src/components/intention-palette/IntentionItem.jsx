@@ -1,6 +1,27 @@
 import { alpha, Box, Chip, Typography, useTheme } from '@mui/material';
 
-import { CommandIcon, makeShortRoundPaletteStyles } from '../mui-styles.js';
+import { ICON_SIZE } from '../mui-icons.js';
+import { makeShortRoundPaletteStyles } from '../mui-styles.js';
+
+// Holds the row's icon, or keeps its place when there is none, so titles line up.
+function IconSpace({ icon }) {
+  return (
+    <Box
+      data-testid="mui-icon-space"
+      sx={{
+        width: ICON_SIZE,
+        height: ICON_SIZE,
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'action.active'
+      }}
+    >
+      {icon}
+    </Box>
+  );
+}
 
 function KeyShortcutChip({ shortcut }) {
   const theme = useTheme();
@@ -28,15 +49,16 @@ function KeyShortcutChip({ shortcut }) {
   );
 }
 
-// Draws a row; core renders the cmdk item around it (selected rows are styled through `[data-selected]` in the frame).
-export function IntentionItem({ intention }) {
+// Draws a row; core renders the cmdk item around it (selected rows are styled through `[data-selected]` in the frame)
+// and chooses its icon.
+export function IntentionItem({ intention, icon }) {
   const theme = useTheme();
   const styles = makeShortRoundPaletteStyles(theme);
 
   return (
     <Box sx={styles.itemFrame}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-        <CommandIcon iconName={intention.icon} />
+        <IconSpace icon={icon} />
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography sx={styles.itemTitle} variant="body2">
             {intention.title}
@@ -45,7 +67,8 @@ export function IntentionItem({ intention }) {
             <Typography
               sx={{
                 color: 'text.secondary',
-                display: 'block'
+                display: 'block',
+                mt: 0.25
               }}
               variant="caption"
             >

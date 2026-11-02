@@ -10,7 +10,7 @@ npm install @shortround/core @shortround/mui
 
 **Peer Dependencies:**
 ```bash
-npm install @mui/material @emotion/react @emotion/styled @mui/icons-material lucide-react
+npm install @mui/material @emotion/react @emotion/styled lucide-react
 ```
 
 Upgrading from an earlier version? Upgrade `@shortround/core` and `@shortround/mui` together, and see the
@@ -174,9 +174,15 @@ ShortRound's row, and the ControlBar applies the names in `labels`. The props fo
 
 ## Icons
 
-Intention icons use Lucide React. The `icon` field accepts one of these names:
-`search`, `settings`, `home`, `person`, `folder`, `file`, `code`, `palette`, `dashboard`, `notification`.
-Any other value, or no value, shows the search icon.
+MUI's own icons are Lucide React icons, drawn at 18px in the theme's `action.active` colour. Its names:
+`search`, `settings`, `home`, `person`, `folder`, `file`, `code`, `palette`, `dashboard`, `notification`. Back and
+Cancel have their own (`back`, `cancel`).
+
+- Any other name shows a question mark, so a misspelling stands out.
+- An intention with no `icon` shows none; its row keeps the space, so titles line up.
+- To use your own icons, from any library, give `ShortRoundProvider` an icon registry: see Icons in
+  `@shortround/core`'s README.
+- The icons are on `MuiSidekickComponents.icons`, so an app passing `SidekickComponents` directly gets them too.
 
 ```jsx
 {

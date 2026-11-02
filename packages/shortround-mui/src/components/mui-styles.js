@@ -1,33 +1,4 @@
 import { alpha } from '@mui/material';
-import {
-  BellRing as NotificationIcon,
-  Code as CodeIcon,
-  FileText as FileIcon,
-  Folder as FolderIcon,
-  Home as HomeIcon,
-  LayoutDashboard as DashboardIcon,
-  Palette as PaletteIcon,
-  Search as SearchIcon,
-  Settings as SettingsIcon,
-  User as PersonIcon
-} from 'lucide-react';
-
-export function CommandIcon({ iconName }) {
-  const iconMap = {
-    search: SearchIcon,
-    settings: SettingsIcon,
-    home: HomeIcon,
-    person: PersonIcon,
-    folder: FolderIcon,
-    file: FileIcon,
-    code: CodeIcon,
-    palette: PaletteIcon,
-    dashboard: DashboardIcon,
-    notification: NotificationIcon
-  };
-  const IconComponent = iconMap[iconName] || SearchIcon;
-  return <IconComponent sx={{ fontSize: 18, color: 'action.active' }} />;
-}
 
 export function makeShortRoundPaletteStyles(theme) {
   return {
@@ -186,9 +157,9 @@ export function makeShortRoundPaletteStyles(theme) {
         bgcolor: alpha(theme.palette.primary.main, 0.12)
       }
     },
+    // No margin below the title: a single-line row's icon centres on the title's line. The subtitle carries the gap.
     itemTitle: {
-      fontWeight: 500,
-      mb: 0.25
+      fontWeight: 500
     }
   };
 }

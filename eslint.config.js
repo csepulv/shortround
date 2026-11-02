@@ -10,7 +10,10 @@ import storybook from 'eslint-plugin-storybook';
 import globals from 'globals';
 
 export default [
-  { ignores: ['**/dist/**', '**/node_modules/**', '**/storybook-static/**'] },
+  // docs/ holds development notes and lab/ throwaway spikes and experiments; `pnpm verify` gates neither.
+  {
+    ignores: ['**/dist/**', '**/node_modules/**', '**/storybook-static/**', 'docs/**', 'lab/**']
+  },
   js.configs.recommended,
   {
     files: ['**/*.{js,jsx}'],

@@ -228,6 +228,24 @@ describe('choosing a line row', () => {
     expect(result.resolveInput('tag design').map((item) => item.title)).toEqual(['Tag: design']);
   });
 
+  test("the last command's side effects win; one without any doesn't clear them", async () => {
+    const first = () => 'first';
+    const second = () => 'second';
+    const both = setupRecording({
+      addFacetValue: { sideEffects: { sidecarRenderer: first } },
+      setSort: { sideEffects: { sidecarRenderer: second } }
+    });
+    const onlyFirst = setupRecording({
+      addFacetValue: { sideEffects: { sidecarRenderer: first } }
+    });
+
+    const [bothRow] = both.palette.resolveInput('kind library sort relevance');
+    const [firstRow] = onlyFirst.palette.resolveInput('kind library sort relevance');
+
+    expect((await bothRow.action('')).sideEffects).toEqual({ sidecarRenderer: second });
+    expect((await firstRow.action('')).sideEffects).toEqual({ sidecarRenderer: first });
+  });
+
   test('a cancelled command stops the line', async () => {
     const { calls, palette } = setupRecording({
       setMatch: { message: 'Match is locked', isCancelled: true }

@@ -29,6 +29,9 @@ const PANEL_TEXT = 'Contract panel content';
 const REJECTION = 'Not allowed here';
 const NO_MATCH = 'zzqx';
 const TOAST_TEXT = 'Contract toast';
+const CONTRACT_ICON_ID = 'shortround-contract-icon';
+
+const ContractIcon = () => createElement('i', { 'data-testid': CONTRACT_ICON_ID });
 
 // Known intentions; `ran` records which actions ran. Typing anything shows `strict`'s rejection.
 function makeIntentions(ran) {
@@ -91,16 +94,16 @@ const defineCheck = ({ id, slots, obligation, verify }) => ({
   }
 });
 
-// Renders the open palette as an app would (the theme from a provider, no slot props), runs `exercise`
-// against it, and always cleans up.
-async function withPalette(theme, exercise) {
+// Renders the open palette as an app would (the theme from a provider, no slot props, optionally the app's
+// icons), runs `exercise` against it, and always cleans up.
+async function withPalette(theme, exercise, { icons } = {}) {
   installJsdomShims();
   const ran = [];
   const store = createSidekickStore({ isOpen: true });
   render(
     createElement(
       ShortRoundProvider,
-      { theme },
+      { theme, icons },
       createElement(ShortRoundSidekick, {
         defaultIntentions: makeIntentions(ran),
         sidekickStore: store,
@@ -216,6 +219,24 @@ export const CONTRACT_CHECKS = [
           'IntentionPalette.Item: "Open file" and its subtitle "From disk" are not both shown'
         );
       })
+  }),
+  // The app's override for one row reaches the theme as `icon`, whatever icons the theme has of its own.
+  defineCheck({
+    id: 'item-icon',
+    slots: ['IntentionPalette.Item'],
+    obligation: 'shows the icon it is given',
+    verify: (theme) =>
+      withPalette(
+        theme,
+        () => {
+          const item = findByHook(TEST_IDS.item('open'), 'IntentionPalette.Item');
+          expectThat(
+            item.querySelector(`[data-testid="${CONTRACT_ICON_ID}"]`),
+            'IntentionPalette.Item: the icon it was given is not shown'
+          );
+        },
+        { icons: { intentions: { open: ContractIcon } } }
+      )
   }),
   defineCheck({
     id: 'group-name',

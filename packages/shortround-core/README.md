@@ -12,6 +12,8 @@ This package provides the headless logic - you'll either need
 - a UI package like `@shortround/mui` for the visual components.
 - provide your own components (see below)
 
+It can be imported outside a browser, so your Node tests can import code that imports it.
+
 Upgrading from an earlier version? See the
 [migration guide](https://github.com/csepulv/shortround/blob/main/MIGRATING.md).
 
@@ -46,6 +48,74 @@ const { showToast } = useShortRoundToast(); // shows a toast in the theme's Toas
 - `ShortRoundProvider` and `SidekickStoreProvider` are separate: one chooses the theme, the other shares one
   palette's state (see Sidekick Store).
 
+## Icons
+
+An intention's `icon` is a name. Without anything more, the theme draws its own icon for that name (see the theme's
+README for its names). To use your own icons, from any library, give the provider an icon registry once:
+
+```jsx
+const icons = {
+  Icon: MaterialSymbol,                  // draws any name: <Icon name="forum" />
+  names: { chat: 'forum' },              // an intention's icon name → the name Icon (or the theme) knows
+  intentions: { 'app.send': ChatBubble } // an icon for one intention, by its id
+};
+
+<ShortRoundProvider theme={muiTheme} icons={icons}>
+  <App />
+</ShortRoundProvider>
+```
+
+Each row's icon is the first that applies:
+
+1. the intention's entry in `intentions`, by id (even if the intention has no `icon`);
+2. none, when the intention has no `icon`; the theme keeps the space, so titles line up;
+3. for Back and Cancel, the theme's icons;
+4. otherwise the name, mapped by `names`, drawn by `Icon`;
+5. without `Icon`, the theme's icon for the name;
+6. the theme's placeholder, for a name it doesn't know.
+
+- `Icon` draws every named row but Back and Cancel. An icon font can't tell a name it lacks, so with `Icon` the
+  placeholder doesn't appear.
+- Back and Cancel keep the theme's icons, since your icon set may have no name for them. To change them, use
+  `intentions: { [RevertIntentionIds.BACK]: MyBack }`.
+- Your icons draw at the size you give them.
+- Define the registry at module scope (or memoize it), like the theme.
+
+## The side panel (sidecar)
+
+The side panel shows content beside the palette. By default, palette navigation drives it:
+
+- an action's result opens it (`sideEffects.sidecarRenderer`) or closes it (`sideEffects.closeSidecar`); a result
+  with neither leaves it as it is;
+- Back replays the result of the last earlier step that brought a list (a step that only showed a message or
+  changed the panel doesn't count);
+- Back to the start list and Cancel show the start list's panel (`defaultSidecarRenderer`), or close it;
+- opening the palette shows the start list's panel, if any;
+- closing the palette, however it closes, clears it. The panel never outlives the palette.
+
+To decide changes yourself, give `ShortRoundSidekick` a `sidecarReducer`. Core proposes each change but a close, with
+a reason, and applies what the reducer returns:
+
+```jsx
+// Keep the chat across Back and Cancel, and bring it back when the palette opens again.
+// (renderChat and chat.wasShowing are your app's: its chat renderer, and whether the chat showed at the last close.)
+const keepChat = (current, proposed, { reason }) => {
+  if (reason === 'open') return chat.wasShowing ? { renderer: renderChat } : proposed;
+  if (['start', 'reset', 'back'].includes(reason) && current.renderer === renderChat) return current;
+  return proposed;
+};
+
+<ShortRoundSidekick defaultIntentions={intentions} sidecarReducer={keepChat} />
+```
+
+- A change is `{ renderer }` or `{ renderer: null }`; `current` has the same shape. Returning `current` keeps the
+  panel as it is, without remounting its content.
+- Reasons: `result`, `back`, `start` (Back to the start list), `reset` (Cancel), `open`, `app`.
+- From app code, inside or outside React: `store.openSidecar(renderer)` and `store.closeSidecar()` (reason `app`), or
+  `useSidekick()`'s `setSidecarRenderer` and `closeSidecar`, which do the same. Call them while the palette is open:
+  opening the palette replaces a panel set while it was closed, unless your reducer keeps it (returns `current` for
+  `open`).
+
 ## Keyboard, focus and screen readers
 
 The sidekick is a non-modal dialog: the page stays usable while it's open, and clicking outside doesn't close it.
@@ -57,6 +127,10 @@ The sidekick is a non-modal dialog: the page stays usable while it's open, and c
   input, so typing carries on.
 - **Escape** closes it when pressed inside it, so Escape in your own dialogs and fields stays yours. Content inside
   the sidekick (a widget in the side panel) sees Escape first and can keep it with `event.preventDefault()`.
+- **Enter** runs the highlighted row. After every new list the highlight is on the list's first enabled row of your
+  own, so the first Enter in a picker or a typed-text prompt runs it rather than Back.
+- **Arrow keys** move through the rows and wrap around at either end. Back and Cancel, when a list shows them, are
+  drawn at the top under **Navigate** but come last for the keyboard: ArrowUp from the first row reaches them.
 - It is announced as a dialog named by `title` (or "ShortRound"), and its controls carry `ControlLabels`.
 - `ShortRoundSidekick`'s `onClose` is called after the sidekick closes, whatever closed it: the close control,
   Escape, or the app through the store.
@@ -98,7 +172,9 @@ const {
 - `back: () => Promise<IntentionActionResult>` - Go back to previous intention set
 - `inputMessage?: { type: string; text: string }` - Validation message to display
 - `dispatchedStack: { intention: Intention; result: IntentionActionResult }[]` - History of executed intentions,
-  each with the result its action returned
+  each with the result its action returned. Back drops the step that brought the current list, and the steps after
+  it, and returns to the list of the last earlier step that brought one; a step whose result brings no list
+  (`intentions`) leaves the list, and its Back and Cancel, as they are
 
 ### useSidekick
 
@@ -128,7 +204,8 @@ const {
 - `store?: SidekickStore` - External store instance
 - `initial?: Partial<SidekickStoreState>` - Initial state overrides
 
-**Returns:** Full sidekick state and control methods (see TypeScript definitions for complete interface)
+**Returns:** Full sidekick state and control methods (see TypeScript definitions for complete interface). Among
+them, `anchorPosition` is the CSS position for the current `anchorOrigin`; it is worked out, not stored.
 
 ## Intention Object
 
@@ -136,9 +213,9 @@ const {
 {
   id: 'unique-identifier',
   title: 'Display Name',
-  group: 'Category Name',
+  group: 'Category Name', // optional: rows without one share one unnamed group
   aliases: ['search', 'terms'], // optional
-  icon: 'icon-name', // optional
+  icon: 'icon-name', // optional: a name (see Icons)
   disabled: false, // optional
   validate: (input) => ({ valid: true, message: 'Optional error' }), // optional
   action: async (input) => {
@@ -170,7 +247,32 @@ own as `resolveInput`, or none.
   rows and logs why. It adds nothing during a typed-text step (`disableInputMatching`).
 - Memoize it, like `defaultIntentions`: a new resolver resets the list and the input.
 
-`@shortround/catalog` builds the intentions and the resolver from a YAML catalog.
+A fallback adds rows after the matches, such as "Send as chat: <text>" for a question no command matches. The default
+list's is `resolveDefaultFallbackInput`; a list an action returns brings its own as `resolveFallbackInput`, or none (a
+picker, say).
+
+```jsx
+// (chat.send is your app's.)
+const sendAsChat = (text, { matches }) =>
+  matches.length
+    ? []
+    : [{ id: 'send-as-chat', title: `Send as chat: ${text}`, group: 'Chat', action: () => chat.send(text) }];
+
+<ShortRoundSidekick defaultIntentions={intentions} resolveDefaultFallbackInput={sendAsChat} />
+```
+
+- It's called while text is typed (not on a blank input, not during a typed-text step) with `matches`: what the list
+  shows before it, typed-line rows then fuzzy matches. Return rows only when `matches` is empty for an "unmatched"
+  row, or always to offer them after any matches.
+- Its rows can be chosen; a row whose id is already listed is left out. They come last when their `group` is one no
+  match uses (`Chat` above). A row in a match's group, or with no group while ungrouped matches show, is drawn at the
+  end of that group, before later groups.
+- Start and Cancel restore the default list's; Back restores the earlier list's.
+- Keep it quick and synchronous, and memoize it: a new function resets the list and the input. So read app state that
+  changes (such as whether the chat shows) when the fallback runs, through a ref or a store, rather than closing over
+  it. One that throws adds no rows and logs why.
+
+`@shortround/catalog` builds the intentions, the resolver and (given one) the fallback from a YAML catalog.
 
 ## System Intentions
 
@@ -189,6 +291,9 @@ return {
   includeRevertIntentions: [RevertIntentionIds.BACK, RevertIntentionIds.RESET]
 };
 ```
+
+They form a group of their own, `Navigate`, separate from any group of yours (even one with the same name), drawn
+at the top of the list and last for the keyboard (see Keyboard, focus and screen readers).
 
 ## Sidekick Store
 
@@ -211,6 +316,10 @@ function App() {
   );
 }
 ```
+
+To open the palette somewhere else, name the place: `createSidekickStore({ anchorOrigin: 'bottom-left' })`, or the
+same in `ShortRoundSidekick`'s `initialSidekickState`. Each of the nine `AnchorPositions` is placed with CSS alone,
+so it stays in place when the window is resized.
 
 ## Constants
 
@@ -236,8 +345,12 @@ This package includes full TypeScript definitions. Key types:
 - `SidekickStore` - Store interface
 - `UseShortRoundResult` - Hook return type
 - `UseSidekickResult` - Hook return type
+- `AnchorPositionStyle` - The CSS position `useSidekick` returns as `anchorPosition`
 - `SidekickComponents` - Interface for custom UI implementations
 - `ShortRoundTheme` - What `ShortRoundProvider` takes: `{ components, Toast }`
+- `IconRegistry` - The app's own icons: `{ Icon, names, intentions }` (see Icons)
+- `SidecarReducer`, `SidecarChange`, `SidecarReason` - The side panel's reducer (see The side panel)
+- `ResolveInput`, `ResolveFallbackInput` - Rows from typed text, and rows after the matches (see Typed input)
 - `ToastProps` - The Toast view's props
 
 ## Custom UI Components
@@ -260,9 +373,11 @@ const MySidekickComponents = {
         {inputMessage && <p>{inputMessage.text}</p>}
       </div>
     ),
-    // Drawn inside ShortRound's row, which handles click, keyboard and disabled.
-    Item: ({ intention }) => (
+    // Drawn inside ShortRound's row, which handles click, keyboard and disabled. ShortRound chooses `icon`;
+    // the space stays when there is none, so titles line up.
+    Item: ({ intention, icon }) => (
       <div>
+        <span style={{ display: 'inline-block', width: 18 }}>{icon}</span>
         <span>{intention.title}</span>
         {intention.subtitle && <small>{intention.subtitle}</small>}
       </div>
@@ -310,7 +425,11 @@ const MySidekickComponents = {
     <div style={{ height, display: isOpen ? 'block' : 'none' }}>
       {renderSidecar?.()}
     </div>
-  )
+  ),
+  // The theme's icons by name; `back` and `cancel` for Back and Cancel, `unknown` for a name it doesn't know.
+  // Kept with the slots, so apps passing SidekickComponents without a provider get them too.
+  // (SearchIcon and the others stand for your own icon components.)
+  icons: { search: SearchIcon, back: BackIcon, cancel: CancelIcon, unknown: UnknownIcon }
 };
 
 // A theme is the slots plus a Toast view; ShortRoundProvider holds the toast's state.

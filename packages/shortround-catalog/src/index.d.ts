@@ -21,12 +21,18 @@ export interface PickerRow {
 
 /**
  * What a `run` function may return, or resolve to. A cancelled run stays in the current state instead of following
- * `then`. For typing the app's own functions.
+ * `then`. `sideEffects` open or close the side panel, and win over the ones the state's `panel` would set; they apply
+ * even when the run is cancelled, and in a line the last command that returns them decides. For typing the app's own
+ * functions.
  */
 export type RunOutcome =
-  | { message?: string; isCancelled?: boolean }
+  | { message?: string; isCancelled?: boolean; sideEffects?: CatalogActionResult['sideEffects'] }
   | void
-  | Promise<{ message?: string; isCancelled?: boolean } | void>;
+  | Promise<{
+      message?: string;
+      isCancelled?: boolean;
+      sideEffects?: CatalogActionResult['sideEffects'];
+    } | void>;
 
 /**
  * A loaded catalog: its shape checked, planned states, commands and pickers left out, and every code path replaced by
@@ -84,6 +90,10 @@ export interface CatalogIntention {
 export interface CatalogActionResult {
   intentions?: CatalogIntention[];
   resolveInput?: ResolveInput;
+  /** A state's list only: the app's `fallback`, told this state (`@shortround/core`'s `resolveFallbackInput`). */
+  resolveFallbackInput?: ResolveFallbackInput;
+  /** What kind of list the result brings, when it brings one. */
+  listKind?: 'state' | 'picker' | 'text';
   disableInputMatching?: boolean;
   includeRevertIntentions?: string[];
   message?: string;
@@ -94,14 +104,35 @@ export interface CatalogActionResult {
 /** Turns typed text into rows for the current list (`@shortround/core`'s `ResolveInput`). */
 export type ResolveInput = (text: string) => CatalogIntention[];
 
+/**
+ * A row the list already shows, as a fallback sees it. Only the fields core's rows and the engine's share, so a
+ * fallback fits `@shortround/core`'s `ResolveFallbackInput`.
+ */
+export interface MatchedRow {
+  id: string;
+  title: string;
+  group?: string;
+}
+
+/** Rows after a list's matches (`@shortround/core`'s `ResolveFallbackInput`). */
+export type ResolveFallbackInput = (
+  text: string,
+  context: { matches: MatchedRow[] }
+) => CatalogIntention[];
+
 export interface Palette {
   intentions: CatalogIntention[];
   resolveInput: ResolveInput;
+  /** The start state's fallback, when `buildPalette` was given one. */
+  resolveFallbackInput?: ResolveFallbackInput;
+  /** The start state's panel renderer, when that state has a `panel`. */
+  sidecarRenderer?: () => any;
 }
 
 /**
- * Builds the start state's intentions and its input resolver. Pass `palette.intentions` as `defaultIntentions` and
- * `palette.resolveInput` as `resolveDefaultInput`; memoize the palette, since new ones reset ShortRound's list.
+ * Builds the start state's intentions and its input resolver. Pass `palette.intentions` as `defaultIntentions`,
+ * `palette.resolveInput` as `resolveDefaultInput`, `palette.resolveFallbackInput` as `resolveDefaultFallbackInput` and
+ * `palette.sidecarRenderer` as `defaultSidecarRenderer`; memoize the palette, since new ones reset ShortRound's list.
  */
 export function buildPalette(
   catalog: Catalog,
@@ -110,6 +141,19 @@ export function buildPalette(
     panels?: Record<string, () => unknown>;
     /** ShortRound's built-in Back row id: `RevertIntentionIds.BACK` from `@shortround/core`. */
     backIntentionId: string;
+    /**
+     * The state the list starts in, such as the page the user is on; the catalog's start state when left out. Throws
+     * if the catalog has no built state by that name.
+     */
+    startState?: string;
+    /**
+     * Rows after a state's matches, such as "Send as chat"; told `matches` and the state's name. Set on the start list
+     * and every state's list, never on a picker's or a text step's.
+     */
+    fallback?: (
+      text: string,
+      context: { matches: MatchedRow[]; stateName: string }
+    ) => CatalogIntention[];
   }
 ): Palette;
 

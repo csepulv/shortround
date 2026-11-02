@@ -35,18 +35,21 @@ export type RevertIntentionId = (typeof RevertIntentionIds)[keyof typeof RevertI
 export type AnchorPosition = (typeof AnchorPositions)[keyof typeof AnchorPositions];
 export type Size = (typeof Sizes)[keyof typeof Sizes];
 
+/** Where the sidekick sits for an anchor origin, as CSS position properties. */
+export interface AnchorPositionStyle {
+  top?: number | string;
+  left?: number | string;
+  right?: number | string;
+  bottom?: number | string;
+  transform?: string;
+}
+
 export interface SidekickStoreState {
   internalSidecarRenderer: (() => ReactNode) | null;
   isOpen: boolean;
   isSidecarOpen: boolean;
+  /** Where the sidekick opens; its position follows from it. */
   anchorOrigin: AnchorPosition;
-  anchorPosition: {
-    top?: number | string;
-    left?: number | string;
-    right?: number | string;
-    bottom?: number | string;
-    transform?: string;
-  };
   maxTotalWidth: string;
   commandWidth: string;
   totalWidth: string;
@@ -61,9 +64,35 @@ export interface SidekickStore {
       | Partial<SidekickStoreState>
       | ((state: SidekickStoreState) => Partial<SidekickStoreState>)
   ) => void;
+  /**
+   * Shows `renderer` in the side panel, through the sidekick's `sidecarReducer` (reason `app`). Works outside React.
+   * Call it while the palette is open: opening replaces a panel set while closed, unless the reducer keeps it for `open`.
+   */
+  openSidecar: (renderer: () => ReactNode) => void;
+  /** Closes the side panel, through the sidekick's `sidecarReducer` (reason `app`). Works outside React. */
+  closeSidecar: () => void;
 }
 
+/** The side panel's state as the reducer sees it, and the change it returns: a renderer, or none. */
+export type SidecarChange = { renderer: (() => ReactNode) | null };
+
+/**
+ * Why core proposes a side panel change: an action's result asks for one (`result`); Back to an earlier step replays
+ * its result (`back`); Back to the start list (`start`); Cancel (`reset`); the palette opens (`open`); the app called
+ * `openSidecar` or `closeSidecar` (`app`). A close has no reason: it always clears the panel.
+ */
+export type SidecarReason = 'result' | 'back' | 'start' | 'reset' | 'open' | 'app';
+
+/** Decides each side panel change but a close. Return `proposed` for the default, or `current` to keep the panel. */
+export type SidecarReducer = (
+  current: SidecarChange,
+  proposed: SidecarChange,
+  context: { reason: SidecarReason }
+) => SidecarChange;
+
 export interface UseSidekickResult extends SidekickStoreState {
+  /** The position for the current `anchorOrigin`. */
+  anchorPosition: AnchorPositionStyle;
   onOpen: () => void;
   setIsOpen: (val: boolean) => void;
   onClose: () => void;
@@ -71,9 +100,11 @@ export interface UseSidekickResult extends SidekickStoreState {
   setSize: (val: string) => void;
   setAnchorOrigin: (origin: AnchorPosition) => void;
   cycleAnchorOrigin: () => void;
+  /** The store's `openSidecar`: through the sidekick's `sidecarReducer` (reason `app`). */
   setSidecarRenderer: (renderer: () => ReactNode) => void;
   commandWidth: string;
   sidecarWidth: string;
+  /** The store's `closeSidecar`: through the sidekick's `sidecarReducer` (reason `app`). */
   closeSidecar: () => void;
   renderSidecar: () => ReactNode | undefined;
 }
@@ -93,11 +124,14 @@ export interface SidekickComponents {
       inputMessage?: { type: string; text: string };
     }>;
     /**
-     * Draws one row inside core's cmdk item (`data-testid="shortround-item-<id>"`): shows the title and subtitle.
-     * `isSelected` says whether the row is highlighted, for a theme that doesn't style through `[data-selected]`.
+     * Draws one row inside core's cmdk item (`data-testid="shortround-item-<id>"`): shows the title and subtitle,
+     * and shows `icon` when given (core chooses it; see `IconRegistry`). A row without an icon should keep the icon's
+     * space, so titles line up. `isSelected` says whether the row is highlighted, for a theme that doesn't style
+     * through `[data-selected]`.
      */
     Item: React.ComponentType<{
       intention: Intention;
+      icon?: ReactNode;
       isSelected: boolean;
     }>;
     /** Shows the group's name. */
@@ -141,6 +175,26 @@ export interface SidekickComponents {
     renderSidecar: () => ReactNode | undefined;
     height: string;
   }>;
+  /**
+   * The theme's icons by name; `unknown` is the placeholder for a name the theme doesn't know. They travel with the
+   * slots, so an app passing `SidekickComponents` without a provider keeps them. Back and Cancel use `back` and
+   * `cancel` from here unless the app overrides them by id.
+   */
+  icons?: Record<string, React.ComponentType>;
+}
+
+/**
+ * The app's own icons, given once to `ShortRoundProvider`. Core looks up each row's icon in this order: the
+ * intention's override in `intentions`; none when the intention has no `icon`; for Back and Cancel, the theme's; the
+ * name mapped by `names`, drawn by `Icon`; the theme's icon for the name; the theme's placeholder.
+ */
+export interface IconRegistry {
+  /** Draws any name, as an icon font or a by-name icon component does. When given, it draws every named row. */
+  Icon?: React.ComponentType<{ name: string }>;
+  /** An intention's icon name → the name `Icon` (or the theme) knows: `{ chat: 'forum' }`. */
+  names?: Record<string, string>;
+  /** An icon for one intention, by its id, whatever its name. */
+  intentions?: Record<string, React.ComponentType>;
 }
 
 /** The theme's Toast: a view. `ShortRoundProvider` holds the state; the theme calls `onClose` to dismiss it. */
@@ -167,6 +221,8 @@ export interface ShortRoundTheme {
  */
 export function ShortRoundProvider(props: {
   theme: ShortRoundTheme;
+  /** The app's own icons. Define it at module scope (or memoize it), like the theme. */
+  icons?: IconRegistry;
   children: ReactNode;
 }): JSX.Element;
 
@@ -179,12 +235,17 @@ export type IntentionActionResult = {
   shouldReset?: boolean;
   includeRevertIntentions?: readonly RevertIntentionId[];
   message?: string;
-  /** The sidecar stays as it is unless a result sets a renderer or asks to close it. */
+  /**
+   * The sidecar stays as it is unless a result sets a renderer or asks to close it; either is proposed to the
+   * sidekick's `sidecarReducer` (reason `result`, or `back` when Back replays this result).
+   */
   sideEffects?: { sidecarRenderer?: () => ReactNode; closeSidecar?: boolean };
   /** Set by dispatch when the intention is disabled or invalid for the current input; nothing ran. */
   isRejected?: boolean;
   /** Turns typed text into extra rows for this result's list (shown above the fuzzy matches). */
   resolveInput?: ResolveInput;
+  /** Adds rows after this result's list's matches (see `ResolveFallbackInput`); a list without one has none. */
+  resolveFallbackInput?: ResolveFallbackInput;
 };
 
 /**
@@ -192,6 +253,17 @@ export type IntentionActionResult = {
  * steps), so keep it quick and synchronous; an error is logged and shows no rows.
  */
 export type ResolveInput = (text: string) => Intention[];
+
+/**
+ * Returns rows to add after the list's matches, such as "Send as chat: <text>". Called on every render while text is
+ * typed (not on a blank input, not during typed-text steps) with `matches`, what the list shows before it (typed-line
+ * rows, then fuzzy matches); return rows only when `matches` is empty for an "unmatched" row. Its rows come last when
+ * their `group` is one no match uses; a row in a match's group (or with none, beside ungrouped matches) is drawn at
+ * the end of that group. Keep it quick and synchronous; an error is logged and adds no rows; a row whose id is
+ * already listed is left out. A new function resets the list, so read changing app state when it runs rather than
+ * closing over it.
+ */
+export type ResolveFallbackInput = (text: string, context: { matches: Intention[] }) => Intention[];
 
 export interface Intention {
   id: string;
@@ -227,6 +299,8 @@ export function useShortRound(opts: {
   defaultIntentions: Intention[];
   /** Resolver for the default list. Memoize it, like `defaultIntentions`: a new one resets the list. */
   resolveDefaultInput?: ResolveInput;
+  /** Fallback for the default list; start and Cancel restore it. Memoize it too. */
+  resolveDefaultFallbackInput?: ResolveFallbackInput;
 }): UseShortRoundResult;
 
 export function useSidekick(opts?: {
@@ -251,6 +325,8 @@ export function ShortRoundSidekick(props: {
   defaultIntentions: Intention[];
   /** Resolver for the default list. Memoize it, like `defaultIntentions`: a new one resets the list. */
   resolveDefaultInput?: ResolveInput;
+  /** Fallback for the default list (see `ResolveFallbackInput`); start and Cancel restore it. Memoize it too. */
+  resolveDefaultFallbackInput?: ResolveFallbackInput;
   /** Overrides the nearest `ShortRoundProvider`'s slots; required without a provider. */
   SidekickComponents?: SidekickComponents;
   /** Overrides the nearest `ShortRoundProvider`'s toast. */
@@ -264,4 +340,11 @@ export function ShortRoundSidekick(props: {
   initialSidekickState?: Partial<SidekickStoreState>;
   /** Called after the sidekick closes, whatever closed it. */
   onClose?: () => void;
+  /**
+   * Decides every side panel change but a close (see `SidecarReducer`); without one, core's proposals apply. A close
+   * always clears the panel, whatever closed it.
+   */
+  sidecarReducer?: SidecarReducer;
+  /** The start list's panel: proposed when the palette opens, on Back to the start and on Cancel. */
+  defaultSidecarRenderer?: () => ReactNode;
 }): JSX.Element;

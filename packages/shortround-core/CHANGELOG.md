@@ -1,5 +1,75 @@
 # @shortround/core
 
+## 0.4.0
+
+### Minor Changes
+
+- 53937ec: Rows after the matches, such as "Send as chat" for text no command matches.
+  - `ShortRoundSidekick` (and `useShortRound`) take `resolveDefaultFallbackInput(text, { matches }) → intentions` for the
+    default list; an action's result brings its own as `resolveFallbackInput`, or none. Start and Cancel restore the
+    default; Back restores the earlier list's.
+  - It's called while text is typed (not on a blank input, not during a typed-text step), with `matches` (typed-line
+    rows, then fuzzy matches); its rows can be chosen, and come last when their `group` is one no match uses (a row
+    in a match's group, or with no group beside ungrouped matches, is drawn at the end of that group). A row whose id is already listed is left out; a
+    fallback that throws is logged and adds no rows.
+  - Type: `ResolveFallbackInput`.
+
+- 34929b7: Apps can give ShortRound their own icons, from any library.
+  - `ShortRoundProvider` takes `icons`, an `IconRegistry`: `Icon` (a component that draws any name), `names` (an
+    intention's icon name → the name `Icon` or the theme knows) and `intentions` (an icon for one intention, by id).
+  - Core chooses each row's icon and passes it to the theme's `Item` as `icon`: the intention's override; none when the
+    intention has no `icon`; for Back and Cancel, the theme's; the name through `names` and `Icon`; the theme's icon for
+    the name; the theme's placeholder (`unknown`).
+  - **For theme authors:** `Item` gets `icon` and should draw it, keeping its space when there is none; a theme's own
+    icons go on `SidekickComponents.icons` (with `back`, `cancel` and `unknown`). `@shortround/conformance` checks that
+    `Item` shows `icon` (`item-icon`).
+
+- 699cf3e: Back and Cancel stay at the top without taking the first Enter; the palette opens where you name; core loads outside
+  a browser.
+  - **Behaviour change:** Back and Cancel form their own group, **Navigate**, drawn at the top of the list but last for
+    the keyboard. After every new list the highlight is on the first enabled row of your own, so the first Enter in a
+    picker or a typed-text prompt runs it; before, it ran Cancel or Back. Tests that pressed ArrowDown past Back now
+    land on Back instead. `makeRevertIntentionsFor` returns rows in the `Navigate` group (was `Actions`), and an app
+    group named `Actions` no longer shares a group with them.
+  - **Behaviour change:** arrow keys wrap around at either end of every list (cmdk's `loop`); ArrowUp from the first
+    row reaches Back and Cancel.
+  - **For tests and themes:** Back and Cancel come last in the DOM (CSS draws them first), so code that takes rows by
+    position gets the app's first row; and core wraps the groups in one element inside `[cmdk-list]`, so a style that
+    selects `[cmdk-list] > [cmdk-group]` no longer matches.
+  - When a Navigate row is highlighted, the whole group, heading included, scrolls into view.
+  - **Behaviour change:** anchor positions are CSS alone. `top` and `bottom` are centred horizontally (they were
+    offset), and every position stays in place when the window is resized.
+  - `anchorPosition` is no longer part of the store's state: `useSidekick` works it out from `anchorOrigin`, so
+    `createSidekickStore({ anchorOrigin: 'bottom-left' })` (or `initialSidekickState`) opens in that corner. A position
+    stored beside the origin is ignored. Types: `anchorPosition` moves from `SidekickStoreState` to
+    `UseSidekickResult`, as the new `AnchorPositionStyle`.
+  - `@shortround/core` can be imported outside a browser (it read `window` when it loaded).
+  - Rows with no `group` share one group without React's "unique key" warning.
+
+- ca97237: Apps can decide what the side panel shows, and when.
+  - `ShortRoundSidekick` takes `sidecarReducer(current, proposed, { reason })`: core proposes each side panel change
+    with a reason (`result`, `back`, `start`, `reset`, `open`, `app`) and applies what the reducer returns, `{ renderer }`
+    or `{ renderer: null }`. Returning `current` keeps the panel without remounting it. Without a reducer, core's
+    proposals apply.
+  - **Behaviour change:** closing the palette clears the side panel however it closes, including the app setting
+    `isOpen: false` on the store; before, only the close control, Escape and `shouldReset` did. An app that kept content
+    across a close can bring it back with the `open` reason.
+  - `ShortRoundSidekick` takes `defaultSidecarRenderer`, the start list's panel: shown when the palette opens, on Back to
+    the start and on Cancel (which used to close the panel).
+  - The store has `openSidecar(renderer)` and `closeSidecar()`, usable outside React; they and `useSidekick`'s
+    `setSidecarRenderer` and `closeSidecar` go through the reducer (reason `app`).
+  - Types: `SidecarReducer`, `SidecarChange`, `SidecarReason`.
+
+### Patch Changes
+
+- 7391cca: Back works after steps that bring no list.
+  - A step whose result brings no list (only a `message`, or only `sideEffects`) leaves the list's Back and Cancel in
+    place. Before, they disappeared.
+  - Back returns to the list before the current one, skipping such steps; before, it could stay on the same list, or
+    leave the user on a list with no Back or Cancel. The side panel's `start` and `back` reasons follow, so Back to the
+    start list proposes `defaultSidecarRenderer` again.
+  - `dispatchedStack` still records every step.
+
 ## 0.3.0
 
 ### Minor Changes
