@@ -1,10 +1,6 @@
-// MUI's own icons (follow-ups M2, FU-11): what a row shows when the app gives ShortRound no icons of its own.
-import {
-  createSidekickStore,
-  RevertIntentionIds,
-  ShortRoundProvider,
-  ShortRoundSidekick
-} from '@shortround/core';
+// MUI's own icons: what a row shows when the app gives ShortRound no icons of its own.
+import { createSidekickStore, RevertIntentionIds } from '@shortround/core';
+import { ShortRoundProvider, ShortRoundSidekick } from '@shortround/react';
 import { act, render, screen } from '@testing-library/react';
 
 import { muiTheme } from '../../mui-theme.js';

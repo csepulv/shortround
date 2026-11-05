@@ -1,6 +1,5 @@
-// Copied from reusableblocs (`packages/toolchain/src/eslint.config.js`, 2026-09-30) so the public repo can use it
-// without the private toolchain package. Additions here: this repo's ignores, Storybook's rules for stories, and an
-// explicit React version (the root has no `react` to detect, so `detect` would lint as the latest React).
+// This repo's config has its own ignores, Storybook's rules for stories, and an explicit React version (the root has
+// no `react` to detect, so `detect` would lint as the latest React).
 import js from '@eslint/js';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -10,7 +9,6 @@ import storybook from 'eslint-plugin-storybook';
 import globals from 'globals';
 
 export default [
-  // docs/ holds development notes and lab/ throwaway spikes and experiments; `pnpm verify` gates neither.
   {
     ignores: ['**/dist/**', '**/node_modules/**', '**/storybook-static/**', 'docs/**', 'lab/**']
   },

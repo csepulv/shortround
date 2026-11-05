@@ -6,8 +6,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 // The engine is the source of truth for the format; the build bundles these modules into the script.
-import { loadExamples } from '../../../../packages/shortround-catalog/src/examples.js';
-import { checkCatalog } from '../../../../packages/shortround-catalog/src/load-catalog.js';
+import { loadExamples } from '../../../../packages/shortround-core/src/catalog/examples.js';
+import { checkCatalog } from '../../../../packages/shortround-core/src/catalog/load-catalog.js';
 import { renderStatesPage } from './render-states.js';
 
 function readText(filePath) {

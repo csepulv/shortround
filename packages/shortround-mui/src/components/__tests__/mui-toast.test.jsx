@@ -1,4 +1,4 @@
-import { ShortRoundProvider, useShortRoundToast } from '@shortround/core';
+import { ShortRoundProvider, useShortRoundToast } from '@shortround/react';
 import { act, render, screen } from '@testing-library/react';
 
 import { muiTheme } from '../../mui-theme.js';

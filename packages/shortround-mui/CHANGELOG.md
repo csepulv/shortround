@@ -1,5 +1,25 @@
 # @shortround/mui
 
+## 0.5.0
+
+### Breaking Changes
+
+- Takes `@shortround/core` and the new `@shortround/react` as peers, `^0.5.0` (core was a dependency).
+  Install all three, at one version. The theme draws exactly as before. See MIGRATING.md, 0.5.0.
+
+### Minor Changes
+
+- Accepts React 19 as well as 18: the `react` peer is `^18.2.0 || ^19.0.0`. `@mui/material` 5, 6, 7 and 9 are
+  accepted, as before; on React 19, MUI itself needs 5.16.8 or later.
+- Colours the palette input's line hints (`@shortround/react` 0.5.0) from the theme's palette: verbs primary, hints
+  secondary, params info, values success, unread words faded, a broken word with an error underline, the ghost faint.
+  Colour only, so the words stay under the caret.
+
+### Patch Changes
+
+- Uses the app's React JSX runtime (`react/jsx-runtime`) instead of a bundled copy of React 18's, which would break
+  under another React. The package ships its `CHANGELOG.md`.
+
 ## 0.4.0
 
 ### Minor Changes

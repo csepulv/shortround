@@ -1,11 +1,12 @@
 # @shortround/mui
 
-Material-UI themed components for ShortRound command palette library.
+Material-UI themed components for ShortRound command palette library. It is a theme for `@shortround/react`, which
+it takes as a peer, with `@shortround/core`.
 
 ## Installation
 
 ```bash
-npm install @shortround/core @shortround/mui
+npm install @shortround/core @shortround/react @shortround/mui
 ```
 
 **Peer Dependencies:**
@@ -13,16 +14,19 @@ npm install @shortround/core @shortround/mui
 npm install @mui/material @emotion/react @emotion/styled lucide-react
 ```
 
-Upgrading from an earlier version? Upgrade `@shortround/core` and `@shortround/mui` together, and see the
+React 18.2 or 19 (with `react-dom`). `@mui/material` 5, 6, 7 or 9; on React 19, MUI's own peers need `@mui/material`
+5.16.8 or later.
+
+Upgrading from an earlier version? Upgrade `@shortround/core`, `@shortround/react` and `@shortround/mui` together (they share one version), and see the
 [migration guide](https://github.com/csepulv/shortround/blob/main/MIGRATING.md).
 
 ## Quick Start
 
 Hand `muiTheme` to `ShortRoundProvider` once, at your app's root, inside your MUI `ThemeProvider` if you have one. Below it, app
-code imports only `@shortround/core`.
+code imports only `@shortround/react` and `@shortround/core`.
 
 ```jsx
-import { ShortRoundProvider, ShortRoundSidekick } from '@shortround/core';
+import { ShortRoundProvider, ShortRoundSidekick } from '@shortround/react';
 import { muiTheme } from '@shortround/mui';
 
 const intentions = [
@@ -82,10 +86,10 @@ import { MuiSidekickComponents } from '@shortround/mui';
 ### Toast Integration
 
 An action that returns a `message` shows it as a toast, drawn by `muiTheme`'s Toast. App code can show its own
-toasts with core's `useShortRoundToast()`, anywhere below `ShortRoundProvider`:
+toasts with `@shortround/react`'s `useShortRoundToast()`, anywhere below `ShortRoundProvider`:
 
 ```jsx
-import { ShortRoundSidekick, useShortRoundToast } from '@shortround/core';
+import { ShortRoundSidekick, useShortRoundToast } from '@shortround/react';
 
 const saveIntention = {
   id: 'save',
@@ -111,7 +115,8 @@ function Sidekick() {
 ```
 
 Apps written for 0.2.x, which pass `SidekickComponents={MuiSidekickComponents}` and a `showToast` from
-`useMuiToast()` inside `MuiToastProvider`, keep working: those props override the provider.
+`useMuiToast()` inside `MuiToastProvider`, still work once they import `ShortRoundSidekick` from `@shortround/react`
+(see the migration guide): those props override the provider.
 
 ## Theming
 
@@ -124,7 +129,7 @@ MUI's `ThemeProvider` goes above `ShortRoundProvider`, so the palette and its to
 
 ```jsx
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { ShortRoundProvider } from '@shortround/core';
+import { ShortRoundProvider } from '@shortround/react';
 import { muiTheme } from '@shortround/mui';
 
 // Your application theme
@@ -170,7 +175,10 @@ const customTheme = {
 
 Slots only draw: an Input receives `input` (ShortRound's input element) to place, an Item draws inside
 ShortRound's row, and the ControlBar applies the names in `labels`. The props for each slot are in
-`@shortround/core`'s README ("Custom UI Components") and types; `@shortround/conformance` checks a custom slot.
+`@shortround/react`'s README ("Custom UI Components") and types; `@shortround/conformance` checks a custom slot.
+
+With a catalog's palette, the input colours each word of a typed line by its role and greys the ghost text (the rest
+of the next word); `disableLineHints` on the sidekick turns this off (`@shortround/react`'s README, "Line hints").
 
 ## Icons
 
@@ -181,7 +189,7 @@ Cancel have their own (`back`, `cancel`).
 - Any other name shows a question mark, so a misspelling stands out.
 - An intention with no `icon` shows none; its row keeps the space, so titles line up.
 - To use your own icons, from any library, give `ShortRoundProvider` an icon registry: see Icons in
-  `@shortround/core`'s README.
+  `@shortround/react`'s README.
 - The icons are on `MuiSidekickComponents.icons`, so an app passing `SidekickComponents` directly gets them too.
 
 ```jsx
@@ -281,7 +289,8 @@ See the [todo-app example](https://github.com/csepulv/shortround/tree/main/examp
 
 ## Other Packages
 
-- **[@shortround/core](https://github.com/csepulv/shortround)** - Core hooks and functionality
+- **[@shortround/react](https://github.com/csepulv/shortround/tree/main/packages/shortround-react)** - The palette, sidekick, provider and theme contract for React
+- **[@shortround/core](https://github.com/csepulv/shortround/tree/main/packages/shortround-core)** - The palette without a UI
 - See the [GitHub repo](https://github.com/csepulv/shortround) for other package details and examples
 
 ## License

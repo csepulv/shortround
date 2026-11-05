@@ -8,6 +8,257 @@ CHANGELOGs list everything that changed; this guide covers only what affects you
 Each item says what changed, what to do, and how to check it. Items are grouped by who they affect, so you can skip
 the groups that don't apply to you.
 
+## 0.5.0
+
+From 0.4.0. ShortRound splits into a headless core and a React package. Every React app changes its imports. An app
+with a catalog also moves it to format version 3 (see "From a v2 catalog"); otherwise nothing else in an app's code
+has to change.
+
+### Upgrade
+
+Install `@shortround/react` beside `@shortround/core`, and upgrade `@shortround/core`, `@shortround/react` and
+`@shortround/mui` together: all three are released at one version. `@shortround/react` takes `@shortround/core` as a
+peer, and `@shortround/mui` takes both as peers (it depended on core before), so your app lists them itself.
+`@shortround/catalog` is gone: its functions are in `@shortround/core`; remove it from your app. React 18 and 19
+both work (`react` and `react-dom` `^18.2.0 || ^19.0.0`), and `@shortround/mui` still takes `@mui/material` 5, 6, 7
+or 9. On React 19, MUI's own peers need `@mui/material` 5.16.8 or later (5.15 accepts React 17 and 18 only).
+
+```bash
+npm install @shortround/core@0.5 @shortround/react@0.5 @shortround/mui@0.5
+npm uninstall @shortround/catalog
+```
+
+### Every React app: the components and hooks move to `@shortround/react`
+
+`@shortround/core` no longer has React in it. Import the UI from `@shortround/react`; the constants and the sidekick
+store stay in core.
+
+| Was imported from `@shortround/core` | Now from |
+| --- | --- |
+| `ShortRoundSidekick`, `ShortRoundProvider`, `useShortRound`, `useSidekick`, `useShortRoundToast`, `SidekickStoreProvider`, `useSidekickStore` | `@shortround/react` |
+| `createSidekickStore`, `RevertIntentionIds`, `makeRevertIntentionsFor`, `AnchorPositions`, `Sizes`, `ControlLabels` | `@shortround/core` (unchanged) |
+
+*To do:* change the import lines; the components, hooks and their props are the same.
+*Check:* your app builds, and searching your code for `from '@shortround/core'` finds only the constants and
+`createSidekickStore` (plus the catalog functions, below).
+
+### Apps with a catalog: `@shortround/catalog` is now part of core
+
+| Was imported from `@shortround/catalog` | Now from |
+| --- | --- |
+| `loadCatalog`, `checkCatalog`, `buildPalette`, `loadExamples`, `findExampleFailures` | `@shortround/core` |
+
+*To do:* change the import lines, and move the catalog to format version 3 (next section). The function names are
+the same; the docs are core's `CATALOG.md` and `ADOPTING-A-CATALOG.md`.
+*TypeScript:* two of the catalog's types are renamed, because core has types of the same names:
+`ResolveInput` is now `CatalogResolveInput`, and `ResolveFallbackInput` is now `CatalogResolveFallbackInput`.
+Imported from `@shortround/core`, the old names mean core's types, which the catalog's still fit.
+*Check:* your catalog tests pass, and nothing imports `@shortround/catalog`.
+
+### From a v2 catalog
+
+Version 3 is one format for both ways of using the palette: picking rows, and typing a whole command
+(`search grid with tags react`). 0.5.0 reads only version 3; `loadCatalog` rejects a v2 catalog with a message that
+points here. The move has five parts: the catalog file, the words people type, the bindings, the examples, and the
+sidekick.
+
+**1. The catalog file.** The changes, field by field:
+
+| Version 2 | Version 3 |
+| --- | --- |
+| `version: 2` | `version: 3` |
+| Commands written inside each state | Commands at the top level, under `commands`; each state lists its commands' names (`commands: [search, preview]`) |
+| The same command name in two states, with different runs (one asks for a result, one acts on the previewed one) | One command whose param has both a `lookup` (to ask) and a `current` (the app's previewed one): its row runs at once while something is current, and asks otherwise. Or two commands with different names, if they really do different things |
+| A command's `title` | `label` (the row's text; not a word anyone types, see part 2) |
+| `group: Search` (a name), a command's `icon` | `group: search` (a key into a top-level `groups` map: `search: { label: Search, icon: search }`). A command's row takes the command's `icon`, else its group's; a param's row takes its `path.icon`, else its group's |
+| `start: true` on the first state, and `then:` on a command to move to another state | Each state holds while its `when` holds (`when: app.conditions.previewed`, `when: '!app.conditions.previewed'`); `start: true` marks at most one. There is no `then`: after a run, the palette shows the states that hold. `buildPalette`'s `startState` option is gone, and ignored if passed: express "the page the user is on" as a condition (`when: app.conditions.onSettingsPage`) |
+| `panel: sidecar` | Unchanged: the side panel is open while the state holds |
+| `when:` on a command | Unchanged, but a command now has one `when` for every state that lists it. A condition that applied in one state only is combined with that state's: `'!app.conditions.previewed \|\| app.results.previewedHasServiceLink'` |
+| `ask: { text: ..., required: ... }` (the typed words) | A param with `argSource: { freeform: true, type: text }`; the prompt and the message go in its `path` (`prompt`, `required`). The param's own `required: true` is different: a typed line can't run until it is given. Leave it out when converting |
+| `ask: { choose: <picker> }`, with the picker under `pickers` | A param with `argSource: { lookup: <the picker's from> }`; the picker's `empty` goes in the param's `path.empty`, where `{title}` becomes `{label}`. The `pickers` map goes |
+| `forEach: facets`, with `facets` listing the facets | One `list: true` param per facet, each with `argSource: { lookup: ..., key: <facet> }`; the facet's `title` and `aliases` become the param's `label` and `aliases`. The `facets` map goes. Shared fields can sit under an `x-facet: &facet` key and be merged with `<<: *facet` |
+| `args: [any]` (a fixed argument) | In a command with several params (as `match` inside `search`), a param whose `argSource.list` has that value, with `path: { rows: each value }` for a row of its own (`rows: each value` takes effect only there). A command that only ever runs with one fixed value has no param: its `run` binding passes the value (`setMatchAny: () => setMatch('any')`). To keep v2's row title and aliases: `path.title: 'Match {title}'` (`{title}` is the value's title) and `aliases` on the list value: `[{ value: any, title: any, aliases: [either] }]` |
+| `args: [{ terms: $value }]` (the asked value inside an object) | Name the param `terms`: `run` receives `{ terms: 'grid' }`, the same object |
+| `args: [$value.facet, $value.value]` (positional arguments from a row's value) | A small adapter in the bindings (part 3): `({ filter }) => drop(filter.facet, filter.value)` |
+| Several commands that add to one thing (search terms, sort, match, a facet) | Usually one command with a param for each, so a typed line can set them together (`search grid with sort created`). It needs: a new `run` that makes the whole change at once (part 3); `default: true` on the param that takes the bare words after the command; `hints: [with]` (or similar) on the other params, so they can follow the typed words; and `path.group` on a param whose row should stay in another v2 group. Keep commands that do something different to the same thing (replace the terms, clear the filters) separate |
+
+Row ids follow the catalog's names. A command with no params or one param has one row, `<app>.<command>`. A command
+with several params has a row per param, `<app>.<command>.<param>`, and a `rows: each value` param has a row per
+value, `<app>.<command>.<param>.<value>`. To keep a v2 id for a param's row or a value's row (for tests or saved
+shortcuts), set the whole id in that param's `path.id` (`path: { id: app.search.merge }`), or on a list value
+(`{ value: all, title: all, path: { id: app.search.matchAll } }`). A command's own row has no override, so keep the
+command's v2 name to keep its id. Version 2's `forEach` rows were `<app>.<command>.<facet>`.
+
+A worked example: the same catalog in
+[version 2](https://github.com/csepulv/shortround/blob/main/packages/shortround-core/src/catalog/__tests__/fixtures/search-palette.v2.yaml)
+and
+[version 3](https://github.com/csepulv/shortround/blob/main/packages/shortround-core/src/catalog/__tests__/fixtures/search-palette-v3.yaml).
+Run `checkCatalog` on the new file as you go; it names the command (and param) and the reason for anything wrong.
+
+**2. The words people type.** A typed line names a command by its name or an alias, never by its label, and fills a
+param by its label, aliases or hints. A literal translation leaves most commands untypeable:
+
+- **A command's name is typed only if it is a plain lowercase word** (`next`, `open`). Version 2's names are dotted
+  (`search.clearFilters`): give each command an alias phrase people say (`clear filters`).
+- **A param's label is a word too.** Three commands with a param labelled `Result` make a line that starts with
+  `result` ambiguous; that matters only if people start lines with it.
+- Add the words people use that v2 never needed (`tags` beside `tagged`).
+
+The [catalog-discovery skill's review script](https://github.com/csepulv/shortround/tree/main/skills/catalog-discovery)
+lists the words nobody can type and the words that mean two things in a state.
+
+**3. The bindings.**
+
+- **A `run` is called once, with one object**: the command's args by param (`{ term: 'grid', sort: 'relevance', tags:
+  ['react'] }`; a `list: true` param's arg is a list). A v2 function that took positional arguments
+  (`addFacetValue(facet, value)`) gets a small adapter, and a command that merges several v2 commands gets one
+  function that makes the whole change at once.
+- **Conditions replace `then`.** Each state's `when` names functions that return a boolean (such as
+  `app.conditions.previewed`); add them to the bindings.
+- **`current`** (new, optional): a function returning the arg the app holds now, such as the previewed result's id,
+  or `undefined`. A one-param command's row runs at once with it, and asks otherwise; a typed line fills any param it
+  leaves out that has one.
+- **Lookups** are called with `{ command, filled, key }`, may return a promise, and return rows `{ value, title,
+  subtitle?, aliases?, key?, isApplied? }`. Mark a value already in effect `isApplied: true`. Version 2's `from` also
+  received the catalog's `facets`; a lookup that used them for titles now takes them from the app.
+- A `run` no longer returns `isCancelled`; it may still return `{ message, sideEffects }`.
+
+**4. The examples.** An example's `means` is now a call, not a row id:
+
+```yaml
+# version 2
+- say: search react grid
+  means: app.search::text
+# version 3
+- say: search react grid
+  means: { search: { term: react grid } }
+```
+
+**5. The sidekick.** Give it the palette whole, and tell the palette when your app's state changes outside it: the
+states' conditions (a preview closed by its own button), and the data typed lines read (new results, new facet
+values). The palette caches what a line read until it is told.
+
+```jsx
+<ShortRoundSidekick palette={palette} />
+```
+
+```js
+useEffect(() => palette.notify(), [palette, previewed, results]);
+```
+
+`palette` replaces `defaultIntentions`, `resolveDefaultInput` and `resolveDefaultFallbackInput` (and a
+`defaultSidecarRenderer` that came from the start state's panel): the sidekick opens on the states that hold, with
+their panel.
+
+*Check:* `checkCatalog` passes on the new file; every command can be typed (part 2); your catalog-loads test and
+`findExampleFailures` test pass; in the app, the palette opens on the right list, and after a change outside the
+palette (closing a preview by its own button, a new search), the open palette follows.
+
+**Asking an agent to do it:**
+
+> Move `catalog.yaml` from ShortRound catalog format version 2 to version 3. Follow `MIGRATING.md`, "From a v2
+> catalog", and core's `CATALOG.md`. Keep every command's behaviour; where several v2 commands add to one thing,
+> propose merging them into one command with params, and ask before doing it. Give every command words people can
+> type. Update the bindings, the examples and the sidekick wiring, and run the catalog tests.
+
+### Theme authors
+
+- The theme contract's types (`SidekickComponents`, `ShortRoundTheme`, `IconRegistry`, `ToastProps`) are
+  `@shortround/react`'s. Behaviour (cmdk, keyboard, focus, the dialog) is the React package's, so themes still only
+  draw.
+- `@shortround/conformance` renders with `@shortround/react`, so a theme's tests need `@shortround/react` installed beside
+  core.
+- With a catalog's palette (line hints on), the `input` your `IntentionPalette.Input` slot receives is a wrapper
+  around the input, with a layer that draws the words under it, and the input's own text is transparent. Place
+  `input` as given; don't clone it or force the input's text colour. Colour the words through their `data-role`.
+
+### Apps with their own UI (new, optional)
+
+- **`createPaletteStore`** in `@shortround/core` is the palette without React: the list, typing, choosing a row,
+  Back and Cancel, the side panel's proposals. Drive it from any UI, such as slash commands in an editor; see core's
+  README. `useShortRound` is now this store as a hook, with the same return value plus `revertIntentions`: the Back
+  and Cancel rows a list asked for, which a palette of your own on the hook can now draw (`dispatch` chooses a row as
+  `ShortRoundSidekick` does, keeping them).
+- **`matchIntentions(text, intentions)`** is the palette's fuzzy matching, so code that copied the rule can import it.
+- **`createPaletteStore({ palette })`** drives a catalog's palette from your own UI: it starts from
+  `palette.current()`, and `watchPalette()` follows `palette.notify()`. While watched it reads typed lines through one
+  command line, `store.commandLine()`: draw the input's words and ghost from that line, so the rows and the input are
+  one reading, and pass the caret to `changeInput(text, caret)`. `getState().highlightedId` is the row Enter should run.
+- **`makeCommandBuilder({ commands, lookups })`** reads a typed line into whole commands with their calls, for a host
+  that isn't the palette.
+- **`makeCommandLine({ builder, run })`** makes a command line over any command builder.
+- **`palette.commandLine()`** is a typed line for your own UI or an editor's slash command: what to show for it (each
+  word's role, the ghost of the next word) and what Tab and Enter do; see core's README, The command line.
+- Also exported now: `bringsList`, `NAVIGATE_GROUP`, `cycleCorners`, `cycleMiddlePositions`.
+
+### Sidekick store (rarely matters)
+
+- `createSidekickStore` keeps its shape. It is now built on Zustand's vanilla store, so a listener passed to
+  `subscribe` is called with `(state, previousState)`, and a `set` whose function returns the same state object
+  notifies no one.
+  *To do:* nothing, unless your code relied on either.
+
+### A result without a list (rarely matters)
+
+- `disableInputMatching` belongs to the list a result brings. A result with no `intentions` (only a `message`, say)
+  leaves it as it is; in 0.4.0, every result set it, so such a row chosen in a typed-text step turned matching back on.
+  *To do:* nothing, unless an action returns `disableInputMatching` without `intentions` to change matching: return it
+  with the list it describes.
+  *Check:* in a typed-text step, choose a row that returns only `{ message }`; the step's rows still all show,
+  whatever is typed.
+
+### Removed
+
+- `@shortround/shadcn-ui`, a prototype that was never published.
+
+### New (optional)
+
+- **Completion rows.** An intention with `completion` (a string) completes the typed line instead of running:
+  choosing it sets the input to `completion` and keeps the palette open, and its `action` isn't called. Tab applies
+  the first enabled completion row.
+  *To do:* nothing, unless you want rows that build a line step by step. Rows without `completion` behave as before.
+  *Check:* a row with `completion: 'search '`; choose it, and the input reads `search `.
+
+- **Resolvers that update without new input.** A `resolveInput` (or `resolveDefaultInput`) function may carry
+  `subscribe(listener)`, returning an unsubscribe function. While the palette is open, `@shortround/react`'s palette
+  watches it and renders again when the listener is called; a UI of your own on `createPaletteStore` calls the
+  store's `watchResolver()` to have the store tell its listeners. Use it when your resolver's rows can change while
+  the input doesn't, such as after an async lookup.
+  *To do:* nothing, unless your resolver has data that arrives later.
+
+- **Line hints.** With a catalog's palette, `@shortround/react`'s input colours each word by its role and shows the
+  rest of the next word as ghost text; Tab completes through the line.
+  *To do:* nothing. To keep the plain input, pass `disableLineHints`. A theme other than `@shortround/mui` can colour
+  the words through their `data-role`.
+
+- **Commands a typed line can't reach.** A command's name is typed only when it is a plain lowercase word; a name like
+  `clearFilters` needs an alias. `findUntypedCommands(catalog)` lists the commands with neither, as `{ command, label }`.
+  *To do:* add a test that expects `[]` (ADOPTING-A-CATALOG.md, step 5), or aliases for the commands it lists.
+
+### TypeScript
+
+- `Intention` gains `completion?: string`; `ResolveInput` gains `subscribe?: (listener: () => void) => () => void`.
+- The UI's types move with the UI: `UseShortRoundResult`, `UseSidekickResult`, `AnchorPositionStyle` and the theme
+  types above are `@shortround/react`'s. `UseShortRoundResult` gains `revertIntentions`. The headless types (`Intention`, `IntentionActionResult`, `ResolveInput`,
+  `ResolveFallbackInput`, `SidekickStore`, `SidecarReducer`, ...) stay in core, with no React types: a side-panel
+  renderer is `SidecarRenderer` (`() => unknown`), so a `() => ReactNode` still fits. New: `PaletteStore`,
+  `PaletteStoreState`, `PaletteDefaults`, `PaletteSource`, `BuilderCommand`, `BuilderState`, `WordRole`,
+  `CommandLine`, `CommandLineState`.
+- `SidekickStore` now declares `changeSidecar`, `clearSidecar` and `setSidecarReducer` (the store always had them);
+  `IntentionActionResult` gains `listKind?` and `command?` (set by a catalog's results); new: `PaletteNow`.
+- The catalog's types describe version 3: `CheckedCatalog` and `Catalog` have `groups`, `states` and `commands`
+  (`CatalogCommand`, `CatalogParam`, `ArgSource`, `CatalogState`); `Palette` adds `current`, `notify`, `subscribe`,
+  `isAvailable`, `listNow` and `commandLine`; `CatalogExample.means` is an `ExampleCall`; `RunOutcome` has no `isCancelled`; `buildPalette`'s options have no
+  `startState`.
+- `ShortRoundSidekick` takes `palette?: PaletteSource` and `disableLineHints?: boolean`, and `defaultIntentions` is
+  optional.
+
+### Fixed (no action)
+
+- A row whose id starts or ends with a space can now be chosen, and shows as highlighted.
+- `@shortround/mui` and `@shortround/react` use the app's `react/jsx-runtime` (0.4.0's MUI bundled React 18's), so they
+  run under React 19.
+
 ## 0.4.0
 
 From 0.3.0.
@@ -295,7 +546,8 @@ with `useShortRoundToast()` from `@shortround/core`. Define the theme, and any c
 Nothing to migrate: a new package, released at 0.3.0 alongside core and MUI. It builds a palette from a catalog
 (a YAML file of states, commands and the functions they run) and needs `@shortround/core` 0.3.0 for typed lines
 (`resolveDefaultInput`). To adopt it, see
-[`packages/shortround-catalog/ADOPTING-A-CATALOG.md`](packages/shortround-catalog/ADOPTING-A-CATALOG.md).
+[`packages/shortround-core/ADOPTING-A-CATALOG.md`](packages/shortround-core/ADOPTING-A-CATALOG.md) (in
+`@shortround/catalog` until 0.5.0, when the catalog became part of core).
 
 ### TypeScript
 

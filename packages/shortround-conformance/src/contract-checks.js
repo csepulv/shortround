@@ -2,13 +2,8 @@
 // as a user would, finding the theme's controls by the contract's test hooks. A check throws a
 // ContractError naming the slot and what it expected; when it reaches its slot through another one and
 // that fails, the message says "(precondition)" and names the slot it went through.
-import {
-  ControlLabels,
-  createSidekickStore,
-  ShortRoundProvider,
-  ShortRoundSidekick,
-  Sizes
-} from '@shortround/core';
+import { ControlLabels, createSidekickStore, Sizes } from '@shortround/core';
+import { ShortRoundProvider, ShortRoundSidekick } from '@shortround/react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createElement } from 'react';
 

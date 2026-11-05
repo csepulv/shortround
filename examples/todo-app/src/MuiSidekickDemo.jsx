@@ -1,7 +1,7 @@
 import { createTheme } from '@mui/material';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
-import { ShortRoundProvider, SidekickStoreProvider } from '@shortround/core';
 import { muiTheme } from '@shortround/mui';
+import { ShortRoundProvider, SidekickStoreProvider } from '@shortround/react';
 import { LifeBuoy, Save } from 'lucide-react';
 
 import SidekickPalette from './SidekickPalette.jsx';

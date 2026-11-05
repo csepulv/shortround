@@ -25,20 +25,21 @@ panel, the new-issue form, the settings pages.
 ```markdown
 ## Section map
 
-| Section | Surfaces | Nouns | In scope? | Values from (sync? all or current?) |
+| Section | Surfaces | Nouns | In scope? | Values from (fast? all or current?) |
 |---|---|---|---|---|
-| Issues | list (/issues), side panel, row menu | issue, label, assignee, status | yes | store: issues (sync; the current list) |
-| Bulk edit | checkbox selection on the list, bulk toolbar | selection | yes | store: selection (sync) |
-| New issue | form (/issues/new) | issue | entry only | api: labels, members (async; all) |
-| Saved views | sidebar list | view (filters + sort) | yes | api: views (async; all; no store action) |
+| Issues | list (/issues), side panel, row menu | issue, label, assignee, status | yes | store: issues (in memory; the current list) |
+| Bulk edit | checkbox selection on the list, bulk toolbar | selection | yes | store: selection (in memory) |
+| New issue | form (/issues/new) | issue | entry only | api: labels, members (network; all) |
+| Saved views | sidebar list | view (filters + sort) | yes | api: views (network; all; no store action) |
 | Settings | labels, members, notifications | label, member | no | api |
 
-Existing functions (store): issues.open(id), issues.closeIssue(), issues.next(), issues.previous(), issue.close(),
-issue.reopen(), issue.assign(memberId), issue.addLabel(name), filters.add(facet, value), filters.drop(facet, value),
-sort.set(id), selection.start(), selection.toggle(id), selection.clear(), bulk.close(), bulk.addLabel(name) (the
-bulk actions apply to the store's current selection).
-In components only: the row menu's "Copy link"; the form's submit. Labels and members are fetched (async), and the
-store caches both after the first fetch.
+Existing functions (store): issues.open(id), issues.current (the open issue, or null), issues.closeIssue(),
+issues.next(), issues.previous(), issue.close(), issue.reopen(), issue.assign(memberId), issue.addLabel(name),
+filters.add(facet, value), filters.drop(facet, value), sort.set(id), selection.isActive, selection.start(),
+selection.toggle(id), selection.clear(), bulk.close(), bulk.addLabel(name) (the bulk actions apply to the store's
+current selection).
+In components only: the row menu's "Copy link"; the form's submit. Labels and members are fetched over the network,
+and the store caches both after the first fetch.
 ```
 
 ## Step 2: contexts the UI offers
@@ -52,26 +53,43 @@ Read from the UI code, not the store:
 - **Selection mode** (after "Select") shows checkboxes and a bulk toolbar: Close selected, Label selected, Done.
 - **The new-issue form** is a separate page with its own Cancel and Create.
 
-So: three candidate states (list, panel, selection), and the form is a way out of the palette's area. The greyed-out
-filter bar is evidence that refining isn't offered while an issue is open, but greyed-out could also mean "not yet
-built" (clarify).
+So: three candidate states (list, panel, selection), and the form is a way out of the palette's area. Each state's
+condition comes from the store: the panel is open while `issues.current` isn't null, and selection mode while
+`selection.isActive` is true. The greyed-out filter bar is evidence that refining isn't offered while an issue is
+open, but greyed-out could also mean "not yet built" (clarify).
 
-An end-to-end test (`triage.spec.js`) walks list → panel → label → next → close, which confirms the panel's loop.
+An end-to-end test (`triage.spec.js`) walks list → panel → label → next → close, which confirms the panel's loop. It
+becomes the catalog's `triage` workflow: the catalog's only record of how a user moves between states.
 
 ## Step 3: the graph
 
 ```text
+browsing   holds while no issue is open and not selecting
+viewing    holds while an issue is open (the side panel)
+selecting  holds while selection mode is on
+
+Moves (from the UI, recorded in the log and the triage workflow):
 browsing ──open issue──▶ viewing ──back──▶ browsing
-viewing ──next / previous──▶ viewing
 browsing ──select issues──▶ selecting ──done / close selected──▶ browsing
 browsing ──new issue──▶ (leaves for the form)
 ```
 
-Functions: everything in the panel and selection mode exists in the store, callable as the catalog will call it.
-`filters.drop(facet, value)` takes two arguments, while its picker's rows carry one `{ facet, value }` value, so the
-command splits it with `args`. Adapters: every picker's rows function (the store holds issues, filters and options; a
-picker wants display rows), and two navigation functions, `issues.openNewForm` and `settings.open` (they navigate
-inside components).
+The filter bar's three filters and the sort change one thing, the list, so they are one command, Refine, with a param
+each: `status new sort newest` becomes one call, `{ status: [new], sort: newest }`.
+
+Functions, as the catalog calls them (once, with one object):
+
+- **existing:** `issues.closeIssue`, `issues.next`, `issues.previous`, `issue.close`, `selection.start`,
+  `selection.clear`, `bulk.close` (they take nothing).
+- **adapter:**
+  - `list.refine({ status, label, assignee, sort })`, which makes one change from `filters.add` and `sort.set`;
+  - `filters.dropOne({ filter })` over `filters.drop(facet, value)`;
+  - `issues.openById({ issue })`, `issue.addLabel({ label })`, `issue.assign({ member })`,
+    `selection.toggle({ issue })` and `bulk.addLabel({ label })`, over the positional store functions;
+  - the two conditions, over `issues.current` and `selection.isActive`;
+  - every lookup's rows (the store holds issues, filters and options; a lookup returns display rows);
+  - two navigation functions, `issues.openNewForm` and `settings.open` (they navigate inside components).
+
 Smell checked: "Go to settings" appears in the app's header on every page; asked about in step 4.
 
 ## Step 4: clarify
@@ -92,155 +110,44 @@ Asked, two at a time, most consequential first:
 > *"Saved views are coming to the palette; the sidebar list exists but the store has no action yet. And I'd like to
 > add an issue from the palette one field at a time, someday. The CLI stays out."*
 
-Not asked, recorded as assumed: the facet titles are the filter bar's labels; "dupe" is a word the team uses for
+Not asked, recorded as assumed: the param labels are the filter bar's labels; "dupe" is a word the team uses for
 closing (from the docs' glossary).
 
 ## Step 5: the catalog
 
-As first written; step 6 drops one alias (`close panel`).
+As first written; step 6 drops one alias (`close panel`). Every command whose name isn't a plain word has an alias
+phrase (`close issue`, `select issues`), since a typed line names a command by its name or an alias, not its label.
+Refine has no free-text param, so its params need no hints; a Search command with a typed term would need them
+(`search crash with status new`).
 
 ```yaml
-version: 2
+version: 3
 app: tracker
 
-pickers:
-  issue:
-    from: tracker.issues.rows
-    empty: No issues match
-  facetValue:
-    from: tracker.filters.valueRows
-    empty: No {title} values
-  activeFilter:
-    from: tracker.filters.activeRows
-    empty: No filters applied
-  sortOption:
-    from: tracker.sort.rows
-    empty: No sort options
-  member:
-    from: tracker.members.rows
-    empty: No members
-  label:
-    from: tracker.labels.rows
-    empty: No labels
-  savedView:
-    planned: true
-    empty: No saved views
-
-facets:
-  status:   { title: Status }
-  label:    { title: Label, aliases: [tagged] }
-  assignee: { title: Assignee, aliases: [assigned to] }
+groups:
+  refine: { label: Refine, icon: settings }
+  issues: { label: Issues, icon: file }
+  issue: { label: This issue }
+  selection: { label: Selection }
 
 states:
   browsing:
     summary: The issue list; where the palette starts
     start: true
+    when: '!tracker.conditions.issueOpen && !tracker.conditions.selecting'
     tier: common
-    commands:
-      filter:
-        summary: Add a value to one of the list's filters (one command per facet)
-        forEach: facets
-        ask: { choose: facetValue }
-        run: tracker.filters.add
-        group: Refine
-      filters.drop:
-        title: Drop filter
-        aliases: [remove filter]
-        ask: { choose: activeFilter }
-        run: tracker.filters.drop
-        args: [$value.facet, $value.value]
-        group: Refine
-      sort.set:
-        title: Sort
-        aliases: [sort by]
-        ask: { choose: sortOption }
-        run: tracker.sort.set
-        group: Refine
-      issues.open:
-        title: Open issue
-        aliases: [open]
-        ask: { choose: issue }
-        run: tracker.issues.open
-        then: viewing
-        group: Issues
-      selection.start:
-        title: Select issues
-        aliases: [select]
-        run: tracker.selection.start
-        then: selecting
-        group: Issues
-      issues.openNewForm:
-        title: New issue
-        summary: Go to the new-issue form
-        run: tracker.issues.openNewForm
-        review: Leaves the palette's area; operator would like a field-by-field version someday (see adding)
-      views.open:
-        planned: true
-        title: Saved views
-        ask: { choose: savedView }
-        summary: Replace the current filters and sort with a saved view
-        review: The sidebar calls the API directly; the store needs a views action first
-      settings.open:
-        title: Go to settings
-        tier: full
-        summary: Open a settings page
-        run: tracker.settings.open
-
+    commands: [refine, dropFilter, open, selectIssues, newIssue, savedViews, settings]
   viewing:
     summary: One issue is open in the side panel; only commands about it apply
+    when: tracker.conditions.issueOpen
     panel: sidecar
     tier: common
-    commands:
-      issue.addLabel:
-        title: Add label
-        aliases: [label]
-        ask: { choose: label }
-        run: tracker.issue.addLabel
-      issue.assign:
-        title: Assign
-        aliases: [assign to]
-        ask: { choose: member }
-        run: tracker.issue.assign
-      issue.close:
-        title: Close issue
-        aliases: [close, dupe]
-        run: tracker.issue.close
-      issues.next:
-        title: Next issue
-        aliases: [next]
-        run: tracker.issues.next
-      issues.previous:
-        title: Previous issue
-        aliases: [prev]
-        run: tracker.issues.previous
-      issues.closeIssue:
-        title: Back to the list
-        aliases: [back, done, close panel]
-        run: tracker.issues.closeIssue
-        then: browsing
-
+    commands: [addLabel, assign, closeIssue, next, previous, back]
   selecting:
     summary: Picking issues for a bulk action
+    when: tracker.conditions.selecting
     tier: common
-    commands:
-      selection.toggle:
-        title: Toggle issue
-        ask: { choose: issue }
-        run: tracker.selection.toggle
-      bulk.close:
-        title: Close selected
-        run: tracker.bulk.close
-        then: browsing
-      bulk.addLabel:
-        title: Label selected
-        ask: { choose: label }
-        run: tracker.bulk.addLabel
-      selection.clear:
-        title: Done selecting
-        aliases: [done, back]
-        run: tracker.selection.clear
-        then: browsing
-
+    commands: [toggle, closeSelected, labelSelected, doneSelecting]
   adding:
     planned: true
     summary: Filing a new issue from the palette, one field at a time (operator, someday)
@@ -249,6 +156,157 @@ states:
       - { ask: { choose: label } }
       - { ask: { choose: member } }
       - { run: tracker.issues.create, then: browsing }
+
+commands:
+  refine:
+    label: Refine
+    summary: Narrow and order the list (the filter bar and sort)
+    group: refine
+    run: tracker.list.refine
+    params:
+      status:
+        label: Status
+        list: true
+        argSource: { lookup: tracker.filters.valueRows, key: status }
+      label:
+        label: Label
+        aliases: [tagged]
+        list: true
+        argSource: { lookup: tracker.filters.valueRows, key: label }
+      assignee:
+        label: Assignee
+        aliases: [assigned to]
+        list: true
+        argSource: { lookup: tracker.filters.valueRows, key: assignee }
+      sort:
+        label: Sort
+        aliases: [sort by]
+        argSource: { lookup: tracker.sort.rows }
+        path: { empty: No sort options }
+  dropFilter:
+    label: Drop filter
+    aliases: [drop filter, remove filter]
+    group: refine
+    run: tracker.filters.dropOne
+    params:
+      filter:
+        label: Filter
+        default: true
+        argSource: { lookup: tracker.filters.activeRows }
+        path: { empty: No filters applied }
+  open:
+    label: Open issue
+    aliases: [open issue]
+    group: issues
+    run: tracker.issues.openById
+    params:
+      issue:
+        label: Issue
+        default: true
+        argSource: { lookup: tracker.issues.rows }
+        path: { empty: No issues match }
+  selectIssues:
+    label: Select issues
+    aliases: [select issues, select]
+    group: issues
+    run: tracker.selection.start
+  newIssue:
+    label: New issue
+    aliases: [new issue]
+    summary: Go to the new-issue form
+    group: issues
+    run: tracker.issues.openNewForm
+    review: Leaves the palette's area; operator would like a field-by-field version someday (see adding)
+  savedViews:
+    planned: true
+    label: Saved views
+    aliases: [saved view, view]
+    summary: Replace the current filters and sort with a saved view
+    params:
+      view: { label: View, default: true, argSource: { lookup: tracker.views.rows } }
+    review: The sidebar calls the API directly; the store needs a views action first
+  settings:
+    label: Go to settings
+    aliases: [go to settings]
+    summary: Open a settings page
+    tier: full
+    run: tracker.settings.open
+
+  addLabel:
+    label: Add label
+    aliases: [add label, label]
+    group: issue
+    run: tracker.issue.addLabel
+    params:
+      label: { label: Label, default: true, argSource: { lookup: tracker.labels.rows } }
+  assign:
+    label: Assign
+    aliases: [assign to]
+    group: issue
+    run: tracker.issue.assign
+    params:
+      member: { label: Member, default: true, argSource: { lookup: tracker.members.rows } }
+  closeIssue:
+    label: Close issue
+    aliases: [close issue, close, dupe]
+    group: issue
+    run: tracker.issue.close
+  next:
+    label: Next issue
+    group: issue
+    run: tracker.issues.next
+  previous:
+    label: Previous issue
+    aliases: [prev]
+    group: issue
+    run: tracker.issues.previous
+  back:
+    label: Back to the list
+    aliases: [done, close panel]
+    group: issue
+    run: tracker.issues.closeIssue
+
+  toggle:
+    label: Toggle issue
+    group: selection
+    run: tracker.selection.toggle
+    params:
+      issue: { label: Issue, default: true, argSource: { lookup: tracker.issues.rows } }
+  closeSelected:
+    label: Close selected
+    aliases: [close selected]
+    group: selection
+    run: tracker.bulk.close
+  labelSelected:
+    label: Label selected
+    aliases: [label selected]
+    group: selection
+    run: tracker.bulk.addLabel
+    params:
+      label: { label: Label, default: true, argSource: { lookup: tracker.labels.rows } }
+  doneSelecting:
+    label: Done selecting
+    aliases: [done, back]
+    group: selection
+    run: tracker.selection.clear
+
+workflows:
+  triage:
+    title: Triage new issues (triage.spec.js)
+    steps:
+      - question: What came in?
+        state: browsing
+        do: status new sort newest
+        then: [open the first one]
+      - question: Is it a real bug?
+        state: viewing
+        do: add label bug
+      - question: Next one
+        state: viewing
+        do: next
+      - question: Not a bug after all
+        state: viewing
+        do: close
 ```
 
 The planned items are exactly what the operator named in C4: saved views, and the field-by-field add. Everything
@@ -259,40 +317,47 @@ else is what the app does today.
 ```yaml
 examples:
   - say: status new
-    means: tracker.filter.status::new
+    means: { refine: { status: [new] } }
   - say: status open
-    means: tracker.filter.status::open
+    means: { refine: { status: [open] } }
   - say: open 42
-    means: tracker.issues.open::42
+    means: { open: { issue: '42' } }
   - say: status new sort newest
-    means: [tracker.filter.status::new, tracker.sort.set::newest]
+    means: { refine: { status: [new], sort: newest } }
   - say: tagged bug
-    means: tracker.filter.label::bug
+    means: { refine: { label: [bug] } }
 ```
 
 ## Step 6: check and review
 
-The review script's checks pass, and its collision check finds one word that means two things:
+The review script's checks pass. Its collision check finds one word that means two things:
 
 - **viewing:** `close` (Close issue) is also the start of `close panel` (Back to the list).
 
-The engine resolves it (the longest match wins, so `close panel` is Back to the list), but two meanings for one word
+The engine resolves it (the longest phrase wins, so `close panel` is Back to the list), but two meanings for one word
 in the same list is worth a decision rather than an accident. Per C2, `close` means the issue: the `close panel`
-alias is dropped.
+alias is dropped. "Words nobody can type" is empty: every command has a name that is a word, or an alias.
 
-Walking the map with the operator surfaced one overlap the check can't see, because it checks command words, not
-values: `open` opens an issue in browsing, but the operator also types `status open` to filter. The line
-`status open` starts with the Status command's words, so it resolves to the filter, and `open 42` resolves to Open
-issue. Recorded as a deliberate overlap, with an example for each, so a change that breaks either line fails.
+Walking the page with the operator surfaced one overlap the check can't see, because it checks command and param
+words, not values: `open` names Open issue in browsing, but the operator also types `status open` to filter. The line
+`status open` starts with Status, a param's label, so it reads as Refine; `open 42` reads as Open issue. Recorded as a
+deliberate overlap, with an example for each, so a change that breaks either line fails.
+
+The map shows the four states with their conditions (the planned one has none). It draws no arrows between the built
+states, since the catalog doesn't say which command changes a condition; its only arrows are where the palette opens
+and the planned add flow's return to browsing. The operator checked the moves against the triage workflow instead.
 
 ## Step 7: the service layer
 
 | Function | Status |
 |---|---|
-| filters.add, filters.drop, sort.set, issues.open, issues.closeIssue, issues.next, issues.previous, issue.addLabel, issue.assign, issue.close, selection.*, bulk.* | existing |
+| issues.closeIssue, issues.next, issues.previous, issue.close, selection.start, selection.clear, bulk.close | existing |
+| list.refine | adapter: one change from filters.add and sort.set |
+| filters.dropOne, issues.openById, issue.addLabel, issue.assign, selection.toggle, bulk.addLabel | adapter: take the args object, call the positional store function |
+| conditions.issueOpen, conditions.selecting | adapter: `issues.current !== null`, `selection.isActive` |
 | issues.rows, filters.valueRows, filters.activeRows, sort.rows, members.rows, labels.rows | adapter: display rows from store data (members and labels from the cache) |
 | issues.openNewForm, settings.open | adapter: navigation that lives in components today |
-| views.open, savedView rows; issues.create (field by field) | planned |
+| views.rows (savedViews); issues.create (field by field) | planned |
 
 ## The discovery log
 
@@ -309,16 +374,21 @@ issue. Recorded as a deliberate overlap, with an example for each, so a change t
 
 **Decisions (with evidence):**
 - Three states: browsing, viewing (side panel), selecting (bulk toolbar). Evidence: each surface has its own actions.
+  Conditions from the store: `issues.current`, `selection.isActive`.
+- Moves: list → panel by Open issue, back by Back; list → selection by Select issues, back by Done selecting or
+  Close selected; New issue leaves for the form. Evidence: UI handlers, `triage.spec.js` (the triage workflow).
+- The filter bar and sort are one command, Refine (they change one thing, the list).
 - No filters in viewing. Evidence: greyed-out filter bar; confirmed C1.
 - `close` in viewing closes the issue; `close panel` alias dropped (collision check, C2).
 - Settings: browsing only, `full` tier (C3).
 - `status open` vs `open 42`: deliberate overlap; one example each.
 
-**Assumed, not yet confirmed:** facet titles = filter bar labels; "dupe" as an alias for Close issue (docs glossary).
+**Assumed, not yet confirmed:** param labels = filter bar labels; "dupe" as an alias for Close issue (docs glossary).
 
 **Asked:** C1–C4 (answers above, operator's words).
 
 **Planned (operator, C4):** saved views; field-by-field add.
 
-**Service layer:** 6 row adapters, 2 navigation adapters, 2 planned (see step 7).
+**Service layer:** 7 existing; 1 refine adapter, 6 argument adapters, 2 conditions, 6 row adapters, 2 navigation
+adapters; 2 planned (see step 7).
 ```

@@ -7,15 +7,16 @@ export const esc = (value) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 export const spaced = (id) => id.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
-export const asList = (value) =>
-  value === undefined ? [] : Array.isArray(value) ? value : [value];
-
-// An example means one intention id, or a list of them (a line of several commands, in order).
+// An example means one call: `{ search: { term: 'grid', tags: ['react'] } }` reads "search: term grid, tags react".
+const describeArg = (arg) => (Array.isArray(arg) ? arg.join(', ') : String(arg));
 const renderChips = (means) =>
-  asList(means)
-    .map(
-      (intentionId) => `<span class="chip"><span class="chip-k">${esc(intentionId)}</span></span>`
-    )
+  Object.entries(means)
+    .map(([command, args]) => {
+      const argText = Object.entries(args ?? {})
+        .map(([param, arg]) => `${param} ${describeArg(arg)}`)
+        .join(' · ');
+      return `<span class="chip"><span class="chip-k">${esc(command)}</span>${argText ? ` ${esc(argText)}` : ''}</span>`;
+    })
     .join('');
 
 export const renderExamples = (examples) =>
@@ -144,9 +145,9 @@ body.common-only [data-tier="full"] { display: none; }
 .chip { font-size: 12.5px; background: var(--brass-soft); border-radius: 4px; padding: 1px 7px; }
 .chip-k { color: var(--muted); font-family: var(--mono); font-size: 11.5px; }
 .no-examples { margin: 0; font-size: 13px; color: var(--muted); font-style: italic; }
-.facet-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
-.facet-list li { border: 1px solid var(--rule); border-radius: 4px; padding: 2px 8px; }
-.facet-list .aka { margin-left: 4px; }
+.params { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; }
+.params li { border-left: 2px solid var(--rule); padding: 2px 0 2px 10px; display: grid; gap: 2px; }
+.params .runtime { display: block; }
 details.language summary { cursor: pointer; font-size: 13px; color: var(--muted); }
 details.language summary:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 details.language dl { margin: 8px 0 0; display: grid; gap: 4px; font-size: 13px; }
@@ -159,12 +160,6 @@ details.language dd { margin: 0; font-family: var(--mono); font-size: 12.5px; }
 .functions { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
 .functions li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; border-bottom: 1px solid var(--rule); padding: 4px 0; }
 .functions code { font-family: var(--mono); font-weight: 500; }
-.vocabs { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-.vocab { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; }
-.vocab h3 { margin: 0 0 6px; font-size: 14px; font-family: var(--mono); font-weight: 500; }
-.vocab ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 13px; }
-.vocab p { margin: 0 0 4px; font-size: 13px; }
-.depends { margin: 0 0 6px; font-size: 12px; color: var(--brass); }
 .val { font-family: var(--mono); font-size: 12.5px; }
 .aka { color: var(--muted); margin-left: 6px; font-size: 12px; }
 .runtime { color: var(--muted); font-size: 12.5px; }

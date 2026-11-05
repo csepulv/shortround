@@ -1,0 +1,11 @@
+# Grammar tests for search-palette-v3.yaml: each typed line (`say`) must run, first, the call `means`: one command,
+# and the args it runs with.
+examples:
+  - say: search react grid
+    means: { search: { term: react grid } }
+  - say: tagged design
+    means: { search: { tags: [design] } }
+  - say: search grid with sort created
+    means: { search: { term: grid, sort: created-newest } }
+  - say: preview 3
+    means: { preview: { result: w2 } }

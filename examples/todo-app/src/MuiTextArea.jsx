@@ -1,9 +1,9 @@
 // The 2025 freeform prototype: its UI below is commented out, so several values are unused on purpose. Kept as a
-// reference for the intentions-and-actions epic ("what the freeform prototype already solved").
+// reference.
 /* eslint-disable no-unused-vars */
 import { autoUpdate, useFloating } from '@floating-ui/react';
 import { Box, Divider, List, ListItem, Paper, Popper } from '@mui/material';
-import { useShortRound } from '@shortround/core';
+import { useShortRound } from '@shortround/react';
 import debounce from 'lodash.debounce';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import getCaretCoordinates from 'textarea-caret';

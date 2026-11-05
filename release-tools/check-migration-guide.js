@@ -1,8 +1,7 @@
-// Release gate: every version about to be released needs a "## <version>" section in MIGRATING.md.
-// `pnpm cs:version` runs this before bumping anything. Usage: node release-tools/check-migration-guide.js
-// [--guide <path>] (default: MIGRATING.md at the repository root).
-import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
+// Release gate: the version the published packages are at needs a "## <version>" section in MIGRATING.md. Versions are
+// set by hand in the manifests, so `pnpm verify` runs this: a bump without its section fails the gate. Usage:
+// node release-tools/check-migration-guide.js [--guide <path>] (default: MIGRATING.md at the repository root).
+import { readdirSync, readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -10,15 +9,14 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const USAGE = 'Usage: node release-tools/check-migration-guide.js [--guide <path>]';
 
-// Packages changesets is about to release, grouped by the version they will have. Private packages it
-// leaves unversioned come back as type "none".
-export function releasesByVersion(status) {
+// The published packages, grouped by the version their manifests are at. Private packages aren't published.
+export function releasesByVersion(manifests) {
   const byVersion = new Map();
-  for (const { name, type, newVersion } of status.releases) {
-    if (type === 'none') {
+  for (const { name, version, private: isPrivate } of manifests) {
+    if (isPrivate) {
       continue;
     }
-    byVersion.set(newVersion, [...(byVersion.get(newVersion) ?? []), name]);
+    byVersion.set(version, [...(byVersion.get(version) ?? []), name]);
   }
   return [...byVersion].map(([version, packages]) => ({ version, packages }));
 }
@@ -31,37 +29,24 @@ const hasSection = (guideText, version) =>
 export const missingSections = (releases, guideText) =>
   releases.filter(({ version }) => !hasSection(guideText, version));
 
-export function describeMissing(missing, changesetIds, guideName = 'MIGRATING.md') {
+export function describeMissing(missing, guideName = 'MIGRATING.md') {
   const versions = missing.map(({ version, packages }) => `${version} (${packages.join(', ')})`);
   const headings = missing.map(({ version }) => `"## ${version}"`);
   return [
     `${guideName} has no section for ${versions.join(', ')}.`,
-    `Add a ${headings.join(', ')} section, written from the pending changesets: ${changesetIds.join(', ')}.`,
+    `Add a ${headings.join(', ')} section, written from the changes since the last release, for the people upgrading.`,
     'A release with nothing to act on still gets one line, such as "No action needed".'
   ].join('\n');
 }
 
-// `changeset status --output` joins its path onto the working directory, even an absolute one, so the file is
-// written inside the repository, in a temporary folder under node_modules/.cache (ignored by git).
-function readChangesetStatus() {
-  const cache = path.join(ROOT, 'node_modules', '.cache');
-  mkdirSync(cache, { recursive: true });
-  const directory = mkdtempSync(path.join(cache, 'shortround-release-'));
-  const file = path.relative(ROOT, path.join(directory, 'status.json'));
-  try {
-    execFileSync('pnpm', ['exec', 'changeset', 'status', `--output=${file}`], {
-      cwd: ROOT,
-      stdio: 'pipe'
-    });
-    return JSON.parse(readFileSync(path.join(ROOT, file), 'utf8'));
-  } catch (error) {
-    if (error.stderr) {
-      throw new Error(`changeset status failed:\n${error.stdout}${error.stderr}`, { cause: error });
-    }
-    throw error;
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
-  }
+// Every package's manifest under packages/.
+function readManifests(root = ROOT) {
+  const packagesDir = path.join(root, 'packages');
+  return readdirSync(packagesDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) =>
+      JSON.parse(readFileSync(path.join(packagesDir, entry.name, 'package.json'), 'utf8'))
+    );
 }
 
 function readGuide(guidePath) {
@@ -98,13 +83,11 @@ export function isRunDirectly(scriptPath, moduleUrl, { realpath = realpathSync }
 
 function main() {
   const guidePath = guidePathFrom(process.argv);
-  const status = readChangesetStatus();
-  const missing = missingSections(releasesByVersion(status), readGuide(guidePath));
+  const missing = missingSections(releasesByVersion(readManifests()), readGuide(guidePath));
   if (missing.length > 0) {
     console.error(
       describeMissing(
         missing,
-        status.changesets.map(({ id }) => id),
         guidePath.startsWith(ROOT + path.sep) ? path.relative(ROOT, guidePath) : guidePath
       )
     );

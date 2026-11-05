@@ -1,0 +1,55 @@
+# The editor's slash commands. Three kinds: one inserts text (date), one calls an app function and inserts its result
+# (search), one changes the block being edited, and with it the context (type). In a task block, the task state holds
+# and offers due.
+
+version: 3
+app: notes
+
+states:
+  writing:
+    start: true
+    summary: An ordinary block
+    when: '!notes.conditions.inTask'
+    commands: [date, search, type]
+  task:
+    summary: The cursor is in a task item
+    when: notes.conditions.inTask
+    commands: [date, search, type, due]
+
+commands:
+  date:
+    label: Insert date
+    summary: Insert a date or a date range at the cursor
+    run: notes.insert.date
+    params:
+      when: { label: When, default: true, argSource: { freeform: true, type: range } }
+
+  search:
+    label: Search
+    summary: Search, and insert a link to the first result
+    run: notes.insert.searchLink
+    params:
+      term: { label: Search, default: true, argSource: { freeform: true, type: text } }
+      tags:
+        label: Tag
+        aliases: [tag, tagged]
+        hints: [with]
+        list: true
+        argSource: { lookup: notes.tags.rows }
+
+  type:
+    label: Change type
+    summary: Make the current block a task item, or a note
+    run: notes.block.setType
+    params:
+      kind:
+        label: Kind
+        default: true
+        argSource: { list: [{ value: task, title: task }, { value: note, title: note }] }
+
+  due:
+    label: Due date
+    summary: Give the task its due date
+    run: notes.task.setDue
+    params:
+      when: { label: When, default: true, argSource: { freeform: true, type: range } }

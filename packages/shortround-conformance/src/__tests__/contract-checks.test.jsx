@@ -79,7 +79,7 @@ describe.each(CONTRACT_CHECKS)('$id', (check) => {
   });
 });
 
-// "The group of size controls": a named group must hold them, not sit empty beside them (review L5).
+// "The group of size controls": a named group must hold them, not sit empty beside them.
 test('control-names fails when the named group does not hold the size controls', async () => {
   const { ControlBar } = referenceTheme.components.Sidekick;
   const groupBeside = {

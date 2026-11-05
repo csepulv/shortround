@@ -1,17 +1,24 @@
-export { useShortRound } from './hooks/useShortRound.js';
 export {
-  useSidekick,
-  createSidekickStore,
-  SidekickStoreProvider,
-  useSidekickStore
-} from './hooks/useSidekick.js';
+  buildPalette,
+  checkCatalog,
+  findExampleFailures,
+  findUntypedCommands,
+  loadCatalog,
+  loadExamples
+} from './catalog/index.js';
+export { makeCommandLine } from './command-builder/command-line.js';
+export { makeCommandBuilder } from './command-builder/engine.js';
+export { createPaletteStore } from './palette-store.js';
+export { createSidekickStore } from './sidekick-store.js';
+export { matchIntentions } from './match-intentions.js';
 export {
   RevertIntentionIds,
   makeRevertIntentionsFor,
+  bringsList,
+  NAVIGATE_GROUP,
   AnchorPositions,
+  cycleCorners,
+  cycleMiddlePositions,
   Sizes,
   ControlLabels
 } from './utils.js';
-export { useShortRoundToast } from './hooks/useShortRoundTheme.js';
-export { ShortRoundSidekick } from './components/ShortRoundSidekick.jsx';
-export { ShortRoundProvider } from './components/ShortRoundProvider.jsx';

@@ -1,14 +1,6 @@
-export { useShortRound } from './hooks/useShortRound.js';
-export {
-  useSidekick,
-  createSidekickStore,
-  SidekickStoreProvider,
-  useSidekickStore
-} from './hooks/useSidekick.js';
-export { useFuzzyMatcher } from './hooks/useFuzzyMatcher.js';
-export { RevertIntentionIds } from './utils.js';
-export { useShortRoundToast } from './hooks/useShortRoundTheme.js';
-export { ShortRoundSidekick } from './components/ShortRoundSidekick.jsx';
-export { ShortRoundProvider } from './components/ShortRoundProvider.jsx';
+export * from './catalog/index.js';
+export { createPaletteStore } from './palette-store.js';
+export { createSidekickStore } from './sidekick-store.js';
+export { matchIntentions } from './match-intentions.js';
 
 export * from './utils.js';

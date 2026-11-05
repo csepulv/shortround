@@ -8,7 +8,7 @@ import { CONTRACT_CHECKS } from './contract-checks.js';
 export function describeThemeContract(name, theme) {
   if (!theme?.components) {
     throw new Error(
-      'describeThemeContract takes the theme object { components, Toast } (since theme-provider M2), not the bare slots'
+      'describeThemeContract takes the theme object { components, Toast } (since 0.3.0), not the bare slots'
     );
   }
   describe(`${name} meets the ShortRound theme contract`, () => {

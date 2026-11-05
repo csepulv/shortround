@@ -1,5 +1,5 @@
 import { Box, Button } from '@mui/material';
-import { ShortRoundSidekick, useSidekick } from '@shortround/core';
+import { ShortRoundSidekick, useSidekick } from '@shortround/react';
 
 import { helpIntent } from '@/help-intent.js';
 import { saveItemIntent } from '@/save-item-intent.js';

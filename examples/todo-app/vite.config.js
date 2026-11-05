@@ -10,11 +10,11 @@ export default defineConfig({
         __dirname,
         '../../packages/shortround-core/src/index.dev.js'
       ),
-      '@shortround/mui': path.resolve(__dirname, '../../packages/shortround-mui/src/index.js'),
-      '@shortround/shadcn-ui': path.resolve(
+      '@shortround/react': path.resolve(
         __dirname,
-        '../../packages/shortround-shadcn-ui/src/index.js'
-      )
+        '../../packages/shortround-react/src/index.dev.js'
+      ),
+      '@shortround/mui': path.resolve(__dirname, '../../packages/shortround-mui/src/index.js')
     },
     conditions: ['development', 'import', 'module', 'browser', 'default']
   },
@@ -36,7 +36,7 @@ export default defineConfig({
   ],
   optimizeDeps: {
     force: true,
-    exclude: ['@shortround/core', '@shortround/mui', '@shortround/shadcn-ui'],
+    exclude: ['@shortround/core', '@shortround/react', '@shortround/mui'],
     esbuildOptions: {
       loader: {
         '.js': 'jsx'

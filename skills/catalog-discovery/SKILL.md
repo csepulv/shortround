@@ -1,16 +1,17 @@
 ---
 name: catalog-discovery
-description: Use when mapping what an app's users can do, as a command catalog — the intentions the app offers today, organised by the context (state) the user is in, and the functions that carry them out — from the app's code, docs and recordings, asking the operator only where the evidence is ambiguous. The catalog drives a context-aware command palette (ShortRound's `@shortround/catalog`) and is the basis for an intent-level service layer or DSL. Also use when someone asks to "map an app's commands", "build a palette catalog", "find the app's intentions or actions", add a host app to ShortRound, or update an existing catalog after the app changed, even if they don't say "catalog".
+description: Use when mapping what an app's users can do, as a command catalog — the intentions the app offers today, organised by the context (state) the user is in, and the functions that carry them out — from the app's code, docs and recordings, asking the operator only where the evidence is ambiguous. The catalog drives a context-aware command palette (ShortRound's catalog engine, in `@shortround/core`) and is the basis for an intent-level service layer or DSL. Also use when someone asks to "map an app's commands", "build a palette catalog", "find the app's intentions or actions", add a host app to ShortRound, or update an existing catalog after the app changed, even if they don't say "catalog".
 ---
 
 # catalog-discovery
 
 A **catalog** is a YAML file that maps what users can do in an app, organised by where they are. It lists the app's
-**states** (contexts such as "browsing the list", "one item is open", "several items selected"), the **commands**
-(intentions) each state offers, what each command asks for (typed text, or a choice from a **picker** list), and which
-state the user is in afterwards. Every `run`, `when` and `from` names a function the app provides. So the catalog is
-two things at once: the map a context-aware palette runs from, and the interface of the app's intent-level service
-layer.
+**states** (contexts such as "browsing the list", "one item is open", "several items selected"), each holding while a
+**condition** of the app's holds; the **commands** (intentions) each state offers; and what each command takes, its
+**params**, with where their values come from (typed text, a fixed list, or a **lookup** of the app's). Every `run`,
+`lookup`, `current` and condition names a function the app provides. So the catalog is two things at once: the map a
+context-aware palette runs from (as rows to pick, and as typed whole commands), and the interface of the app's
+intent-level service layer.
 
 This skill is **discovery, not design**. You map the app as it is today, from the evidence it gives you, and you ask
 the operator only where that evidence is ambiguous or conflicting. You don't ask what the app should do, which
@@ -64,9 +65,10 @@ filter chips, a "clear all" button) and their defaults: they offer actions the a
 **section map**: each section, its screens and surfaces, the nouns it works on, whether it's in the catalog's scope,
 and where its values come from.
 
-For each value source, note whether it answers **synchronously** and whether it lists **all values or only those in
-the current results**. A palette picker must answer synchronously to resolve while the user types; an API call needs a
-cache before it can back a picker. That shapes which commands are cheap to build.
+For each value source, note whether it answers **from memory or over the network**, and whether it lists **all values
+or only those in the current results**. Lookups may be asynchronous, but a picker waits for its rows and a typed line
+shows "Loading" meanwhile, so a slow source needs a time limit or a cache in the app. That shapes which commands are
+cheap to build.
 
 List the app's existing functions under the map: controller or store actions, and handlers that live inside
 components. These become the `run` names.
@@ -83,9 +85,12 @@ the user gets in and out. Then read the controller the same way. Both are eviden
 - **Per-item actions with no current item** (a card grid where each card has its own menu): either each command asks
   which item, or a current-item state holds them. If neither the UI nor the controller has a current item, ask; don't
   invent the state.
-- **How a surface opens and closes** gives the moves between states, and each state's way out.
+- **How a surface opens and closes** gives each state's **condition** (the panel is open while the store has a
+  current item), and the moves between states. The catalog holds the conditions, not the moves: a state holds while
+  its condition does, and after every run the palette shows the states that hold. Record the moves in the log, and
+  the paths the evidence shows (an end-to-end test, a recording) as workflows.
 - **Actions that differ by item type** (a chat has "view conversation", a web page doesn't) are usually a `when`
-  condition on one state; make them separate states only if they lead to different states.
+  condition on the command; make them separate states only if the surface offers a different set of actions.
 - **A dialog** the app opens (add, edit, confirm delete) is how the app does that today: record a command whose
   function opens it. A dialog that belongs to each item needs the item as well. Whether the palette should instead ask
   field by field is a design choice for the operator; note it in the log, don't decide it.
@@ -101,18 +106,21 @@ visited and in what order; don't take vocabulary from it.
 
 Read `references/catalog-format.md` first: its "How `run` is called" decides what counts as existing.
 
-Draft the states and the moves between them, then attach each action to the states where the app offers it. For each
-command's `run`, each picker's `from` and each `when`, note its function:
+Draft the states with their conditions, then attach each action to the states where the app offers it. Actions that
+change one thing (the filter bar's filters and the sort all change the list) are usually **one command with a param
+each**, so one typed line can set them together (`status new sort newest`) and the app makes one change. For each
+command's `run`, each param's `lookup` and `current`, and each condition, note its function:
 
-- **existing** — the app has it, callable as the catalog will call it: by default (`addFacetValue(facet, value)`
-  fits a per-facet command that asks for a value), or with `args` describing the shape (`merge({ terms })` with
-  `args: [{ terms: $value }]`);
-- **adapter** — the app does it, but inside a component, or it needs logic `args` can't express, so the catalog needs
-  a small wrapping function: `open(index)` when a picker row carries an id; most picker row functions, which turn app
-  data into display rows;
+- **existing** — the app has it, callable as the catalog will call it: once, with one object of the args
+  (`refine({ status, sort })`), or with an empty object for a command with no params (a function that takes
+  nothing ignores it);
+- **adapter** — the app does it, but positionally (`filters.add(facet, value)`), inside a component, or in several
+  calls where the command makes one change, so the catalog needs a small wrapping function. Most lookups (they turn
+  app data into display rows) and most conditions (they read the store: `current !== null`) are adapters;
 - **missing** — the app offers it but no callable function exists (a dialog whose open state lives in a component).
 
-Name functions after the app's methods where one exists, so the catalog, the code and the palette's ids read the same.
+Name commands and functions after the app's methods where one exists, so the catalog, the code and the palette's ids
+read the same.
 
 A UI **toggle** (a star, dark mode) usually becomes two commands (set and unset) or a choice: a command must change
 nothing when asked to apply a value already in effect. Note which you chose. Where the app offers the same outcome in
@@ -120,7 +128,8 @@ more than one way (remove one value, one filter, or all), don't assume: ask the 
 its own command (step 4).
 
 Then check the draft for two smells: a command offered in most states (often app chrome such as theme or profile; ask
-whether it belongs in the palette at all), and a state with no way out.
+whether it belongs in the palette at all), and a state with no way out: none of its commands ends its condition (a
+panel state with no Back or Close). The catalog can't check that; read it from the moves in the log.
 
 ### 4. Clarify
 
@@ -143,12 +152,23 @@ count, and is anything planned that the catalog should carry as `planned`?
 ### 5. Write the catalog
 
 Write the YAML in the format in `references/catalog-format.md`. For each command, give a one-sentence `summary` in
-plain words. Write examples for the start state's commands: an engine checks examples only in the start state, so
-a command in another state can't have one yet. Use the user's words for titles and aliases where the UI or docs give them: the
-words on a palette row are also the words a user can type. Record open questions as `review:` notes on the state or
-command they concern, so they appear on the review page.
+plain words. Write examples for the start state's commands: an engine checks examples against the list the palette
+was built on (usually the start state's), and the review script counts only start-state commands, so a command in
+another state can't have one yet. Record open questions as `review:` notes on the state or command they
+concern, so they appear on the review page.
 
-Quote YAML values that contain a comma or `[`; unquoted, they break or truncate silently.
+Then propose the words people type, from the UI's and docs' own words. A typed line names a command by its name or an
+alias, never its label, and fills params by their labels, aliases and hints:
+
+- **An alias phrase for every command whose name isn't a plain word** (`clearFilters` → `clear filters`). A label
+  alone ("Clear filters") makes a row, not a word anyone can type.
+- **Hints for every param that can follow typed text** (`with`, `sort by`, `for`): in `search crash with status new`,
+  the term reads up to the hint. Without one, `status new` becomes part of the term.
+- **`default: true` on the param whose value follows the command directly** (`open 42`, `add label bug`); without it,
+  the line must name the param (`open issue 42`).
+
+Mark these as proposals in the log (the operator confirms the words in step 6). Quote YAML values that contain a comma
+or `[`, and clauses that start with `!`; unquoted, they break or change meaning silently.
 
 See `references/worked-example.md` for a complete small catalog, examples file and discovery log.
 
@@ -161,26 +181,30 @@ See `references/worked-example.md` for a complete small catalog, examples file a
    needs a network connection to draw; the rest of the page doesn't.
 
    Examples (`<name>.examples.yaml` beside the catalog) are checked less: their shape, and that each `means` names a
-   start-state command (the summary line counts those that don't; usually a mistyped id). The script doesn't
-   resolve the typed lines: that needs the app's functions and data, so it happens when the app runs the engine's
-   example check. A wrong facet key or value passes here.
-2. Read the **words that mean two things** list. The check runs within each state, because a palette shows one
-   state's list at a time. Each collision is either a mistake or a deliberate overlap worth writing down.
-3. Walk the operator through the page: the map of states first, then each state's commands. Where the map surprises
-   either of you, that is a clarification question.
-4. Record answers and decisions in the log, update the catalog, and regenerate.
+   start-state command (the summary line counts those that don't; usually a mistyped command name). The script
+   doesn't read the typed lines: that needs the app's functions and data, so it happens when the app runs the
+   engine's example check. A wrong param name or value passes here.
+2. Read the **words that mean two things** list: words that name two commands, or two params of one command, in the
+   same state. The check runs within each state, because a palette reads one state's commands at a time. Each
+   collision is either a mistake or a deliberate overlap worth writing down.
+3. Read the **words nobody can type** list: commands no typed line can name, and params that can't follow the typed
+   text. Each is a missing alias or hint, unless the operator says the command is for picking only.
+4. Walk the operator through the page: the map of states (each with its condition) first, then each state's
+   commands and their words, then the workflows. Where a state, a condition or a path surprises either of you, that
+   is a clarification question.
+5. Record answers and decisions in the log, update the catalog, and regenerate.
 
 ### 7. Hand over the service layer
 
-The catalog's `run`, `when` and `from` names are the service layer's interface; the review page lists every one,
-with where it's used. Summarise in the log which exist, which need an adapter, and which are missing: that list is the work needed before a palette (or any other
+The catalog's `run`, `lookup` and `current` names, and the conditions in its `when` clauses, are the service layer's
+interface; the review page lists every one, with where it's used. Summarise in the log which exist, which need an adapter, and which are missing: that list is the work needed before a palette (or any other
 caller) can run the catalog. When an app adopts a palette engine, the built part runs as written, and the examples
 file becomes its grammar test.
 
-To turn the catalog into a running palette, the steps are in `ADOPTING-A-CATALOG.md`, beside the README of
-`@shortround/catalog`. A user can hand that over to an agent:
+To turn the catalog into a running palette, the steps are in `ADOPTING-A-CATALOG.md`, in `@shortround/core` (it was
+`@shortround/catalog` before 0.5.0). A user can hand that over to an agent:
 
-> Add a ShortRound palette to this app from `catalog.yaml`. Follow `ADOPTING-A-CATALOG.md` in `@shortround/catalog`.
+> Add a ShortRound palette to this app from `catalog.yaml`. Follow `ADOPTING-A-CATALOG.md` in `@shortround/core`.
 > The function list and its existing / adapter / missing status are in `catalog.discovery.md`.
 
 ## Pitfalls from earlier runs
@@ -191,8 +215,8 @@ To turn the catalog into a running palette, the steps are in `ADOPTING-A-CATALOG
   Map all sections from code first.
 - **Interviewing instead of mapping.** Asking about priorities and future features turns discovery into design. Ask
   only what the evidence leaves open.
-- **Titles and aliases are a grammar.** A missing alias ("type" for a facet called Kind) makes a natural line fail;
-  add examples for the lines people actually type.
+- **Aliases, labels and hints are a grammar.** A missing alias ("type" for a param called Kind) makes a natural line
+  fail, and a command's label is never typed; add examples for the lines people actually type.
 - **Tidy test data hides ranking bugs.** Example values need near neighbours (`react` next to `react-native`).
 - **Review pages describe internals.** Keep generated pages local.
 
@@ -201,8 +225,8 @@ To turn the catalog into a running palette, the steps are in `ADOPTING-A-CATALOG
 - `references/catalog-format.md` — the catalog format, field by field. Read before classifying functions (step 3).
 - `references/worked-example.md` — a small hypothetical app taken through all seven steps. Read when starting a
   first catalog.
-- `scripts/catalog-review.js` — the review script: the engine's checks, the collision check and the review page.
-  Run in step 6. It is generated (source: `scripts/src/`); `scripts/vendor/` holds the YAML and schema libraries it
-  imports, minified, with their licences. Don't edit either; keep them together.
+- `scripts/catalog-review.js` — the review script: the engine's checks, the word checks and the review page. Run in
+  step 6. It is generated (source: `scripts/src/`); `scripts/vendor/` holds the YAML, schema and condition-parsing
+  libraries it imports, minified, with their licences. Don't edit either; keep them together.
 - The `sekko` skill — recording and extracting narrated sessions (step 2):
   <https://github.com/csepulv/save-the-tokens>.

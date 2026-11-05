@@ -1,0 +1,90 @@
+# search-palette.v2.yaml (version 2) in version 3: the palette tests' catalog. Commands in the command shape, states from
+# conditions (no `then`), and `path` holding what only the picking rows need. Its explicit
+# `path.id`s exercise the override.
+
+version: 3
+app: app
+
+groups:
+  search: { label: Search, icon: search }
+  refine: { label: Refine, icon: settings }
+  results: { label: Results, icon: file }
+  preview: { label: Preview }
+
+states:
+  browsing:
+    start: true
+    when: '!app.conditions.previewed'
+    commands: [search, preview]
+  previewing:
+    when: app.conditions.previewed
+    panel: sidecar
+    commands: [next, openInService, closePreview]
+
+commands:
+  # One compound command; the picking rows show one row per param.
+  search:
+    label: Search
+    group: search
+    run: app.search.apply
+    params:
+      term:
+        label: Search
+        default: true
+        argSource: { freeform: true, type: text }
+        path:
+          id: app.search
+          aliases: [find]
+          prompt: Search for the typed words
+          required: Type some words first
+      match:
+        label: Match
+        aliases: [match]
+        argSource: { list: [{ value: any, title: any, path: { id: app.matchAny } }] }
+        path: { rows: each value, title: Match any, group: refine }
+      # A hint lets a sort follow the term.
+      sort:
+        label: Sort
+        hints: [with]
+        aliases: [sort]
+        argSource: { lookup: app.sortOptions.rows }
+        path: { id: app.sort, group: refine, empty: No sort options }
+      tags:
+        label: Tag
+        aliases: [tagged]
+        list: true
+        argSource: { lookup: app.search.facetValueRows, key: tags }
+        path:
+          id: app.facet.tags
+          group: refine
+          icon: folder
+          empty: 'No {label} values for this search'
+      bookmarked_at:
+        label: Bookmark age
+        list: true
+        argSource: { lookup: app.search.facetValueRows, key: bookmarked_at }
+        path:
+          id: app.facet.bookmarked_at
+          group: refine
+          icon: folder
+          empty: 'No {label} values for this search'
+
+  # One param: a single row, as a command with a picker.
+  preview:
+    label: Preview
+    group: results
+    run: app.results.preview
+    params:
+      result:
+        label: Result
+        default: true
+        argSource: { lookup: app.results.rows }
+        path: { empty: No results loaded }
+
+  next: { label: Next, group: preview, run: app.results.next }
+  openInService:
+    label: Open in service
+    group: preview
+    when: app.results.previewedHasServiceLink
+    run: app.results.openInService
+  closePreview: { label: Close preview, group: preview, run: app.results.closePreview }

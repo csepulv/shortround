@@ -12,7 +12,7 @@ names, the side panel shows its content, and toasts show their message only whil
 
 Updating a theme written for an earlier ShortRound? The
 [migration guide](https://github.com/csepulv/shortround/blob/main/MIGRATING.md) lists the slot changes for each
-release, under "If you have a custom theme or slot".
+release: under "Theme authors" for 0.5.0, and "If you have a custom theme or slot" for 0.3.0 and 0.4.0.
 
 ## Running it
 
@@ -34,9 +34,9 @@ palette under `ShortRoundProvider` with your theme, as an app would:
     Sidekick.ControlBar: no element with data-testid="shortround-close"
 ```
 
-Requirements: Vitest with the `jsdom` environment; `@shortround/core`, `@testing-library/react`, `react` and
-`react-dom` installed (peer dependencies). The suite installs the two browser APIs core's cmdk needs that jsdom
-lacks, and runs its tests on real timers even if your file uses fake ones.
+Requirements: Vitest with the `jsdom` environment; `@shortround/core`, `@shortround/react`, `@testing-library/react`,
+`react` and `react-dom` installed (peer dependencies). The suite installs the two browser APIs that cmdk (which comes
+with `@shortround/react`) needs and jsdom lacks, and runs its tests on real timers even if your file uses fake ones.
 
 A failure names the slot that falls short. Some checks reach their slot through another one (typing into the Input to
 see "no matches"); if that step fails, the message says `(precondition)` and names the slot it went through, so fix
@@ -65,14 +65,14 @@ which icons a theme has.
 
 What ShortRound does, and this suite therefore doesn't check: keyboard and click selection, disabled rows, each
 row's value, the controlled input, focus moving into the sidekick and back, Escape closing it only from inside, and
-the sidekick's `role="dialog"` and name. Those are core's tests. The names in `labels` are `ControlLabels`, exported
+the sidekick's `role="dialog"` and name. Those are `@shortround/react`'s tests. The names in `labels` are `ControlLabels`, exported
 by `@shortround/core`.
 
-The same props are typed in `@shortround/core` (`ShortRoundTheme`, `SidekickComponents`, `ToastProps`), with these
+The same props are typed in `@shortround/react` (`ShortRoundTheme`, `SidekickComponents`, `ToastProps`), with these
 obligations as JSDoc; annotating your theme with it lets an editor flag a missing slot:
 
 ```js
-/** @type {import('@shortround/core').ShortRoundTheme} */
+/** @type {import('@shortround/react').ShortRoundTheme} */
 export const myTheme = {
   components: { IntentionPalette: { … }, Sidekick: { … }, SidecarContent },
   Toast: MyToast
@@ -90,5 +90,5 @@ pnpm installs a package from a subdirectory of a git repository with the `path:`
 pnpm add -D csepulv/shortround#path:/packages/shortround-conformance
 ```
 
-Not yet tried against the public repository (the package reaches it with the next publish). Without pnpm, clone the
+Not yet tried against the public repository, which carries the package and is updated with each publish. Without pnpm, clone the
 repository and link the package directory.

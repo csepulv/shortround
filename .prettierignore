@@ -2,6 +2,5 @@
 skills/catalog-discovery/scripts/catalog-review.js
 skills/catalog-discovery/scripts/vendor/
 
-# Development notes, and throwaway spikes and experiments; `pnpm verify` doesn't gate them.
 docs/
 lab/

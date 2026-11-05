@@ -18,7 +18,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@shortround/core": "workspace:*",
     "@shortround/mui": "workspace:*",
-    "@shortround/shadcn-ui": "workspace:*",
+    "@shortround/react": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lodash.debounce": "^4.0.8",

@@ -5,7 +5,7 @@ packages:
   - '!./eslint.config.js' 
 
 # pnpm 11+ runs no install scripts unless allowed (strictDepBuilds). Both install native binaries: esbuild for Vite,
-# oxide for Tailwind (shadcn-ui); pnpm 8 ran them without asking.
+# oxide for Tailwind (the todo-app example); pnpm 8 ran them without asking.
 allowBuilds:
   esbuild: true
   '@tailwindcss/oxide': true

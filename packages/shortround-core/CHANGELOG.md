@@ -1,5 +1,107 @@
 # @shortround/core
 
+## 0.5.0
+
+### Breaking Changes
+
+- Core is headless: no React, no DOM. The components and hooks (`ShortRoundSidekick`, `ShortRoundProvider`,
+  `useShortRound`, `useSidekick`, `useShortRoundToast`, `SidekickStoreProvider`, `useSidekickStore`) move to the new
+  `@shortround/react`; the constants and `createSidekickStore` stay here. See MIGRATING.md, 0.5.0.
+- The catalog engine is part of core: `loadCatalog`, `checkCatalog`, `buildPalette`, `loadExamples` and
+  `findExampleFailures`, with the docs `CATALOG.md` and `ADOPTING-A-CATALOG.md`. `@shortround/catalog` is retired
+  (its history: `CHANGELOG-catalog.md`).
+  - Types: the catalog's `ResolveInput` and `ResolveFallbackInput` are renamed `CatalogResolveInput` and
+    `CatalogResolveFallbackInput`; from core, the old names are core's own types, which the catalog's fit.
+- The catalog format is version 3, and version 2 is no longer read: `loadCatalog` and `checkCatalog` reject a v2
+  catalog with a pointer to MIGRATING.md, "From a v2 catalog". Version 3 joins the picking rows and the typed whole
+  commands in one file: `groups`; `states` that hold while their `when` holds, with a `panel`; `commands` with
+  `params`, each with an `argSource` (`freeform`, `list`, `lookup`, `current`) and optional `path` overrides for the
+  picking rows. See CATALOG.md.
+  - A `run` is called once with one object, the command's args by param (`{ term, sort, tags: [...] }`), not with
+    positional arguments.
+  - A typed line runs one command with all its args.
+  - Row ids follow the catalog's command and param names.
+  - An example's `means` is a call (`{ search: { term: 'grid' } }`).
+  - `RunOutcome` has no `isCancelled`.
+- `buildPalette` returns a palette that follows the app: `current()` (the list for the states that hold now),
+  `notify()`, `subscribe()`, `isAvailable(commandName)` and `listNow()`.
+- Core, `@shortround/react` and `@shortround/mui` are released together, at one version.
+- The package ships its changelogs (`CHANGELOG.md`, and `CHANGELOG-catalog.md` for `@shortround/catalog`'s history).
+
+### Minor Changes
+
+- `createPaletteStore`: the palette without a UI. It holds the list, the input and its validation message, what ran,
+  Back and Cancel, typed-text resolvers and fallbacks, and decides what choosing a row does (`select`), including the
+  side panel's proposals and the Back and Cancel rows. `useShortRound` in `@shortround/react` is this store as a hook.
+  - `rows()` is what to show now; `changeInput`, `dispatch`, `back`, `reset`, `setDefaults`, `completeFirst` (Tab)
+    and `watchResolver` complete it. Types: `PaletteStore`, `PaletteStoreState`, `PaletteDefaults`.
+- Completion rows: an intention with `completion` (a string) completes the typed line instead of running. Choosing it
+  sets the input to `completion`; `action` isn't called and nothing is added for Back to step back over.
+  `completeFirst()` (Tab in the React palette) applies the first enabled one. Type: `Intention.completion`.
+- A resolver can say its rows changed while the input didn't (an async lookup landed): a `resolveInput` may carry
+  `subscribe(listener)`, returning an unsubscribe function. While watched (`watchResolver`), each notice tells the
+  store's listeners; a new list's resolver replaces the old one. Type: `ResolveInput.subscribe`.
+- `createPaletteStore({ palette })`: the store starts from a catalog palette's `current()`, and Back and Cancel to the
+  start land there. `watchPalette()` follows the palette's `notify()`: the start list (or a list a run brought)
+  re-reads, and a step whose command is no longer available returns to it with a message. `refresh()` re-reads on
+  demand. Results from a catalog carry `listKind` and `command`. Types: `PaletteSource`, `PaletteDefaults.palette`.
+  - Following the app to such a list drops the steps that led to it, so `back()` has no stale step to return to.
+  - While a choice runs, the store holds off following, then follows once when it settles: an app that calls
+    `notify()` from inside a run no longer makes the step flash "… isn't available now".
+  - While watching, the store reads typed lines through one command line of its own (`commandLine()`, `null` in a
+    picker or a typed-text step): its typed rows (the line's `rows()`) and the words, ghost and Tab drawn from the line
+    are one reading, so a lookup is called once per text. The completion rows are the next steps at the caret:
+    `changeInput(text, caret)` takes it (the end when left out). The function `watchPalette()` returns also disposes
+    the line. Watches are counted (they share the line; the last stop disposes it), and `setDefaults` while watched
+    follows the new source.
+  - A lookup that throws is a failed lookup, as a rejected one is: the line says "Couldn't load …" and the typed text
+    stays.
+- The store holds the highlight (`getState().highlightedId`, moved with `highlight(id)`): after every change of the
+  rows, a lookup that landed included, it is the first enabled row as drawn, so Enter runs what an instant lookup would
+  have. A UI on core alone gets the rule `@shortround/react`'s palette had.
+- `disableInputMatching` belongs to the list a result brings: a result with no `intentions` (only a `message`, say)
+  leaves it as it is, as with Back and Cancel. In 0.4.0's `useShortRound`, every result set it, so a message-only row
+  chosen in a typed-text step turned matching back on.
+- `makeCommandBuilder({ commands, lookups })`: the command-builder engine, which reads a typed line into whole
+  commands with their calls, next steps and lookups still loading. Its lookups may be async, and dates read as ranges
+  (chrono-node). Types: `BuilderCommand`, `BuilderState`. New dependencies: `jsep`, `chrono-node`,
+  `damerau-levenshtein`.
+  - Each word's role (`annotations`) holds while the line is unfinished, from the best reading so far.
+  - A command's name is read as a typed word only when it is a plain lowercase word (`search`, not `newSearch`); its
+    aliases are read as before. A command with neither has no typed form (it is still a row);
+    `findUntypedCommands(catalog)` lists such commands, for a test.
+  - A phrase of several words reads as soon as its last word is typed, before any space after it: a whole line
+    `clear filters` runs the command whose alias it is.
+  - Right after a command's name, a `default` param with values offers its values as next steps, ahead of the hints
+    and other params' words, instead of its own label (`preview ` offers the results). While the app holds the
+    default's current value (`argSource.current`, such as the previewed result), it isn't offered, so Tab can't
+    replace that value.
+  - A command runs by its name alone when it has no params, or while the app holds a current value for each
+    (`open` while a result is previewed). While the app holds none, it reads like any other: `open ` offers the
+    results, and Enter completes the first.
+  - When the values offered at the caret have none to choose from, and nothing is typed for that param, `incomplete`
+    says so with the param's `emptyText`. A catalog gives each param its `path.empty`, or "No {label} to choose from",
+    as its picker says (`drop ` with no filters: "No filters to drop"). Type: `BuilderCommand`'s param `emptyText`.
+    In a palette, `incomplete` shows as disabled rows under Status, with "Loading …" and "Couldn't load …".
+  - A `current` function that returns `null` or `undefined` means the app holds no arg.
+  - A closing quote ends a freeform term: a param's word may follow it directly (`search "react grid" kind library`).
+    An unquoted term still runs until a reserved word.
+- The command line: one typed line read against the commands, with what a host shows for it (each word's role, the
+  ghost of the next word, what would run, whether it can) and what Tab (`acceptCompletion`) and Enter (`submit`) do.
+  `palette.commandLine()` gives one for the commands available now: it follows the app and reads with engines of its
+  own. `makeCommandLine({ builder, run })` makes one over any command builder. Either way, `dispose()` releases it.
+  Enter runs once: a second Enter while a run is in progress returns that run. Its state carries every candidate
+  (`readings`) beside the best (`top`), and a palette's line has `rows()`, the typed-line rows for the line as it
+  reads. Types: `CommandLine`, `CommandLineState`, `WordRole`; `Palette.commandLine`, and `PaletteSource.commandLine`
+  (optional).
+- `matchIntentions(text, intentions)`: the palette's fuzzy matching, for a host that needs to know what the palette
+  would show.
+- Also exported: `bringsList`, `NAVIGATE_GROUP`, `cycleCorners`, `cycleMiddlePositions`.
+- `createSidekickStore` runs on Zustand's vanilla store, with the same shape. A listener is called with
+  `(state, previousState)`; a `set` whose function returns the same state object notifies no one.
+- Types carry no React: a side-panel renderer is `SidecarRenderer` (`() => unknown`). `SidekickStore` now declares
+  `changeSidecar`, `clearSidecar` and `setSidecarReducer`, which the store always had.
+
 ## 0.4.0
 
 ### Minor Changes
@@ -103,7 +205,7 @@
   Memoize the resolver, like `defaultIntentions`: a new function resets the list and the input. A resolver runs on
   every render while text is typed, should be quick and synchronous, and its errors are logged and show no rows.
 
-- b31f345: Palette friction found in the junkdrawer integration.
+- b31f345: Palette friction found in an app integration.
   - **Behaviour change:** the sidecar stays open after a result without a renderer. A result closes it with
     `sideEffects: { closeSidecar: true }`. Cancel, and Back to the start, still close it.
   - Selecting a disabled intention, or one that is invalid for the current input, no longer runs silently or resets

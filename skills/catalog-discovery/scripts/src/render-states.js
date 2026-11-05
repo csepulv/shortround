@@ -1,7 +1,7 @@
-// Review page for a catalog: states first, each with its commands; planned states and commands marked.
-// A state or command is planned when it says `planned: true`, or (for a command) when its state does.
+// Review page for a catalog (format version 3): states first, each with the commands it offers; planned states and
+// commands marked. A command is planned when it says `planned: true`, or when the state listing it does.
+import { compileWhen } from '../../../../packages/shortround-core/src/catalog/conditions.js';
 import {
-  asList,
   esc,
   renderCollisions,
   renderExamples,
@@ -10,103 +10,108 @@ import {
   spaced
 } from './page-kit.js';
 
-const ANYWHERE_MIN = 3; // the same command on this many states → one "From anywhere" arrow on the map
+const spokenName = (name, cmd) => cmd?.label ?? spaced(name);
 
-const spokenName = (id, cmd) => cmd.title ?? spaced(id);
+// The engine types a command by its name and its aliases (not its label), so a name is typed only if it is a word.
+const isTypedWord = (name) => /^[a-z]+$/.test(name);
+const commandWords = (name, cmd) => [...(isTypedWord(name) ? [name] : []), ...(cmd.aliases ?? [])];
 
 // The part of a state's summary before its first semicolon, for the map and the section links.
 const shortLabel = (state, id) => state?.summary?.split(';')[0] ?? id;
-const stateSummary = (catalog, id) => catalog.states?.[id]?.summary ?? id;
+
+// A condition in words, for people: each path by its last part ("previewed has service link"), and the operators
+// spelled out. The clause has passed the engine's check, so it holds only paths, !, &&, || and parentheses.
+const describeWhen = (clause) =>
+  clause
+    .replace(/[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*/g, (path) => spaced(path.split('.').pop()))
+    .replace(/!\s*/g, 'not ')
+    .replace(/&&/g, 'and')
+    .replace(/\|\|/g, 'or');
+
+// The condition functions a clause names, read with the engine's own parser.
+function conditionPaths(clause) {
+  const paths = [];
+  compileWhen(clause, {
+    owner: 'review',
+    resolve: (path) => {
+      paths.push(path);
+      return () => true;
+    }
+  });
+  return paths;
+}
 
 function commandsFor(catalog, stateId) {
-  const state = catalog.states?.[stateId] ?? {};
-  return Object.entries(state.commands ?? {}).map(([id, cmd]) => ({
-    id,
-    cmd,
-    planned: Boolean(state.planned || cmd.planned)
-  }));
+  const state = catalog.states[stateId];
+  return state.commands.map((name) => {
+    const cmd = catalog.commands[name];
+    return { name, cmd, planned: Boolean(state.planned || cmd.planned) };
+  });
 }
 
 const allCommands = (catalog) =>
-  Object.keys(catalog.states ?? {}).flatMap((stateId) =>
+  Object.keys(catalog.states).flatMap((stateId) =>
     commandsFor(catalog, stateId).map((entry) => ({ ...entry, stateId }))
   );
 
-// A `forEach: facets` command stands for one palette row per facet.
-const facetEntries = (catalog, cmd) =>
-  cmd.forEach === 'facets' ? Object.entries(catalog.facets ?? {}) : [];
+const paramsOf = (cmd) => Object.entries(cmd.params ?? {});
+
+// How many picking rows a command makes: one, unless it has several params (a row each, or a row per value).
+function rowCountOf(cmd) {
+  const params = paramsOf(cmd);
+  if (params.length <= 1) {
+    return 1;
+  }
+  return params.reduce(
+    (count, [, param]) =>
+      count + (param.path?.rows === 'each value' ? (param.argSource.list?.length ?? 1) : 1),
+    0
+  );
+}
 
 const paletteRowCount = (catalog, stateId) =>
   commandsFor(catalog, stateId)
     .filter((entry) => !entry.planned)
-    .reduce((count, { cmd }) => count + (facetEntries(catalog, cmd).length || 1), 0);
+    .reduce((count, { cmd }) => count + rowCountOf(cmd), 0);
 
-function describeAsk(catalog, ask) {
-  if (ask?.text) {
-    return `asks for text: “${ask.text}”${ask.required ? ` (required: “${ask.required}”)` : ''}`;
+const isFreeformText = (param) =>
+  Boolean(param.argSource.freeform) && (param.argSource.type ?? 'text') === 'text';
+
+function describeSource(argSource) {
+  if (argSource.freeform) {
+    return `typed ${argSource.type ?? 'text'}`;
   }
-  if (ask?.choose) {
-    const isPlannedList = catalog.pickers?.[ask.choose]?.planned;
-    return `picks from: ${spaced(ask.choose)}${isPlannedList ? ' (planned list)' : ''}`;
+  if (argSource.list) {
+    return `one of: ${argSource.list.map((entry) => entry.title).join(', ')}`;
   }
-  return null;
+  const parts = [
+    argSource.lookup &&
+      `rows from ${argSource.lookup}${argSource.key ? ` (key ${argSource.key})` : ''}`,
+    argSource.current && `the app's current one from ${argSource.current}`
+  ];
+  return parts.filter(Boolean).join('; or ');
 }
 
-// Commands with the same name and destination on many states are navigation, not a path.
-function findAnywhereCommands(catalog) {
-  const counts = new Map();
-  for (const { id, cmd } of allCommands(catalog)) {
-    if (cmd.then) {
-      const key = `${spokenName(id, cmd)}->${cmd.then}`;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-  }
-  return new Set([...counts].filter(([, count]) => count >= ANYWHERE_MIN).map(([key]) => key));
-}
-
-// Mermaid ends a label at a double quote and reserves some words (`end`), so labels use its entity for `"` and
-// state ids get a prefix.
-const mermaidLabel = (text) => String(text).replaceAll('"', '#quot;');
-const stateNode = (id) => `s_${id}`;
-
+// Planned states' guided steps may name the state they lead to: the only moves the catalog states.
 function buildMermaid(catalog) {
   const lines = ['flowchart LR', '  paletteOpens(("Palette opens"))'];
-  const states = Object.entries(catalog.states ?? {});
+  const states = Object.entries(catalog.states);
   for (const [id, state] of states) {
-    lines.push(`  ${stateNode(id)}(["${mermaidLabel(shortLabel(state, id))}"])`);
+    const condition = state.when ? `<br/>while ${describeWhen(state.when)}` : '';
+    lines.push(
+      `  ${stateNode(id)}(["${mermaidLabel(shortLabel(state, id))}${mermaidLabel(condition)}"])`
+    );
   }
   const startState = states.find(([, state]) => state.start)?.[0];
   if (startState) {
     lines.push(`  paletteOpens --> ${stateNode(startState)}`);
   }
-
-  const edges = new Map();
-  const addEdge = (from, to, label, planned) => {
-    // A command whose `then` names its own state (e.g. drilling from one item to a related one) draws a loop.
-    if (!to) {
-      return;
-    }
-    const key = `${from}->${to}->${planned ? 'p' : 'b'}`;
-    edges.set(key, [...(edges.get(key) ?? []), label]);
-  };
-  const anywhere = findAnywhereCommands(catalog);
-  for (const { id, cmd, planned, stateId } of allCommands(catalog)) {
-    const name = spokenName(id, cmd);
-    const from = anywhere.has(`${name}->${cmd.then}`) ? 'anywhere' : stateNode(stateId);
-    addEdge(from, cmd.then && stateNode(cmd.then), name, planned);
-  }
-  for (const [stateId, state] of states) {
+  for (const [id, state] of states) {
     for (const step of state.steps ?? []) {
-      addEdge(stateNode(stateId), step.then && stateNode(step.then), 'finish', true);
+      if (step.then) {
+        lines.push(`  ${stateNode(id)} -.->|"finish"| ${stateNode(step.then)}`);
+      }
     }
-  }
-  if (anywhere.size) {
-    lines.push('  anywhere(("From anywhere"))');
-  }
-  for (const [key, labels] of edges) {
-    const [from, to, kind] = key.split('->');
-    const arrow = kind === 'p' ? '-.->' : '-->';
-    lines.push(`  ${from} ${arrow}|"${mermaidLabel([...new Set(labels)].join(' · '))}"| ${to}`);
   }
   const plannedStates = states.filter(([, state]) => state.planned).map(([id]) => stateNode(id));
   if (plannedStates.length) {
@@ -116,55 +121,104 @@ function buildMermaid(catalog) {
   return lines.join('\n');
 }
 
-// Collisions only matter within one state: the palette shows one state's list at a time.
-function findCollisions(catalog) {
-  const collisions = [];
-  for (const [stateId, state] of Object.entries(catalog.states ?? {})) {
-    const owners = {};
-    const claim = (word, owner) => (owners[word.toLowerCase()] ??= new Set()).add(owner);
-    for (const { id, cmd } of commandsFor(catalog, stateId)) {
-      const facets = facetEntries(catalog, cmd);
-      if (facets.length) {
-        for (const [, facet] of facets) {
-          claim(facet.title, facet.title);
-          for (const alias of facet.aliases ?? []) {
-            claim(alias, facet.title);
-          }
-        }
-        continue;
-      }
-      const name = spokenName(id, cmd);
-      claim(name, name);
-      for (const alias of cmd.aliases ?? []) {
-        claim(alias, name);
-      }
-    }
-    const where = shortLabel(state, stateId);
-    for (const [word, names] of Object.entries(owners)) {
-      if (names.size > 1) {
-        collisions.push({ word, detail: `(${where}) can mean “${[...names].join('” or “')}”` });
-      }
-    }
-    const words = Object.keys(owners);
-    for (const short of words) {
-      for (const long of words) {
-        if (
-          long.startsWith(`${short} `) &&
-          [...owners[short]].some((name) => !owners[long].has(name))
-        ) {
-          collisions.push({
-            word: short,
-            detail: `(${where}) “${[...owners[short]].join('” / “')}” is also the start of “${long}” (“${[...owners[long]].join('” / “')}”)`
-          });
-        }
-      }
+// Mermaid ends a label at a double quote and reserves some words (`end`), so labels use its entity for `"` and
+// state ids get a prefix.
+const mermaidLabel = (text) => String(text).replaceAll('"', '#quot;');
+const stateNode = (id) => `s_${id}`;
+
+// The words a user types in one state: each command's name (if a word) and aliases, and each param's label and
+// aliases, which imply their command. A param's hints introduce whichever param follows, so they belong to the
+// command. Collisions only matter within one state: the palette reads one state's commands at a time.
+// → { word: Map(command name → Set(param label, or null for the command itself)) }
+function wordsOfState(catalog, stateId) {
+  const owners = {};
+  const claim = (word, commandName, paramLabel) => {
+    const byCommand = (owners[word.toLowerCase()] ??= new Map());
+    byCommand.set(commandName, (byCommand.get(commandName) ?? new Set()).add(paramLabel));
+  };
+  for (const { name, cmd } of commandsFor(catalog, stateId)) {
+    const commandName = spokenName(name, cmd);
+    commandWords(name, cmd).forEach((word) => claim(word, commandName, null));
+    for (const [, param] of paramsOf(cmd)) {
+      [param.label, ...(param.aliases ?? [])].forEach((word) =>
+        claim(word, commandName, param.label)
+      );
+      (param.hints ?? []).forEach((word) => claim(word, commandName, null));
     }
   }
-  return collisions;
+  return owners;
 }
 
-// Every function the catalog names, with where it's used: the service layer's interface. A function is
-// planned when every use of it is planned.
+// Who a word names, for people: "Search: Sort", or the command alone. A command's own word and one of its params'
+// read the same command, so the param names it.
+function ownersOf(byCommand) {
+  return [...byCommand].flatMap(([commandName, paramLabels]) => {
+    const params = [...paramLabels].filter(Boolean);
+    return params.length ? params.map((label) => `${commandName}: ${label}`) : [commandName];
+  });
+}
+
+// A word means two things when two commands claim it, or two params of one command do.
+const isAmbiguous = (byCommand) => ownersOf(byCommand).length > 1;
+
+function findCollisions(catalog) {
+  return Object.entries(catalog.states).flatMap(([stateId, state]) => {
+    const words = wordsOfState(catalog, stateId);
+    const owners = Object.fromEntries(
+      Object.entries(words).map(([word, byCommand]) => [word, new Set(ownersOf(byCommand))])
+    );
+    const where = shortLabel(state, stateId);
+    const sameWord = Object.keys(words)
+      .filter((word) => isAmbiguous(words[word]))
+      .map((word) => ({
+        word,
+        detail: `(${where}) can mean “${[...owners[word]].join('” or “')}”`
+      }));
+    const allWords = Object.keys(words);
+    // A short word inside a longer phrase of the same command (Label, label selected) reads that command either way.
+    const startOfLonger = allWords.flatMap((short) =>
+      allWords
+        .filter(
+          (long) =>
+            long.startsWith(`${short} `) &&
+            [...words[short].keys()].some((command) => !words[long].has(command))
+        )
+        .map((long) => ({
+          word: short,
+          detail: `(${where}) “${[...owners[short]].join('” / “')}” is also the start of “${long}” (“${[...owners[long]].join('” / “')}”)`
+        }))
+    );
+    return [...sameWord, ...startOfLonger];
+  });
+}
+
+// A command no typed line can name, and a param that can't follow the typed text.
+function findUntypeable(catalog) {
+  return Object.entries(catalog.commands).flatMap(([name, cmd]) => {
+    const commandName = spokenName(name, cmd);
+    const unnamed = commandWords(name, cmd).length
+      ? []
+      : [
+          {
+            word: name,
+            detail: `${commandName}: its name isn't a word people type, and it has no aliases. Add the phrase people use, such as “${cmd.label.toLowerCase()}”.`
+          }
+        ];
+    const term = paramsOf(cmd).find(([, param]) => param.default && isFreeformText(param));
+    const unhinted = term
+      ? paramsOf(cmd)
+          .filter(([key, param]) => key !== term[0] && !param.hints?.length)
+          .map(([, param]) => ({
+            word: param.label.toLowerCase(),
+            detail: `${commandName}: ${param.label} can't follow the ${term[1].label.toLowerCase()} words, which read up to a hint or a closing quote. Add hints that introduce it, such as “with”.`
+          }))
+      : [];
+    return [...unnamed, ...unhinted];
+  });
+}
+
+// Every function the catalog names, with where it's used: the service layer's interface. A function is planned
+// when every use of it is planned.
 function collectFunctions(catalog) {
   const functions = new Map();
   const addUse = (name, use, planned) => {
@@ -174,16 +228,32 @@ function collectFunctions(catalog) {
     const entry = functions.get(name) ?? { uses: [], planned: true };
     functions.set(name, { uses: [...entry.uses, use], planned: entry.planned && planned });
   };
-  for (const [pickerName, picker] of Object.entries(catalog.pickers ?? {})) {
-    addUse(picker.from, `rows for ${spaced(pickerName)}`, Boolean(picker.planned));
+  for (const [stateId, state] of Object.entries(catalog.states)) {
+    const planned = Boolean(state.planned);
+    if (state.when) {
+      conditionPaths(state.when).forEach((path) =>
+        addUse(path, `${stateId}: holds while`, planned)
+      );
+    }
+    (state.steps ?? []).forEach((step) => addUse(step.run, `${stateId}: guided-flow step`, true));
   }
-  for (const { id, cmd, planned, stateId } of allCommands(catalog)) {
-    addUse(cmd.run, `${stateId}: ${spokenName(id, cmd)}`, planned);
-    addUse(cmd.when, `${stateId}: offered when (${spokenName(id, cmd)})`, planned);
-  }
-  for (const [stateId, state] of Object.entries(catalog.states ?? {})) {
-    for (const step of state.steps ?? []) {
-      addUse(step.run, `${stateId}: guided-flow step`, true);
+  const plannedCommands = new Set(
+    allCommands(catalog)
+      .filter((entry) => entry.planned)
+      .map((entry) => entry.name)
+  );
+  for (const [name, cmd] of Object.entries(catalog.commands)) {
+    const commandName = spokenName(name, cmd);
+    const planned = Boolean(cmd.planned) || plannedCommands.has(name);
+    addUse(cmd.run, `${commandName}: runs`, planned);
+    if (cmd.when) {
+      conditionPaths(cmd.when).forEach((path) =>
+        addUse(path, `${commandName}: offered while`, planned)
+      );
+    }
+    for (const [, param] of paramsOf(cmd)) {
+      addUse(param.argSource.lookup, `${commandName}: ${param.label} rows`, planned);
+      addUse(param.argSource.current, `${commandName}: ${param.label} now`, planned);
     }
   }
   return [...functions].sort(([a], [b]) => a.localeCompare(b));
@@ -199,118 +269,95 @@ function renderFunctions(functions) {
   return `<ul class="functions">${items || '<li>None.</li>'}</ul>`;
 }
 
-// An example's `means` is one intention id or a list (a line of several commands): `<app>.<command>[.<facet>][::<row>]`.
-// Examples are checked in the start state, so they are matched to its commands; the longest command name wins.
+// An example's `means` is one call: `{ <command>: { <param>: arg } }`. Examples are read in the start state.
 function groupExamplesByCommand(catalog, examples) {
-  const startState = Object.entries(catalog.states ?? {}).find(([, state]) => state.start)?.[0];
-  const names = startState ? Object.keys(catalog.states[startState].commands ?? {}) : [];
-  const commandOf = (intentionId) => {
-    const rest = intentionId.replace(`${catalog.app}.`, '').split('::')[0];
-    return names
-      .filter((name) => rest === name || rest.startsWith(`${name}.`))
-      .sort((a, b) => b.length - a.length)[0];
-  };
+  const startState = Object.entries(catalog.states).find(([, state]) => state.start)?.[0];
+  const names = new Set(startState ? catalog.states[startState].commands : []);
   const byCommand = {};
   let unmatchedCount = 0;
   for (const example of examples) {
-    const commands = new Set(asList(example.means).map(commandOf));
-    if (commands.has(undefined)) {
+    const [command] = Object.keys(example.means);
+    if (!names.has(command)) {
       unmatchedCount += 1;
+      continue;
     }
-    for (const name of commands) {
-      if (name) {
-        (byCommand[name] ??= []).push(example);
-      }
-    }
+    (byCommand[command] ??= []).push(example);
   }
-  return { startState, byCommand, unmatchedCount };
-}
-
-function renderFacetList(catalog, cmd) {
-  const items = facetEntries(catalog, cmd)
-    .map(
-      ([, facet]) =>
-        `<li>${esc(facet.title)}${facet.aliases?.length ? `<span class="aka">also: ${facet.aliases.map(esc).join(', ')}</span>` : ''}</li>`
-    )
-    .join('');
-  return items
-    ? `<ul class="facet-list" aria-label="One palette row per filter">${items}</ul>`
-    : '';
+  return { byCommand, unmatchedCount };
 }
 
 // `tier` (common | full) marks the everyday view; a command without one inherits its state's tier.
 const TIER_LABELS = { common: 'Everyday', full: 'Full catalog' };
 
 const usesTiers = (catalog) =>
-  Object.values(catalog.states ?? {}).some(
-    (state) => state.tier || Object.values(state.commands ?? {}).some((cmd) => cmd.tier)
-  );
+  Object.values(catalog.states).some((state) => state.tier) ||
+  Object.values(catalog.commands).some((cmd) => cmd.tier);
 
 const tierBadge = (tier) =>
   tier ? `<span class="badge tier-${esc(tier)}">${esc(TIER_LABELS[tier] ?? tier)}</span>` : '';
 
-function renderCommand(catalog, { id, cmd, planned }, { stateTier, examples }) {
-  const tier = cmd.tier ?? stateTier;
-  const flags = [
-    planned && 'planned',
-    describeAsk(catalog, cmd.ask),
-    cmd.then && `then: ${stateSummary(catalog, cmd.then)}`,
-    cmd.when && `only when ${cmd.when}`
+function renderParam([key, param]) {
+  const traits = [
+    param.default && 'takes the bare words',
+    param.list && 'several',
+    param.required && 'required'
   ].filter(Boolean);
+  const words = [
+    `${[param.label, ...(param.aliases ?? [])].map(esc).join(', ')}`,
+    param.hints?.length && `after: ${param.hints.map(esc).join(', ')}`
+  ].filter(Boolean);
+  return `<li><b>${esc(param.label)}</b> <span class="aka">(${esc(key)})</span> ${esc(describeSource(param.argSource))}${traits.length ? ` · ${traits.map(esc).join(', ')}` : ''}<span class="runtime">words: ${words.join(' · ')}</span>${param.summary ? `<span class="runtime">${esc(param.summary)}</span>` : ''}</li>`;
+}
+
+function renderCommand(catalog, { name, cmd, planned }, { stateTier, examples }) {
+  const tier = cmd.tier ?? stateTier;
+  const flags = [planned && 'planned', cmd.when && `only while ${describeWhen(cmd.when)}`].filter(
+    Boolean
+  );
+  const params = paramsOf(cmd);
   const exampleItems = renderExamples(examples);
+  const typed = commandWords(name, cmd);
   const language = `<details class="language">
         <summary>How you say it</summary>
         <dl>
-          <div><dt>command words</dt><dd>${[spokenName(id, cmd), ...(cmd.aliases ?? [])].map(esc).join(', ')}</dd></div>
-          <div><dt>runs</dt><dd>${cmd.run ? `<code>${esc(cmd.run)}</code>` : 'not named yet'}${cmd.args ? `, called with <code>${esc(JSON.stringify(cmd.args))}</code>` : ''}</dd></div>${cmd.group ? `<div><dt>group</dt><dd>${esc(cmd.group)}</dd></div>` : ''}
+          <div><dt>command words</dt><dd>${typed.length ? typed.map(esc).join(', ') : 'none: no typed line names it'}</dd></div>
+          <div><dt>runs</dt><dd>${cmd.run ? `<code>${esc(cmd.run)}</code>` : 'not named yet'}</dd></div>${cmd.group ? `<div><dt>group</dt><dd>${esc(catalog.groups[cmd.group]?.label ?? cmd.group)}</dd></div>` : ''}
         </dl>
       </details>`;
   return `
-    <article class="command${planned ? ' is-planned' : ''}" id="cmd-${esc(id)}"${tier ? ` data-tier="${esc(tier)}"` : ''}>
+    <article class="command${planned ? ' is-planned' : ''}" id="cmd-${esc(name)}"${tier ? ` data-tier="${esc(tier)}"` : ''}>
       <header class="command-head">
-        <h3>${esc(cmd.summary ?? spokenName(id, cmd))}</h3>${tier === 'full' ? tierBadge(tier) : ''}
+        <h3>${esc(cmd.summary ?? spokenName(name, cmd))}</h3>${tier === 'full' ? tierBadge(tier) : ''}
         ${flags.length ? `<span class="flags">${flags.map(esc).join(' · ')}</span>` : ''}
       </header>
-      ${renderFacetList(catalog, cmd)}
+      ${params.length ? `<ul class="params" aria-label="What it takes">${params.map(renderParam).join('')}</ul>` : ''}
       ${cmd.review ? `<p class="review-note">To revisit: ${esc(cmd.review)}</p>` : ''}
       ${exampleItems ? `<ul class="examples">${exampleItems}</ul>` : ''}
       ${language}
     </article>`;
 }
 
-// Ways in and out of a state, read from the commands' `then`.
-function describeMoves(catalog, stateId) {
-  const leaveBy = commandsFor(catalog, stateId)
-    .filter(({ cmd }) => cmd.then && cmd.then !== stateId)
-    .map(({ id, cmd }) => spokenName(id, cmd));
-  const reachedFrom = allCommands(catalog)
-    .filter(({ cmd, stateId: from }) => cmd.then === stateId && from !== stateId)
-    .map(({ id, cmd }) => spokenName(id, cmd));
-  return { leaveBy: [...new Set(leaveBy)], reachedFrom: [...new Set(reachedFrom)] };
-}
-
-function renderStateMeta(catalog, stateId, state) {
-  const { leaveBy, reachedFrom } = describeMoves(catalog, stateId);
+function renderStateMeta(state) {
   const parts = [
     state.start && ['Starts here', 'when the palette opens'],
-    reachedFrom.length && ['Reached from', reachedFrom.join(', ')],
-    leaveBy.length && ['Leave by', leaveBy.join(', ')],
+    state.when && ['Holds while', describeWhen(state.when)],
     state.panel && ['Shows', state.panel === 'sidecar' ? 'the side panel' : state.panel]
   ].filter(Boolean);
   return `<div class="state-meta">${parts.map(([label, value]) => `<span>${esc(label)}: <b>${esc(value)}</b></span>`).join('')}</div>`;
 }
 
-function describeStep(catalog, step) {
-  if (step.ask) {
-    return describeAsk(catalog, step.ask);
+function describeStep(step) {
+  if (step.ask?.text) {
+    return `asks for text: “${step.ask.text}”`;
   }
-  return `runs ${step.run ?? '(not named yet)'}${step.then ? `, then ${stateSummary(catalog, step.then)}` : ''}`;
+  if (step.ask?.choose) {
+    return `picks from: ${spaced(step.ask.choose)}`;
+  }
+  return `runs ${step.run ?? '(not named yet)'}${step.then ? `, then ${step.then}` : ''}`;
 }
 
-function renderSteps(catalog, steps) {
-  const items = steps
-    .map((step) => `<li class="step">${esc(describeStep(catalog, step))}</li>`)
-    .join('');
+function renderSteps(steps) {
+  const items = steps.map((step) => `<li class="step">${esc(describeStep(step))}</li>`).join('');
   return `<article class="command is-planned"><header class="command-head"><h3>Steps, in order</h3><span class="flags">guided flow</span></header><ol class="steps">${items}</ol></article>`;
 }
 
@@ -321,7 +368,7 @@ function renderState(catalog, stateId, state, examplesByCommand) {
     .map((entry) =>
       renderCommand(catalog, entry, {
         stateTier: state.tier,
-        examples: examplesByCommand[entry.id] ?? []
+        examples: state.start ? (examplesByCommand[entry.name] ?? []) : []
       })
     )
     .join('');
@@ -329,25 +376,25 @@ function renderState(catalog, stateId, state, examplesByCommand) {
   <section class="group" id="state-${esc(stateId)}"${state.tier ? ` data-tier="${esc(state.tier)}"` : ''}>
     <div class="state-head">
       <h2>${esc(state.summary ?? stateId)} <span class="badge ${isPlanned ? 'planned' : 'built'}">${isPlanned ? 'Planned' : 'Built'}</span>${tierBadge(state.tier)}</h2>
-      ${renderStateMeta(catalog, stateId, state)}
+      ${renderStateMeta(state)}
       ${rows !== null ? `<div class="state-meta"><span>Palette rows today: <b>${rows}</b></span></div>` : ''}
       ${state.review ? `<p class="review-note">To revisit: ${esc(state.review)}</p>` : ''}
     </div>
     ${commands}
-    ${state.steps ? renderSteps(catalog, state.steps) : ''}
+    ${state.steps ? renderSteps(state.steps) : ''}
   </section>`;
 }
 
-// Workflows name the state each step happens in, so the path through the graph is visible.
+// Workflows name the state each step happens in, so a path through the states is visible.
 function renderWorkflow(catalog, [id, workflow]) {
   const steps = workflow.steps ?? workflow.options ?? [];
   const items = steps
     .map((step) => {
       const where = step.state
-        ? `<span class="where">${esc(shortLabel(catalog.states?.[step.state], step.state))}</span>`
+        ? `<span class="where">${esc(shortLabel(catalog.states[step.state], step.state))}</span>`
         : '';
       const then = step.then
-        ? `<span class="then">then: ${asList(step.then).map(esc).join(' · ')}</span>`
+        ? `<span class="then">then: ${[step.then].flat().map(esc).join(' · ')}</span>`
         : '';
       return `
       <li class="step">
@@ -368,15 +415,6 @@ function renderWorkflow(catalog, [id, workflow]) {
     </article>`;
 }
 
-function renderPicker([name, picker]) {
-  const lines = [
-    picker.planned && '<p class="depends">Planned: the rows function doesn’t exist yet</p>',
-    picker.from && `<p>Rows from <code>${esc(picker.from)}</code></p>`,
-    picker.empty && `<p>When there are no rows: “${esc(picker.empty)}”</p>`
-  ].filter(Boolean);
-  return `<section class="vocab"><h3>${esc(spaced(name))}</h3>${lines.join('')}</section>`;
-}
-
 const TIER_TOGGLE = `<div class="tier-toggle">
     <label for="common-only"><input id="common-only" type="checkbox"> Show the everyday view only (hide commands and states tagged “Full catalog”)</label>
   </div>
@@ -387,29 +425,42 @@ const TIER_TOGGLE = `<div class="tier-toggle">
   </script>`;
 
 function countCatalog(catalog, examples) {
-  const states = Object.entries(catalog.states ?? {});
-  const commands = allCommands(catalog);
+  const states = Object.entries(catalog.states);
   return {
     builtStates: states.filter(([, state]) => !state.planned).length,
     plannedStates: states.filter(([, state]) => state.planned).length,
     builtRows: states.reduce((count, [id]) => count + paletteRowCount(catalog, id), 0),
-    plannedCommands: commands.filter((entry) => entry.planned).length,
+    plannedCommands: allCommands(catalog).filter((entry) => entry.planned).length,
     examples: examples.length
   };
 }
 
+function renderWorkflows(catalog) {
+  if (!catalog.workflows) {
+    return '';
+  }
+  return `<section id="workflows" class="group">
+    <h2>Workflows</h2>
+    <p class="section-note">Named paths through the states. Each step shows the state it happens in and what you'd type.</p>
+    ${Object.entries(catalog.workflows)
+      .map((entry) => renderWorkflow(catalog, entry))
+      .join('')}
+  </section>`;
+}
+
 export function renderStatesPage(catalog, examples = []) {
-  const states = Object.entries(catalog.states ?? {});
+  const states = Object.entries(catalog.states);
   const counts = countCatalog(catalog, examples);
   const { byCommand, unmatchedCount } = groupExamplesByCommand(catalog, examples);
   const collisions = findCollisions(catalog);
+  const untypeable = findUntypeable(catalog);
   const functions = collectFunctions(catalog);
 
   const body = `
   ${usesTiers(catalog) ? TIER_TOGGLE : ''}
   <section id="map">
-    <h2>Paths through the palette</h2>
-    <p class="section-note">Each box is a state: a context the user is in, with its own list of commands. Arrows are commands that move you to another state. Dashed boxes and arrows are planned, not built.</p>
+    <h2>The states</h2>
+    <p class="section-note">Each box is a state: a context the user is in, with its own list of commands. A state holds while its condition does, so the app's own state decides the list; the catalog doesn't say which command changes a condition. Dashed boxes are planned, not built.</p>
     ${renderMap(buildMermaid(catalog))}
   </section>
 
@@ -417,42 +468,28 @@ export function renderStatesPage(catalog, examples = []) {
     ${states.map(([id, state]) => renderState(catalog, id, state, byCommand)).join('')}
   </div>
 
-  ${
-    catalog.workflows
-      ? `<section id="workflows" class="group">
-    <h2>Workflows</h2>
-    <p class="section-note">Named paths through the states. Each step shows the state it happens in and what you'd type.</p>
-    ${Object.entries(catalog.workflows)
-      .map((entry) => renderWorkflow(catalog, entry))
-      .join('')}
-  </section>`
-      : ''
-  }
+  ${renderWorkflows(catalog)}
 
   <section id="collisions">
     <h2>Words that mean two things</h2>
-    <p class="section-note">Checked within each state, since the palette shows one state's list at a time. Includes command names and their other words.</p>
+    <p class="section-note">Checked within each state, since the palette reads one state's commands at a time. Includes command names and aliases, and each param's label, aliases and hints.</p>
     ${renderCollisions(collisions)}
+  </section>
+
+  <section id="untypeable">
+    <h2>Words nobody can type</h2>
+    <p class="section-note">A typed line names a command by its name or an alias, not its label. A param after unquoted typed text needs a hint (such as “with”) to start it; after a closing quote, the param's own word (such as “kind”) starts it too.</p>
+    ${renderCollisions(untypeable)}
   </section>
 
   <section id="functions">
     <h2>Functions the catalog names</h2>
-    <p class="section-note">Every <code>run</code>, <code>when</code> and <code>from</code>: the interface of the app's service layer. Each must exist in the app, or be written, before the catalog runs. Check the spelling here; nothing else does until the app loads the catalog.</p>
+    <p class="section-note">Every <code>run</code>, <code>lookup</code> and <code>current</code>, and each condition in a <code>when</code>: the interface of the app's service layer. Each must exist in the app, or be written, before the catalog runs. Check the spelling here; nothing else does until the app loads the catalog.</p>
     ${renderFunctions(functions)}
-  </section>
-
-  ${
-    catalog.pickers
-      ? `<section id="pickers">
-    <h2>Pickers</h2>
-    <p class="section-note">Lists a command opens so you can choose what it acts on.</p>
-    <div class="vocabs">${Object.entries(catalog.pickers).map(renderPicker).join('')}</div>
-  </section>`
-      : ''
-  }`;
+  </section>`;
 
   return {
-    summary: `${counts.builtStates} states, ${counts.plannedStates} planned states, ${counts.builtRows} palette rows, ${counts.examples} examples (${unmatchedCount} unmatched), ${functions.length} functions named`,
+    summary: `${counts.builtStates} states, ${counts.plannedStates} planned states, ${counts.builtRows} palette rows, ${counts.examples} examples (${unmatchedCount} unmatched), ${collisions.length} words that mean two things, ${untypeable.length} words nobody can type, ${functions.length} functions named`,
     html: renderShell({
       app: catalog.app,
       version: catalog.version,
@@ -464,20 +501,21 @@ export function renderStatesPage(catalog, examples = []) {
         [counts.builtRows, 'palette rows built'],
         [counts.plannedCommands, 'commands planned'],
         [counts.examples, 'examples'],
-        unmatchedCount && [unmatchedCount, 'examples matching no command'],
+        unmatchedCount && [unmatchedCount, 'examples matching no start-state command'],
         [collisions.length, 'words that mean two things'],
+        [untypeable.length, 'words nobody can type'],
         [functions.length, 'functions named']
       ].filter(Boolean),
       nav: [
-        ['map', 'Map'],
+        ['map', 'States'],
         ...states.map(([id, state]) => [
           `state-${id}`,
           `${shortLabel(state, id)}${state.planned ? ' (planned)' : ''}`
         ]),
         catalog.workflows && ['workflows', 'Workflows'],
         ['collisions', 'Words that mean two things'],
-        ['functions', 'Functions'],
-        catalog.pickers && ['pickers', 'Pickers']
+        ['untypeable', 'Words nobody can type'],
+        ['functions', 'Functions']
       ].filter(Boolean),
       body
     })

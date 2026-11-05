@@ -1,8 +1,0 @@
-# Grammar tests for search-palette.yaml: each typed line (`say`) must resolve, first, to the row `means`.
-examples:
-  - say: tag react
-    means: app.facet.tags::react
-  - say: sort created new
-    means: app.sort::created-newest
-  - say: search react grid
-    means: app.search::text

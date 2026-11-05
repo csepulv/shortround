@@ -8,39 +8,36 @@ import {
   releasesByVersion
 } from '../check-migration-guide.js';
 
-// The shape `changeset status --output=<file>` writes (trimmed to the fields the check reads).
-const status = {
-  changesets: [{ id: 'behaviour-into-core' }, { id: 'input-resolver' }],
-  releases: [
-    { name: '@shortround/core', type: 'minor', oldVersion: '0.2.3', newVersion: '0.3.0' },
-    { name: '@shortround/mui', type: 'minor', oldVersion: '0.2.3', newVersion: '0.3.0' },
-    { name: '@shortround/conformance', type: 'none', oldVersion: '0.0.0', newVersion: '0.0.0' }
-  ]
-};
+// The packages' manifests (trimmed to the fields the check reads). Versions are set by hand, so the version in each
+// published manifest is the one being released.
+const manifests = [
+  { name: '@shortround/core', version: '0.5.0' },
+  { name: '@shortround/react', version: '0.5.0' },
+  { name: '@shortround/mui', version: '0.5.0' },
+  { name: '@shortround/conformance', version: '0.0.0', private: true }
+];
 
 describe('releasesByVersion', () => {
-  test('groups the packages being released by their new version, skipping unreleased ones', () => {
-    expect(releasesByVersion(status)).toEqual([
-      { version: '0.3.0', packages: ['@shortround/core', '@shortround/mui'] }
+  test('groups the published packages by their version, skipping private ones', () => {
+    expect(releasesByVersion(manifests)).toEqual([
+      { version: '0.5.0', packages: ['@shortround/core', '@shortround/react', '@shortround/mui'] }
     ]);
   });
 
   test('keeps different versions apart', () => {
-    const mixed = {
-      releases: [
-        { name: '@shortround/core', type: 'patch', oldVersion: '0.3.0', newVersion: '0.3.1' },
-        { name: '@shortround/mui', type: 'minor', oldVersion: '0.3.0', newVersion: '0.4.0' }
-      ]
-    };
+    const mixed = [
+      { name: '@shortround/core', version: '0.5.1' },
+      { name: '@shortround/mui', version: '0.5.0' }
+    ];
 
     expect(releasesByVersion(mixed)).toEqual([
-      { version: '0.3.1', packages: ['@shortround/core'] },
-      { version: '0.4.0', packages: ['@shortround/mui'] }
+      { version: '0.5.1', packages: ['@shortround/core'] },
+      { version: '0.5.0', packages: ['@shortround/mui'] }
     ]);
   });
 
-  test('is empty when nothing is pending', () => {
-    expect(releasesByVersion({ releases: [] })).toEqual([]);
+  test('is empty when nothing is published', () => {
+    expect(releasesByVersion([{ name: 'x', version: '0.0.0', private: true }])).toEqual([]);
   });
 });
 
@@ -119,15 +116,14 @@ describe('isRunDirectly', () => {
 });
 
 describe('describeMissing', () => {
-  test('names the versions, the packages and the pending changesets', () => {
-    const message = describeMissing(
-      [{ version: '0.3.0', packages: ['@shortround/core', '@shortround/mui'] }],
-      ['behaviour-into-core', 'input-resolver']
-    );
+  test('names the versions and the packages', () => {
+    const message = describeMissing([
+      { version: '0.5.0', packages: ['@shortround/core', '@shortround/mui'] }
+    ]);
 
     expect(message).toBe(
-      'MIGRATING.md has no section for 0.3.0 (@shortround/core, @shortround/mui).\n' +
-        'Add a "## 0.3.0" section, written from the pending changesets: behaviour-into-core, input-resolver.\n' +
+      'MIGRATING.md has no section for 0.5.0 (@shortround/core, @shortround/mui).\n' +
+        'Add a "## 0.5.0" section, written from the changes since the last release, for the people upgrading.\n' +
         'A release with nothing to act on still gets one line, such as "No action needed".'
     );
   });
@@ -135,7 +131,6 @@ describe('describeMissing', () => {
   test('names the guide it read, when that is not MIGRATING.md', () => {
     const message = describeMissing(
       [{ version: '0.3.0', packages: ['@shortround/core'] }],
-      ['input-resolver'],
       'draft-guide.md'
     );
 

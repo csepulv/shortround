@@ -1,5 +1,5 @@
 // The smallest theme that meets the contract: plain elements that only draw, with the contract's test hooks.
-// No cmdk: core renders cmdk's input and rows (theme-provider M3).
+// No cmdk: core renders cmdk's input and rows.
 // A test fixture that exports a theme object, not a module for fast refresh.
 /* eslint-disable react-refresh/only-export-components */
 import { TEST_IDS } from '../../test-ids.js';

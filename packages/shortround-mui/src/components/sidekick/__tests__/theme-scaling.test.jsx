@@ -8,7 +8,7 @@ import { SidekickFrame } from '../SidekickFrame.jsx';
 import { SidekickPopover } from '../SidekickPopover.jsx';
 
 // A consumer theme unlike the example app's (spacing 4, radius 2): MUI's default
-// spacing (8px) and a larger corner radius, as in Junk Drawer.
+// spacing (8px) and a larger corner radius, as a real app's theme has.
 const consumerTheme = createTheme({ shape: { borderRadius: 8 } });
 
 const renderInTheme = (ui) => render(<ThemeProvider theme={consumerTheme}>{ui}</ThemeProvider>);
@@ -57,11 +57,11 @@ test('control bar keeps its buttons off the edges and has an opaque background',
       onClose={vi.fn()}
       setSize={vi.fn()}
       size="medium"
-      title="Junk Drawer"
+      title="Bookmarks"
     />
   );
 
-  const bar = screen.getByText('Junk Drawer').parentElement;
+  const bar = screen.getByText('Bookmarks').parentElement;
   expect(styleOf(bar).paddingLeft).toBe('8px');
   expect(styleOf(bar).paddingRight).toBe('8px');
   expect(styleOf(bar).backgroundColor).toBe('rgb(255, 255, 255)');

@@ -1,0 +1,199 @@
+# A bookmark and chat search app's palette in catalog format version 3, translated from a version 2 catalog. Row ids
+# follow the catalog's names (links.search.tags), not version 2's (links.search.addFacetValue.tags).
+#
+# One catalog drives both ways of using the palette: rows to pick from (a command with one param asks for it; a
+# command with several params shows a row per param), and typed whole commands ("search grid with tags react").
+#
+#   groups:   the palette's sections, in order. Rows sort by group, then catalog order. A row takes its group's icon
+#             unless it names its own.
+#   states:   where the user can be. A state holds while its `when` holds (the app's conditions), and lists the
+#             commands that apply there. No `then`: after every run, the list is whatever the app's state says.
+#             `panel` keeps the side panel open while the state holds.
+#   commands: what the user can do. `run` names the app function; it receives the args, { <paramKey>: arg }.
+#             `aliases` are the phrases people type (a command's key isn't typed unless it's a word, like `next`).
+#             `when` limits a command further: condition names with !, && and ||.
+#   params:   what a command takes. `argSource` says where args come from: `freeform` (with `type`), a `list`, a
+#             `lookup` (an app function, called with { command, filled, key }), and `current` (the arg the app
+#             holds now, such as the previewed result). `hints` are connector words that introduce the param in a
+#             typed line (`with`, `for`); `aliases` name it (`tagged`). `default` takes bare words. `list: true`
+#             takes several args.
+#   path:     overrides for the picking rows (id, title, prompt, empty, group, icon, rows: each value). By default a
+#             prompt reads "Type the {label}" and an empty picker "No {label} to choose from". `empty` is also what
+#             a typed line says when the param has nothing to offer.
+
+version: 3
+app: links
+
+groups:
+  search: { label: Search, icon: search }
+  refine: { label: Refine, icon: settings }
+  preview: { label: Preview, icon: file }
+  results: { label: Results, icon: file }
+
+states:
+  browsing:
+    summary: Searching and refining; where the palette starts
+    start: true
+    when: '!links.conditions.previewed'
+    commands: [search, newSearch, clearFilters, clearSearch, drop, preview, open, openInService]
+  previewing:
+    summary: One result is open in the side panel
+    when: links.conditions.previewed
+    panel: sidecar
+    commands: [next, previous, open, openInService, closePreview]
+
+# A sidebar facet as a param of Search. Each facet merges this and adds its own key, label and aliases.
+x-facet: &facet
+  list: true
+  hints: [with]
+  path: { group: refine, icon: folder, empty: 'No {label} values for this search' }
+
+commands:
+  search:
+    label: Search
+    aliases: [find, look for]
+    group: search
+    run: links.search.apply
+    params:
+      term:
+        label: Search
+        default: true
+        hints: [for, about]
+        argSource: { freeform: true, type: text }
+        path:
+          aliases: [find, look for]
+          prompt: Search for the typed words
+          required: Type some words first
+      sort:
+        label: Sort
+        hints: [with, sort by, order by]
+        aliases: [sort, sort by, order by]
+        argSource: { lookup: links.sortOptions.rows }
+        path: { group: refine, empty: No sort options }
+      match:
+        label: Match
+        aliases: [match]
+        argSource:
+          list:
+            - { value: all, title: all, aliases: [every] }
+            - { value: any, title: any, aliases: [either] }
+        path: { rows: each value, title: 'Match {title}', group: refine }
+      content_format:
+        <<: *facet
+        label: Type
+        aliases: [format]
+        argSource: { lookup: links.search.facetValueRows, key: content_format }
+      # "type" is shared with Type on purpose: the value decides.
+      kinds:
+        <<: *facet
+        label: Kind
+        aliases: [category, type]
+        argSource: { lookup: links.search.facetValueRows, key: kinds }
+      tags:
+        <<: *facet
+        label: Tag
+        aliases: [tagged, tag, tags]
+        argSource: { lookup: links.search.facetValueRows, key: tags }
+      plugin:
+        <<: *facet
+        label: Plugin
+        argSource: { lookup: links.search.facetValueRows, key: plugin }
+      service:
+        <<: *facet
+        label: Service
+        aliases: [from]
+        argSource: { lookup: links.search.facetValueRows, key: service }
+      machine:
+        <<: *facet
+        label: Machine
+        argSource: { lookup: links.search.facetValueRows, key: machine }
+      project:
+        <<: *facet
+        label: Project
+        argSource: { lookup: links.search.facetValueRows, key: project }
+      bookmarked_at:
+        <<: *facet
+        label: Bookmark age
+        aliases: [bookmarked in]
+        argSource: { lookup: links.search.facetValueRows, key: bookmarked_at }
+      created_at:
+        <<: *facet
+        label: Created age
+        argSource: { lookup: links.search.facetValueRows, key: created_at }
+
+  newSearch:
+    label: New search
+    aliases: [new search, fresh search]
+    group: search
+    run: links.search.replaceWith
+    params:
+      term:
+        label: New search
+        default: true
+        argSource: { freeform: true, type: text }
+        path: { prompt: Start over with the typed words, required: Type some words first }
+
+  clearFilters:
+    { label: Clear filters, aliases: [clear filters], group: search, run: links.search.clearFilters }
+  clearSearch:
+    { label: Clear search, aliases: [clear search], group: search, run: links.search.clearSearch }
+
+  drop:
+    label: Drop filter
+    aliases: [drop, remove filter]
+    group: refine
+    run: links.search.dropFilter
+    params:
+      filter:
+        label: Filter
+        default: true
+        argSource: { lookup: links.search.activeFilterRows }
+        path: { empty: No filters to drop }
+
+  preview:
+    label: Preview
+    aliases: [peek]
+    group: results
+    run: links.searchResults.previewById
+    params:
+      result:
+        label: Result
+        default: true
+        argSource: { lookup: links.searchResults.rows }
+        path: { empty: No results loaded }
+
+  # One command in both states: while previewing, its result is the previewed one (`current`); while browsing, it
+  # asks for one.
+  open:
+    label: Open
+    group: results
+    run: links.searchResults.openById
+    params:
+      result:
+        label: Result
+        default: true
+        argSource: { lookup: links.searchResults.rows, current: links.searchResults.previewedId }
+        path: { empty: No results loaded }
+
+  openInService:
+    label: Open in service
+    aliases: [open in service]
+    group: results
+    when: '!links.conditions.previewed || links.searchResults.previewedHasServiceLink'
+    run: links.searchResults.openInServiceById
+    params:
+      result:
+        label: Result
+        default: true
+        argSource:
+          lookup: links.searchResults.chatWithServiceLinkRows
+          current: links.searchResults.previewedId
+        path: { empty: No loaded chats have a service link }
+
+  next: { label: Next, group: preview, run: links.searchResults.showNext }
+  previous: { label: Previous, aliases: [prev], group: preview, run: links.searchResults.showPrevious }
+  closePreview:
+    label: Close preview
+    aliases: [close preview, close, back, done]
+    group: preview
+    run: links.searchResults.closePreview

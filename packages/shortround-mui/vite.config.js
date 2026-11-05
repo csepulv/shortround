@@ -18,12 +18,14 @@ export default defineConfig({
     rollupOptions: {
       external: [
         'react',
+        'react/jsx-runtime',
         'react-dom',
         '@mui/material',
         '@mui/icons-material',
         '@emotion/react',
         '@emotion/styled',
         '@shortround/core',
+        '@shortround/react',
         'framer-motion',
         'lucide-react'
       ],

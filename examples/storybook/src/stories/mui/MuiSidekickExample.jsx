@@ -1,12 +1,12 @@
 import { Box, Button, createTheme } from '@mui/material';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
+import { muiTheme } from '@shortround/mui';
 import {
   ShortRoundProvider,
   ShortRoundSidekick,
   SidekickStoreProvider,
   useSidekick
-} from '@shortround/core';
-import { muiTheme } from '@shortround/mui';
+} from '@shortround/react';
 import { LifeBuoy, Save } from 'lucide-react';
 
 import { helpIntent } from './help-intent.js';

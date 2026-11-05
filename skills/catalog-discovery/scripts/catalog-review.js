@@ -1,16 +1,18 @@
-// Generated from scripts/src and @shortround/catalog's checks. Don't edit this file; edit the source.
+// Generated from scripts/src and @shortround/core's catalog checks. Don't edit this file; edit the source.
+/* eslint-disable simple-import-sort/imports */
 
 // ../skills/catalog-discovery/scripts/src/generate.js
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-// ../packages/shortround-catalog/src/examples.js
+// ../packages/shortround-core/src/catalog/examples.js
 import { parse } from "./vendor/yaml.js";
 import { z } from "./vendor/zod.js";
+var callSchema = z.record(z.string(), z.record(z.string(), z.unknown())).refine((call) => Object.keys(call).length === 1, {
+  message: "means names one command, with its args"
+});
 var examplesSchema = z.strictObject({
-  examples: z.array(
-    z.strictObject({ say: z.string(), means: z.union([z.string(), z.array(z.string()).min(2)]) })
-  )
+  examples: z.array(z.strictObject({ say: z.string(), means: callSchema }))
 });
 function loadExamples(text) {
   const result = examplesSchema.safeParse(parse(text));
@@ -21,119 +23,21 @@ ${z.prettifyError(result.error)}`);
   return result.data.examples;
 }
 
-// ../packages/shortround-catalog/src/load-catalog.js
+// ../packages/shortround-core/src/catalog/load-catalog.js
 import { parse as parse2 } from "./vendor/yaml.js";
 import { z as z3 } from "./vendor/zod.js";
 
-// ../packages/shortround-catalog/src/call-args.js
-var REFERENCE = /^\$(?:(key)|(value)((?:\.[A-Za-z_$][\w$]*)*))$/;
-var LOOKS_LIKE_REFERENCE = /^\$(key|value)/;
-function parseReference(item) {
-  const match = typeof item === "string" ? REFERENCE.exec(item) : null;
-  return match && { name: match[1] ?? match[2], fields: (match[3] ?? "").split(".").slice(1) };
-}
-function collectStrings(item) {
-  if (typeof item === "string") {
-    return [item];
-  }
-  if (item && typeof item === "object") {
-    return Object.values(item).flatMap(collectStrings);
-  }
-  return [];
-}
-var findMalformedReferences = (args) => collectStrings(args).filter((text) => LOOKS_LIKE_REFERENCE.test(text) && !REFERENCE.test(text));
-function mapReferences(item, visit) {
-  const reference = parseReference(item);
-  if (reference) {
-    return visit(reference);
-  }
-  if (Array.isArray(item)) {
-    return item.map((element) => mapReferences(element, visit));
-  }
-  if (item && typeof item === "object") {
-    return Object.fromEntries(
-      Object.entries(item).map(([field, element]) => [field, mapReferences(element, visit)])
-    );
-  }
-  return item;
-}
-function findReferencedInputs(args) {
-  const names = /* @__PURE__ */ new Set();
-  mapReferences(args, ({ name }) => names.add(name));
-  return names;
-}
-
-// ../packages/shortround-catalog/src/catalog-schema.js
+// ../packages/shortround-core/src/catalog/catalog-schema.js
 import { z as z2 } from "./vendor/zod.js";
+var tierSchema = z2.enum(["common", "full"]);
 var askSchema = z2.union([
   z2.strictObject({ text: z2.string(), required: z2.string().optional() }),
   z2.strictObject({ choose: z2.string() })
 ]);
-var tierSchema = z2.enum(["common", "full"]);
-var commandSchema = z2.strictObject({
-  title: z2.string().optional(),
-  summary: z2.string().optional(),
-  group: z2.string().optional(),
-  icon: z2.string().optional(),
-  aliases: z2.array(z2.string()).optional(),
-  forEach: z2.literal("facets").optional(),
-  ask: askSchema.optional(),
-  run: z2.string().optional(),
-  args: z2.array(z2.unknown()).optional(),
-  when: z2.string().optional(),
-  then: z2.string().optional(),
-  planned: z2.boolean().optional(),
-  tier: tierSchema.optional(),
-  review: z2.string().optional()
-}).refine((command) => command.forEach || command.title, {
-  message: "a command needs a title (a forEach command takes its titles from the facets)",
-  path: ["title"]
-});
 var stepSchema = z2.union([
   z2.strictObject({ ask: askSchema }),
   z2.strictObject({ run: z2.string().optional(), then: z2.string().optional() })
 ]);
-var stateSchema = z2.strictObject({
-  summary: z2.string().optional(),
-  start: z2.boolean().optional(),
-  panel: z2.literal("sidecar").optional(),
-  commands: z2.record(z2.string(), commandSchema).default({}),
-  steps: z2.array(stepSchema).optional(),
-  planned: z2.boolean().optional(),
-  tier: tierSchema.optional(),
-  review: z2.string().optional()
-}).superRefine((state, context) => {
-  if (state.steps && !state.planned) {
-    context.addIssue({
-      code: "custom",
-      message: "steps (a guided flow) belong to a planned state; the engine cannot run them yet",
-      path: ["steps"]
-    });
-  }
-  if (!state.steps && Object.keys(state.commands).length === 0) {
-    context.addIssue({ code: "custom", message: "a state needs commands", path: ["commands"] });
-  }
-  if (state.planned) {
-    return;
-  }
-  for (const [name, command] of Object.entries(state.commands)) {
-    if (!command.planned && !command.run) {
-      context.addIssue({
-        code: "custom",
-        message: "a built command needs run (a planned one may leave it out)",
-        path: ["commands", name, "run"]
-      });
-    }
-  }
-});
-var pickerSchema = z2.strictObject({
-  from: z2.string().optional(),
-  empty: z2.string(),
-  planned: z2.boolean().optional()
-}).refine((picker) => picker.planned || picker.from, {
-  message: "a built picker needs from (a planned one may leave it out)",
-  path: ["from"]
-});
 var workflowStepSchema = z2.strictObject({
   question: z2.string(),
   state: z2.string().optional(),
@@ -147,104 +51,217 @@ var workflowSchema = z2.strictObject({
 }).refine((workflow) => Boolean(workflow.steps) !== Boolean(workflow.options), {
   message: "a workflow has steps (in order) or options (places to start), not both"
 });
+var stringList = z2.array(z2.string());
+var groupSchema = z2.strictObject({ label: z2.string(), icon: z2.string().optional() });
+var pathSchema = z2.strictObject({
+  id: z2.string().optional(),
+  title: z2.string().optional(),
+  aliases: stringList.optional(),
+  prompt: z2.string().optional(),
+  required: z2.string().optional(),
+  empty: z2.string().optional(),
+  group: z2.string().optional(),
+  icon: z2.string().optional(),
+  rows: z2.literal("each value").optional()
+});
+var listEntrySchema = z2.strictObject({
+  value: z2.union([z2.string(), z2.number(), z2.boolean()]),
+  title: z2.string(),
+  subtitle: z2.string().optional(),
+  aliases: stringList.optional(),
+  path: z2.strictObject({ id: z2.string().optional() }).optional()
+});
+var argSourceSchema = z2.strictObject({
+  freeform: z2.boolean().optional(),
+  type: z2.enum(["text", "range", "url"]).optional(),
+  list: z2.array(listEntrySchema).optional(),
+  lookup: z2.string().optional(),
+  key: z2.string().optional(),
+  current: z2.string().optional()
+}).refine((source) => source.freeform || source.list || source.lookup || source.current, {
+  message: "an argSource needs freeform, list, lookup or current"
+}).refine((source) => !source.current || source.freeform || source.list || source.lookup, {
+  message: "current needs a way to ask too: freeform, list or lookup"
+});
+var paramSchema = z2.strictObject({
+  label: z2.string(),
+  summary: z2.string().optional(),
+  required: z2.boolean().optional(),
+  list: z2.boolean().optional(),
+  default: z2.boolean().optional(),
+  priority: z2.number().optional(),
+  hints: stringList.optional(),
+  aliases: stringList.optional(),
+  argSource: argSourceSchema,
+  path: pathSchema.optional()
+});
+var commandSchema = z2.strictObject({
+  label: z2.string(),
+  summary: z2.string().optional(),
+  aliases: stringList.optional(),
+  group: z2.string().optional(),
+  icon: z2.string().optional(),
+  run: z2.string().optional(),
+  when: z2.string().optional(),
+  params: z2.record(z2.string(), paramSchema).default({}),
+  planned: z2.boolean().optional(),
+  tier: tierSchema.optional(),
+  review: z2.string().optional()
+}).refine((command) => command.planned || command.run, {
+  message: "a built command needs run (a planned one may leave it out)",
+  path: ["run"]
+});
+var stateSchema = z2.strictObject({
+  summary: z2.string().optional(),
+  start: z2.boolean().optional(),
+  when: z2.string().optional(),
+  panel: z2.string().optional(),
+  commands: stringList.default([]),
+  steps: z2.array(stepSchema).optional(),
+  planned: z2.boolean().optional(),
+  tier: tierSchema.optional(),
+  review: z2.string().optional()
+}).superRefine((state, context) => {
+  if (state.steps && !state.planned) {
+    context.addIssue({
+      code: "custom",
+      message: "steps (a guided flow) belong to a planned state; the engine cannot run them yet",
+      path: ["steps"]
+    });
+  }
+  if (!state.steps && state.commands.length === 0) {
+    context.addIssue({ code: "custom", message: "a state needs commands", path: ["commands"] });
+  }
+});
 var catalogSchema = z2.strictObject({
-  version: z2.literal(2),
+  version: z2.literal(3),
   app: z2.string(),
-  pickers: z2.record(z2.string(), pickerSchema).default({}),
-  facets: z2.record(
-    z2.string(),
-    z2.strictObject({ title: z2.string(), aliases: z2.array(z2.string()).optional() })
-  ).default({}),
+  groups: z2.record(z2.string(), groupSchema).default({}),
   states: z2.record(z2.string(), stateSchema),
+  commands: z2.record(z2.string(), commandSchema),
   workflows: z2.record(z2.string(), workflowSchema).optional()
 });
 
-// ../packages/shortround-catalog/src/load-catalog.js
-function checkCatalog(text) {
-  const catalog = parseCatalog(text);
-  const startState = findStartState(catalog.states);
-  checkReferences(catalog);
-  return { ...catalog, startState };
+// ../packages/shortround-core/src/catalog/conditions.js
+import jsep from "./vendor/jsep.js";
+var LOGICAL = /* @__PURE__ */ new Set(["&&", "||"]);
+function compileWhen(clause, { resolve, owner }) {
+  const fail = (why) => {
+    throw new Error(`${owner}: when "${clause}" ${why}`);
+  };
+  let tree;
+  try {
+    tree = jsep(clause);
+  } catch (error) {
+    fail(`isn't a valid clause (${error.message})`);
+  }
+  const pathOf = (node) => {
+    if (node.type === "Identifier") {
+      return node.name;
+    }
+    if (node.type === "MemberExpression" && !node.computed && node.property.type === "Identifier") {
+      return `${pathOf(node.object)}.${node.property.name}`;
+    }
+    return fail("may use only condition names, !, &&, || and parentheses");
+  };
+  function compile(node) {
+    if (node.type === "UnaryExpression" && node.operator === "!") {
+      const inner = compile(node.argument);
+      return (reading) => !inner(reading);
+    }
+    if (node.type === "BinaryExpression" && LOGICAL.has(node.operator)) {
+      const left = compile(node.left);
+      const right = compile(node.right);
+      return node.operator === "&&" ? (reading) => left(reading) && right(reading) : (reading) => left(reading) || right(reading);
+    }
+    const path2 = pathOf(node);
+    const condition = resolve(path2, owner);
+    return (reading) => {
+      const value = condition(reading);
+      if (typeof value !== "boolean") {
+        throw new Error(
+          `Condition "${path2}" returned ${typeof value}; conditions return a boolean`
+        );
+      }
+      return value;
+    };
+  }
+  return compile(tree);
 }
-function parseCatalog(text) {
-  const result = catalogSchema.safeParse(parse2(text));
+
+// ../packages/shortround-core/src/catalog/load-catalog.js
+var VERSION_2 = 'This is a version 2 catalog; ShortRound 0.5.0 reads version 3. See "From a v2 catalog" in MIGRATING.md: https://github.com/csepulv/shortround/blob/main/MIGRATING.md#from-a-v2-catalog';
+function checkCatalog(text) {
+  const raw = readYaml(text);
+  if (raw?.version === 2) {
+    throw new Error(VERSION_2);
+  }
+  const catalog = parseCatalog(withoutExtensionKeys(raw));
+  checkReferences(catalog);
+  checkStartState(catalog.states);
+  const anyCondition = () => () => true;
+  forEachWhen(catalog, (clause, owner) => compileWhen(clause, { resolve: anyCondition, owner }));
+  return catalog;
+}
+var readYaml = (text) => parse2(text, { merge: true });
+var withoutExtensionKeys = (raw) => raw && typeof raw === "object" ? Object.fromEntries(Object.entries(raw).filter(([key]) => !key.startsWith("x-"))) : raw;
+function parseCatalog(raw) {
+  const result = catalogSchema.safeParse(raw);
   if (!result.success) {
     throw new Error(`Catalog is malformed:
 ${z3.prettifyError(result.error)}`);
   }
   return result.data;
 }
-function findStartState(states) {
-  const startStates = Object.keys(states).filter((name) => states[name].start);
-  if (startStates.length === 0) {
-    throw new Error("Catalog has no start state");
-  }
-  if (startStates.length > 1) {
-    throw new Error(`Catalog has more than one start state: ${startStates.join(", ")}`);
-  }
-  if (states[startStates[0]].planned) {
-    throw new Error(`Catalog start state "${startStates[0]}" is planned, not built`);
-  }
-  return startStates[0];
-}
 function checkReferences(catalog) {
-  for (const [stateName, state] of Object.entries(catalog.states)) {
-    for (const [commandName, command] of Object.entries(state.commands)) {
-      const owner = `Catalog command "${stateName}.${commandName}"`;
-      const isBuilt = !state.planned && !command.planned;
-      checkPicker(catalog, command.ask?.choose, { owner, isBuilt });
-      checkNextState(catalog, command.then, { owner, isBuilt });
-      checkArgs(command, owner);
+  const checkGroup = (key, owner) => {
+    if (key !== void 0 && !catalog.groups[key]) {
+      throw new Error(`${owner}: no group "${key}" in the catalog`);
+    }
+  };
+  for (const [name, command] of Object.entries(catalog.commands)) {
+    checkGroup(command.group, commandOwner(name));
+    for (const [paramKey, param] of Object.entries(command.params)) {
+      checkGroup(param.path?.group, paramOwner(name, paramKey));
+    }
+  }
+  for (const [name, state] of Object.entries(catalog.states)) {
+    const missing = state.commands.find((command) => !catalog.commands[command]);
+    if (missing) {
+      throw new Error(`${stateOwner(name)}: no command "${missing}" in the catalog`);
     }
   }
 }
-function checkArgs(command, owner) {
-  const [malformed] = findMalformedReferences(command.args ?? []);
-  if (malformed) {
-    throw new Error(
-      `${owner}: "${malformed}" looks like a reference but isn't one ($key, $value or $value.<field>)`
-    );
-  }
-  const inputs = findReferencedInputs(command.args ?? []);
-  if (inputs.has("value") && !command.ask) {
-    throw new Error(`${owner}: args use $value, but the command asks for nothing`);
-  }
-  if (inputs.has("key") && !command.forEach) {
-    throw new Error(`${owner}: args use $key, but the command is not forEach`);
+function checkStartState(states) {
+  const startStates = Object.keys(states).filter((name) => states[name].start);
+  if (startStates.length > 1) {
+    throw new Error(`Catalog has more than one start state: ${startStates.join(", ")}`);
   }
 }
-function checkPicker(catalog, pickerName, { owner, isBuilt }) {
-  if (!pickerName) {
-    return;
+function forEachWhen(catalog, visit) {
+  for (const [name, state] of Object.entries(catalog.states)) {
+    if (state.when) {
+      visit(state.when, stateOwner(name));
+    }
   }
-  const picker = catalog.pickers[pickerName];
-  if (!picker) {
-    throw new Error(`${owner}: no picker named "${pickerName}"`);
-  }
-  if (isBuilt && picker.planned) {
-    throw new Error(`${owner}: picker "${pickerName}" is planned, not built`);
-  }
-}
-function checkNextState(catalog, stateName, { owner, isBuilt }) {
-  if (!stateName) {
-    return;
-  }
-  const state = catalog.states[stateName];
-  if (!state) {
-    throw new Error(`${owner}: no state named "${stateName}"`);
-  }
-  if (isBuilt && state.planned) {
-    throw new Error(`${owner}: state "${stateName}" is planned, not built`);
+  for (const [name, command] of Object.entries(catalog.commands)) {
+    if (command.when) {
+      visit(command.when, commandOwner(name));
+    }
   }
 }
+var commandOwner = (name) => `Catalog command "${name}"`;
+var paramOwner = (name, paramKey) => `${commandOwner(name)} param "${paramKey}"`;
+var stateOwner = (name) => `Catalog state "${name}"`;
 
 // ../skills/catalog-discovery/scripts/src/page-kit.js
 var esc = (value) => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 var spaced = (id) => id.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
-var asList = (value) => value === void 0 ? [] : Array.isArray(value) ? value : [value];
-var renderChips = (means) => asList(means).map(
-  (intentionId) => `<span class="chip"><span class="chip-k">${esc(intentionId)}</span></span>`
-).join("");
+var describeArg = (arg) => Array.isArray(arg) ? arg.join(", ") : String(arg);
+var renderChips = (means) => Object.entries(means).map(([command, args]) => {
+  const argText = Object.entries(args ?? {}).map(([param, arg]) => `${param} ${describeArg(arg)}`).join(" \xB7 ");
+  return `<span class="chip"><span class="chip-k">${esc(command)}</span>${argText ? ` ${esc(argText)}` : ""}</span>`;
+}).join("");
 var renderExamples = (examples) => (examples ?? []).map(
   (example) => `
       <li class="example">
@@ -360,9 +377,9 @@ body.common-only [data-tier="full"] { display: none; }
 .chip { font-size: 12.5px; background: var(--brass-soft); border-radius: 4px; padding: 1px 7px; }
 .chip-k { color: var(--muted); font-family: var(--mono); font-size: 11.5px; }
 .no-examples { margin: 0; font-size: 13px; color: var(--muted); font-style: italic; }
-.facet-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
-.facet-list li { border: 1px solid var(--rule); border-radius: 4px; padding: 2px 8px; }
-.facet-list .aka { margin-left: 4px; }
+.params { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; }
+.params li { border-left: 2px solid var(--rule); padding: 2px 0 2px 10px; display: grid; gap: 2px; }
+.params .runtime { display: block; }
 details.language summary { cursor: pointer; font-size: 13px; color: var(--muted); }
 details.language summary:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 details.language dl { margin: 8px 0 0; display: grid; gap: 4px; font-size: 13px; }
@@ -375,12 +392,6 @@ details.language dd { margin: 0; font-family: var(--mono); font-size: 12.5px; }
 .functions { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
 .functions li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; border-bottom: 1px solid var(--rule); padding: 4px 0; }
 .functions code { font-family: var(--mono); font-weight: 500; }
-.vocabs { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-.vocab { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; }
-.vocab h3 { margin: 0 0 6px; font-size: 14px; font-family: var(--mono); font-weight: 500; }
-.vocab ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 13px; }
-.vocab p { margin: 0 0 4px; font-size: 13px; }
-.depends { margin: 0 0 6px; font-size: 12px; color: var(--brass); }
 .val { font-family: var(--mono); font-size: 12.5px; }
 .aka { color: var(--muted); margin-left: 6px; font-size: 12px; }
 .runtime { color: var(--muted); font-size: 12.5px; }
@@ -389,81 +400,77 @@ details.language dd { margin: 0; font-family: var(--mono); font-size: 12.5px; }
 `;
 
 // ../skills/catalog-discovery/scripts/src/render-states.js
-var ANYWHERE_MIN = 3;
-var spokenName = (id, cmd) => cmd.title ?? spaced(id);
+var spokenName = (name, cmd) => cmd?.label ?? spaced(name);
+var isTypedWord = (name) => /^[a-z]+$/.test(name);
+var commandWords = (name, cmd) => [...isTypedWord(name) ? [name] : [], ...cmd.aliases ?? []];
 var shortLabel = (state, id) => state?.summary?.split(";")[0] ?? id;
-var stateSummary = (catalog, id) => catalog.states?.[id]?.summary ?? id;
-function commandsFor(catalog, stateId) {
-  const state = catalog.states?.[stateId] ?? {};
-  return Object.entries(state.commands ?? {}).map(([id, cmd]) => ({
-    id,
-    cmd,
-    planned: Boolean(state.planned || cmd.planned)
-  }));
+var describeWhen = (clause) => clause.replace(/[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*/g, (path2) => spaced(path2.split(".").pop())).replace(/!\s*/g, "not ").replace(/&&/g, "and").replace(/\|\|/g, "or");
+function conditionPaths(clause) {
+  const paths = [];
+  compileWhen(clause, {
+    owner: "review",
+    resolve: (path2) => {
+      paths.push(path2);
+      return () => true;
+    }
+  });
+  return paths;
 }
-var allCommands = (catalog) => Object.keys(catalog.states ?? {}).flatMap(
+function commandsFor(catalog, stateId) {
+  const state = catalog.states[stateId];
+  return state.commands.map((name) => {
+    const cmd = catalog.commands[name];
+    return { name, cmd, planned: Boolean(state.planned || cmd.planned) };
+  });
+}
+var allCommands = (catalog) => Object.keys(catalog.states).flatMap(
   (stateId) => commandsFor(catalog, stateId).map((entry) => ({ ...entry, stateId }))
 );
-var facetEntries = (catalog, cmd) => cmd.forEach === "facets" ? Object.entries(catalog.facets ?? {}) : [];
-var paletteRowCount = (catalog, stateId) => commandsFor(catalog, stateId).filter((entry) => !entry.planned).reduce((count, { cmd }) => count + (facetEntries(catalog, cmd).length || 1), 0);
-function describeAsk(catalog, ask) {
-  if (ask?.text) {
-    return `asks for text: \u201C${ask.text}\u201D${ask.required ? ` (required: \u201C${ask.required}\u201D)` : ""}`;
+var paramsOf = (cmd) => Object.entries(cmd.params ?? {});
+function rowCountOf(cmd) {
+  const params = paramsOf(cmd);
+  if (params.length <= 1) {
+    return 1;
   }
-  if (ask?.choose) {
-    const isPlannedList = catalog.pickers?.[ask.choose]?.planned;
-    return `picks from: ${spaced(ask.choose)}${isPlannedList ? " (planned list)" : ""}`;
-  }
-  return null;
+  return params.reduce(
+    (count, [, param]) => count + (param.path?.rows === "each value" ? param.argSource.list?.length ?? 1 : 1),
+    0
+  );
 }
-function findAnywhereCommands(catalog) {
-  const counts = /* @__PURE__ */ new Map();
-  for (const { id, cmd } of allCommands(catalog)) {
-    if (cmd.then) {
-      const key = `${spokenName(id, cmd)}->${cmd.then}`;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
+var paletteRowCount = (catalog, stateId) => commandsFor(catalog, stateId).filter((entry) => !entry.planned).reduce((count, { cmd }) => count + rowCountOf(cmd), 0);
+var isFreeformText = (param) => Boolean(param.argSource.freeform) && (param.argSource.type ?? "text") === "text";
+function describeSource(argSource) {
+  if (argSource.freeform) {
+    return `typed ${argSource.type ?? "text"}`;
   }
-  return new Set([...counts].filter(([, count]) => count >= ANYWHERE_MIN).map(([key]) => key));
+  if (argSource.list) {
+    return `one of: ${argSource.list.map((entry) => entry.title).join(", ")}`;
+  }
+  const parts = [
+    argSource.lookup && `rows from ${argSource.lookup}${argSource.key ? ` (key ${argSource.key})` : ""}`,
+    argSource.current && `the app's current one from ${argSource.current}`
+  ];
+  return parts.filter(Boolean).join("; or ");
 }
-var mermaidLabel = (text) => String(text).replaceAll('"', "#quot;");
-var stateNode = (id) => `s_${id}`;
 function buildMermaid(catalog) {
   const lines = ["flowchart LR", '  paletteOpens(("Palette opens"))'];
-  const states = Object.entries(catalog.states ?? {});
+  const states = Object.entries(catalog.states);
   for (const [id, state] of states) {
-    lines.push(`  ${stateNode(id)}(["${mermaidLabel(shortLabel(state, id))}"])`);
+    const condition = state.when ? `<br/>while ${describeWhen(state.when)}` : "";
+    lines.push(
+      `  ${stateNode(id)}(["${mermaidLabel(shortLabel(state, id))}${mermaidLabel(condition)}"])`
+    );
   }
   const startState = states.find(([, state]) => state.start)?.[0];
   if (startState) {
     lines.push(`  paletteOpens --> ${stateNode(startState)}`);
   }
-  const edges = /* @__PURE__ */ new Map();
-  const addEdge = (from, to, label, planned) => {
-    if (!to) {
-      return;
-    }
-    const key = `${from}->${to}->${planned ? "p" : "b"}`;
-    edges.set(key, [...edges.get(key) ?? [], label]);
-  };
-  const anywhere = findAnywhereCommands(catalog);
-  for (const { id, cmd, planned, stateId } of allCommands(catalog)) {
-    const name = spokenName(id, cmd);
-    const from = anywhere.has(`${name}->${cmd.then}`) ? "anywhere" : stateNode(stateId);
-    addEdge(from, cmd.then && stateNode(cmd.then), name, planned);
-  }
-  for (const [stateId, state] of states) {
+  for (const [id, state] of states) {
     for (const step of state.steps ?? []) {
-      addEdge(stateNode(stateId), step.then && stateNode(step.then), "finish", true);
+      if (step.then) {
+        lines.push(`  ${stateNode(id)} -.->|"finish"| ${stateNode(step.then)}`);
+      }
     }
-  }
-  if (anywhere.size) {
-    lines.push('  anywhere(("From anywhere"))');
-  }
-  for (const [key, labels] of edges) {
-    const [from, to, kind] = key.split("->");
-    const arrow = kind === "p" ? "-.->" : "-->";
-    lines.push(`  ${from} ${arrow}|"${mermaidLabel([...new Set(labels)].join(" \xB7 "))}"| ${to}`);
   }
   const plannedStates = states.filter(([, state]) => state.planned).map(([id]) => stateNode(id));
   if (plannedStates.length) {
@@ -472,47 +479,72 @@ function buildMermaid(catalog) {
   }
   return lines.join("\n");
 }
-function findCollisions(catalog) {
-  const collisions = [];
-  for (const [stateId, state] of Object.entries(catalog.states ?? {})) {
-    const owners = {};
-    const claim = (word, owner) => (owners[word.toLowerCase()] ??= /* @__PURE__ */ new Set()).add(owner);
-    for (const { id, cmd } of commandsFor(catalog, stateId)) {
-      const facets = facetEntries(catalog, cmd);
-      if (facets.length) {
-        for (const [, facet] of facets) {
-          claim(facet.title, facet.title);
-          for (const alias of facet.aliases ?? []) {
-            claim(alias, facet.title);
-          }
-        }
-        continue;
-      }
-      const name = spokenName(id, cmd);
-      claim(name, name);
-      for (const alias of cmd.aliases ?? []) {
-        claim(alias, name);
-      }
-    }
-    const where = shortLabel(state, stateId);
-    for (const [word, names] of Object.entries(owners)) {
-      if (names.size > 1) {
-        collisions.push({ word, detail: `(${where}) can mean \u201C${[...names].join("\u201D or \u201C")}\u201D` });
-      }
-    }
-    const words = Object.keys(owners);
-    for (const short of words) {
-      for (const long of words) {
-        if (long.startsWith(`${short} `) && [...owners[short]].some((name) => !owners[long].has(name))) {
-          collisions.push({
-            word: short,
-            detail: `(${where}) \u201C${[...owners[short]].join("\u201D / \u201C")}\u201D is also the start of \u201C${long}\u201D (\u201C${[...owners[long]].join("\u201D / \u201C")}\u201D)`
-          });
-        }
-      }
+var mermaidLabel = (text) => String(text).replaceAll('"', "#quot;");
+var stateNode = (id) => `s_${id}`;
+function wordsOfState(catalog, stateId) {
+  const owners = {};
+  const claim = (word, commandName, paramLabel) => {
+    const byCommand = owners[word.toLowerCase()] ??= /* @__PURE__ */ new Map();
+    byCommand.set(commandName, (byCommand.get(commandName) ?? /* @__PURE__ */ new Set()).add(paramLabel));
+  };
+  for (const { name, cmd } of commandsFor(catalog, stateId)) {
+    const commandName = spokenName(name, cmd);
+    commandWords(name, cmd).forEach((word) => claim(word, commandName, null));
+    for (const [, param] of paramsOf(cmd)) {
+      [param.label, ...param.aliases ?? []].forEach(
+        (word) => claim(word, commandName, param.label)
+      );
+      (param.hints ?? []).forEach((word) => claim(word, commandName, null));
     }
   }
-  return collisions;
+  return owners;
+}
+function ownersOf(byCommand) {
+  return [...byCommand].flatMap(([commandName, paramLabels]) => {
+    const params = [...paramLabels].filter(Boolean);
+    return params.length ? params.map((label) => `${commandName}: ${label}`) : [commandName];
+  });
+}
+var isAmbiguous = (byCommand) => ownersOf(byCommand).length > 1;
+function findCollisions(catalog) {
+  return Object.entries(catalog.states).flatMap(([stateId, state]) => {
+    const words = wordsOfState(catalog, stateId);
+    const owners = Object.fromEntries(
+      Object.entries(words).map(([word, byCommand]) => [word, new Set(ownersOf(byCommand))])
+    );
+    const where = shortLabel(state, stateId);
+    const sameWord = Object.keys(words).filter((word) => isAmbiguous(words[word])).map((word) => ({
+      word,
+      detail: `(${where}) can mean \u201C${[...owners[word]].join("\u201D or \u201C")}\u201D`
+    }));
+    const allWords = Object.keys(words);
+    const startOfLonger = allWords.flatMap(
+      (short) => allWords.filter(
+        (long) => long.startsWith(`${short} `) && [...words[short].keys()].some((command) => !words[long].has(command))
+      ).map((long) => ({
+        word: short,
+        detail: `(${where}) \u201C${[...owners[short]].join("\u201D / \u201C")}\u201D is also the start of \u201C${long}\u201D (\u201C${[...owners[long]].join("\u201D / \u201C")}\u201D)`
+      }))
+    );
+    return [...sameWord, ...startOfLonger];
+  });
+}
+function findUntypeable(catalog) {
+  return Object.entries(catalog.commands).flatMap(([name, cmd]) => {
+    const commandName = spokenName(name, cmd);
+    const unnamed = commandWords(name, cmd).length ? [] : [
+      {
+        word: name,
+        detail: `${commandName}: its name isn't a word people type, and it has no aliases. Add the phrase people use, such as \u201C${cmd.label.toLowerCase()}\u201D.`
+      }
+    ];
+    const term = paramsOf(cmd).find(([, param]) => param.default && isFreeformText(param));
+    const unhinted = term ? paramsOf(cmd).filter(([key, param]) => key !== term[0] && !param.hints?.length).map(([, param]) => ({
+      word: param.label.toLowerCase(),
+      detail: `${commandName}: ${param.label} can't follow the ${term[1].label.toLowerCase()} words, which read up to a hint or a closing quote. Add hints that introduce it, such as \u201Cwith\u201D.`
+    })) : [];
+    return [...unnamed, ...unhinted];
+  });
 }
 function collectFunctions(catalog) {
   const functions = /* @__PURE__ */ new Map();
@@ -523,16 +555,30 @@ function collectFunctions(catalog) {
     const entry = functions.get(name) ?? { uses: [], planned: true };
     functions.set(name, { uses: [...entry.uses, use], planned: entry.planned && planned });
   };
-  for (const [pickerName, picker] of Object.entries(catalog.pickers ?? {})) {
-    addUse(picker.from, `rows for ${spaced(pickerName)}`, Boolean(picker.planned));
+  for (const [stateId, state] of Object.entries(catalog.states)) {
+    const planned = Boolean(state.planned);
+    if (state.when) {
+      conditionPaths(state.when).forEach(
+        (path2) => addUse(path2, `${stateId}: holds while`, planned)
+      );
+    }
+    (state.steps ?? []).forEach((step) => addUse(step.run, `${stateId}: guided-flow step`, true));
   }
-  for (const { id, cmd, planned, stateId } of allCommands(catalog)) {
-    addUse(cmd.run, `${stateId}: ${spokenName(id, cmd)}`, planned);
-    addUse(cmd.when, `${stateId}: offered when (${spokenName(id, cmd)})`, planned);
-  }
-  for (const [stateId, state] of Object.entries(catalog.states ?? {})) {
-    for (const step of state.steps ?? []) {
-      addUse(step.run, `${stateId}: guided-flow step`, true);
+  const plannedCommands = new Set(
+    allCommands(catalog).filter((entry) => entry.planned).map((entry) => entry.name)
+  );
+  for (const [name, cmd] of Object.entries(catalog.commands)) {
+    const commandName = spokenName(name, cmd);
+    const planned = Boolean(cmd.planned) || plannedCommands.has(name);
+    addUse(cmd.run, `${commandName}: runs`, planned);
+    if (cmd.when) {
+      conditionPaths(cmd.when).forEach(
+        (path2) => addUse(path2, `${commandName}: offered while`, planned)
+      );
+    }
+    for (const [, param] of paramsOf(cmd)) {
+      addUse(param.argSource.lookup, `${commandName}: ${param.label} rows`, planned);
+      addUse(param.argSource.current, `${commandName}: ${param.label} now`, planned);
     }
   }
   return [...functions].sort(([a], [b]) => a.localeCompare(b));
@@ -544,89 +590,81 @@ function renderFunctions(functions) {
   return `<ul class="functions">${items || "<li>None.</li>"}</ul>`;
 }
 function groupExamplesByCommand(catalog, examples) {
-  const startState = Object.entries(catalog.states ?? {}).find(([, state]) => state.start)?.[0];
-  const names = startState ? Object.keys(catalog.states[startState].commands ?? {}) : [];
-  const commandOf = (intentionId) => {
-    const rest = intentionId.replace(`${catalog.app}.`, "").split("::")[0];
-    return names.filter((name) => rest === name || rest.startsWith(`${name}.`)).sort((a, b) => b.length - a.length)[0];
-  };
+  const startState = Object.entries(catalog.states).find(([, state]) => state.start)?.[0];
+  const names = new Set(startState ? catalog.states[startState].commands : []);
   const byCommand = {};
   let unmatchedCount = 0;
   for (const example of examples) {
-    const commands = new Set(asList(example.means).map(commandOf));
-    if (commands.has(void 0)) {
+    const [command] = Object.keys(example.means);
+    if (!names.has(command)) {
       unmatchedCount += 1;
+      continue;
     }
-    for (const name of commands) {
-      if (name) {
-        (byCommand[name] ??= []).push(example);
-      }
-    }
+    (byCommand[command] ??= []).push(example);
   }
-  return { startState, byCommand, unmatchedCount };
-}
-function renderFacetList(catalog, cmd) {
-  const items = facetEntries(catalog, cmd).map(
-    ([, facet]) => `<li>${esc(facet.title)}${facet.aliases?.length ? `<span class="aka">also: ${facet.aliases.map(esc).join(", ")}</span>` : ""}</li>`
-  ).join("");
-  return items ? `<ul class="facet-list" aria-label="One palette row per filter">${items}</ul>` : "";
+  return { byCommand, unmatchedCount };
 }
 var TIER_LABELS = { common: "Everyday", full: "Full catalog" };
-var usesTiers = (catalog) => Object.values(catalog.states ?? {}).some(
-  (state) => state.tier || Object.values(state.commands ?? {}).some((cmd) => cmd.tier)
-);
+var usesTiers = (catalog) => Object.values(catalog.states).some((state) => state.tier) || Object.values(catalog.commands).some((cmd) => cmd.tier);
 var tierBadge = (tier) => tier ? `<span class="badge tier-${esc(tier)}">${esc(TIER_LABELS[tier] ?? tier)}</span>` : "";
-function renderCommand(catalog, { id, cmd, planned }, { stateTier, examples }) {
-  const tier = cmd.tier ?? stateTier;
-  const flags = [
-    planned && "planned",
-    describeAsk(catalog, cmd.ask),
-    cmd.then && `then: ${stateSummary(catalog, cmd.then)}`,
-    cmd.when && `only when ${cmd.when}`
+function renderParam([key, param]) {
+  const traits = [
+    param.default && "takes the bare words",
+    param.list && "several",
+    param.required && "required"
   ].filter(Boolean);
+  const words = [
+    `${[param.label, ...param.aliases ?? []].map(esc).join(", ")}`,
+    param.hints?.length && `after: ${param.hints.map(esc).join(", ")}`
+  ].filter(Boolean);
+  return `<li><b>${esc(param.label)}</b> <span class="aka">(${esc(key)})</span> ${esc(describeSource(param.argSource))}${traits.length ? ` \xB7 ${traits.map(esc).join(", ")}` : ""}<span class="runtime">words: ${words.join(" \xB7 ")}</span>${param.summary ? `<span class="runtime">${esc(param.summary)}</span>` : ""}</li>`;
+}
+function renderCommand(catalog, { name, cmd, planned }, { stateTier, examples }) {
+  const tier = cmd.tier ?? stateTier;
+  const flags = [planned && "planned", cmd.when && `only while ${describeWhen(cmd.when)}`].filter(
+    Boolean
+  );
+  const params = paramsOf(cmd);
   const exampleItems = renderExamples(examples);
+  const typed = commandWords(name, cmd);
   const language = `<details class="language">
         <summary>How you say it</summary>
         <dl>
-          <div><dt>command words</dt><dd>${[spokenName(id, cmd), ...cmd.aliases ?? []].map(esc).join(", ")}</dd></div>
-          <div><dt>runs</dt><dd>${cmd.run ? `<code>${esc(cmd.run)}</code>` : "not named yet"}${cmd.args ? `, called with <code>${esc(JSON.stringify(cmd.args))}</code>` : ""}</dd></div>${cmd.group ? `<div><dt>group</dt><dd>${esc(cmd.group)}</dd></div>` : ""}
+          <div><dt>command words</dt><dd>${typed.length ? typed.map(esc).join(", ") : "none: no typed line names it"}</dd></div>
+          <div><dt>runs</dt><dd>${cmd.run ? `<code>${esc(cmd.run)}</code>` : "not named yet"}</dd></div>${cmd.group ? `<div><dt>group</dt><dd>${esc(catalog.groups[cmd.group]?.label ?? cmd.group)}</dd></div>` : ""}
         </dl>
       </details>`;
   return `
-    <article class="command${planned ? " is-planned" : ""}" id="cmd-${esc(id)}"${tier ? ` data-tier="${esc(tier)}"` : ""}>
+    <article class="command${planned ? " is-planned" : ""}" id="cmd-${esc(name)}"${tier ? ` data-tier="${esc(tier)}"` : ""}>
       <header class="command-head">
-        <h3>${esc(cmd.summary ?? spokenName(id, cmd))}</h3>${tier === "full" ? tierBadge(tier) : ""}
+        <h3>${esc(cmd.summary ?? spokenName(name, cmd))}</h3>${tier === "full" ? tierBadge(tier) : ""}
         ${flags.length ? `<span class="flags">${flags.map(esc).join(" \xB7 ")}</span>` : ""}
       </header>
-      ${renderFacetList(catalog, cmd)}
+      ${params.length ? `<ul class="params" aria-label="What it takes">${params.map(renderParam).join("")}</ul>` : ""}
       ${cmd.review ? `<p class="review-note">To revisit: ${esc(cmd.review)}</p>` : ""}
       ${exampleItems ? `<ul class="examples">${exampleItems}</ul>` : ""}
       ${language}
     </article>`;
 }
-function describeMoves(catalog, stateId) {
-  const leaveBy = commandsFor(catalog, stateId).filter(({ cmd }) => cmd.then && cmd.then !== stateId).map(({ id, cmd }) => spokenName(id, cmd));
-  const reachedFrom = allCommands(catalog).filter(({ cmd, stateId: from }) => cmd.then === stateId && from !== stateId).map(({ id, cmd }) => spokenName(id, cmd));
-  return { leaveBy: [...new Set(leaveBy)], reachedFrom: [...new Set(reachedFrom)] };
-}
-function renderStateMeta(catalog, stateId, state) {
-  const { leaveBy, reachedFrom } = describeMoves(catalog, stateId);
+function renderStateMeta(state) {
   const parts = [
     state.start && ["Starts here", "when the palette opens"],
-    reachedFrom.length && ["Reached from", reachedFrom.join(", ")],
-    leaveBy.length && ["Leave by", leaveBy.join(", ")],
+    state.when && ["Holds while", describeWhen(state.when)],
     state.panel && ["Shows", state.panel === "sidecar" ? "the side panel" : state.panel]
   ].filter(Boolean);
   return `<div class="state-meta">${parts.map(([label, value]) => `<span>${esc(label)}: <b>${esc(value)}</b></span>`).join("")}</div>`;
 }
-function describeStep(catalog, step) {
-  if (step.ask) {
-    return describeAsk(catalog, step.ask);
+function describeStep(step) {
+  if (step.ask?.text) {
+    return `asks for text: \u201C${step.ask.text}\u201D`;
   }
-  return `runs ${step.run ?? "(not named yet)"}${step.then ? `, then ${stateSummary(catalog, step.then)}` : ""}`;
+  if (step.ask?.choose) {
+    return `picks from: ${spaced(step.ask.choose)}`;
+  }
+  return `runs ${step.run ?? "(not named yet)"}${step.then ? `, then ${step.then}` : ""}`;
 }
-function renderSteps(catalog, steps) {
-  const items = steps.map((step) => `<li class="step">${esc(describeStep(catalog, step))}</li>`).join("");
+function renderSteps(steps) {
+  const items = steps.map((step) => `<li class="step">${esc(describeStep(step))}</li>`).join("");
   return `<article class="command is-planned"><header class="command-head"><h3>Steps, in order</h3><span class="flags">guided flow</span></header><ol class="steps">${items}</ol></article>`;
 }
 function renderState(catalog, stateId, state, examplesByCommand) {
@@ -635,26 +673,26 @@ function renderState(catalog, stateId, state, examplesByCommand) {
   const commands = commandsFor(catalog, stateId).map(
     (entry) => renderCommand(catalog, entry, {
       stateTier: state.tier,
-      examples: examplesByCommand[entry.id] ?? []
+      examples: state.start ? examplesByCommand[entry.name] ?? [] : []
     })
   ).join("");
   return `
   <section class="group" id="state-${esc(stateId)}"${state.tier ? ` data-tier="${esc(state.tier)}"` : ""}>
     <div class="state-head">
       <h2>${esc(state.summary ?? stateId)} <span class="badge ${isPlanned ? "planned" : "built"}">${isPlanned ? "Planned" : "Built"}</span>${tierBadge(state.tier)}</h2>
-      ${renderStateMeta(catalog, stateId, state)}
+      ${renderStateMeta(state)}
       ${rows !== null ? `<div class="state-meta"><span>Palette rows today: <b>${rows}</b></span></div>` : ""}
       ${state.review ? `<p class="review-note">To revisit: ${esc(state.review)}</p>` : ""}
     </div>
     ${commands}
-    ${state.steps ? renderSteps(catalog, state.steps) : ""}
+    ${state.steps ? renderSteps(state.steps) : ""}
   </section>`;
 }
 function renderWorkflow(catalog, [id, workflow]) {
   const steps = workflow.steps ?? workflow.options ?? [];
   const items = steps.map((step) => {
-    const where = step.state ? `<span class="where">${esc(shortLabel(catalog.states?.[step.state], step.state))}</span>` : "";
-    const then = step.then ? `<span class="then">then: ${asList(step.then).map(esc).join(" \xB7 ")}</span>` : "";
+    const where = step.state ? `<span class="where">${esc(shortLabel(catalog.states[step.state], step.state))}</span>` : "";
+    const then = step.then ? `<span class="then">then: ${[step.then].flat().map(esc).join(" \xB7 ")}</span>` : "";
     return `
       <li class="step">
         <div class="available">${where}<span class="question">${esc(step.question)}</span></div>
@@ -670,14 +708,6 @@ function renderWorkflow(catalog, [id, workflow]) {
       ${list}
     </article>`;
 }
-function renderPicker([name, picker]) {
-  const lines = [
-    picker.planned && '<p class="depends">Planned: the rows function doesn\u2019t exist yet</p>',
-    picker.from && `<p>Rows from <code>${esc(picker.from)}</code></p>`,
-    picker.empty && `<p>When there are no rows: \u201C${esc(picker.empty)}\u201D</p>`
-  ].filter(Boolean);
-  return `<section class="vocab"><h3>${esc(spaced(name))}</h3>${lines.join("")}</section>`;
-}
 var TIER_TOGGLE = `<div class="tier-toggle">
     <label for="common-only"><input id="common-only" type="checkbox"> Show the everyday view only (hide commands and states tagged \u201CFull catalog\u201D)</label>
   </div>
@@ -687,27 +717,37 @@ var TIER_TOGGLE = `<div class="tier-toggle">
     });
   </script>`;
 function countCatalog(catalog, examples) {
-  const states = Object.entries(catalog.states ?? {});
-  const commands = allCommands(catalog);
+  const states = Object.entries(catalog.states);
   return {
     builtStates: states.filter(([, state]) => !state.planned).length,
     plannedStates: states.filter(([, state]) => state.planned).length,
     builtRows: states.reduce((count, [id]) => count + paletteRowCount(catalog, id), 0),
-    plannedCommands: commands.filter((entry) => entry.planned).length,
+    plannedCommands: allCommands(catalog).filter((entry) => entry.planned).length,
     examples: examples.length
   };
 }
+function renderWorkflows(catalog) {
+  if (!catalog.workflows) {
+    return "";
+  }
+  return `<section id="workflows" class="group">
+    <h2>Workflows</h2>
+    <p class="section-note">Named paths through the states. Each step shows the state it happens in and what you'd type.</p>
+    ${Object.entries(catalog.workflows).map((entry) => renderWorkflow(catalog, entry)).join("")}
+  </section>`;
+}
 function renderStatesPage(catalog, examples = []) {
-  const states = Object.entries(catalog.states ?? {});
+  const states = Object.entries(catalog.states);
   const counts = countCatalog(catalog, examples);
   const { byCommand, unmatchedCount } = groupExamplesByCommand(catalog, examples);
   const collisions = findCollisions(catalog);
+  const untypeable = findUntypeable(catalog);
   const functions = collectFunctions(catalog);
   const body = `
   ${usesTiers(catalog) ? TIER_TOGGLE : ""}
   <section id="map">
-    <h2>Paths through the palette</h2>
-    <p class="section-note">Each box is a state: a context the user is in, with its own list of commands. Arrows are commands that move you to another state. Dashed boxes and arrows are planned, not built.</p>
+    <h2>The states</h2>
+    <p class="section-note">Each box is a state: a context the user is in, with its own list of commands. A state holds while its condition does, so the app's own state decides the list; the catalog doesn't say which command changes a condition. Dashed boxes are planned, not built.</p>
     ${renderMap(buildMermaid(catalog))}
   </section>
 
@@ -715,31 +755,27 @@ function renderStatesPage(catalog, examples = []) {
     ${states.map(([id, state]) => renderState(catalog, id, state, byCommand)).join("")}
   </div>
 
-  ${catalog.workflows ? `<section id="workflows" class="group">
-    <h2>Workflows</h2>
-    <p class="section-note">Named paths through the states. Each step shows the state it happens in and what you'd type.</p>
-    ${Object.entries(catalog.workflows).map((entry) => renderWorkflow(catalog, entry)).join("")}
-  </section>` : ""}
+  ${renderWorkflows(catalog)}
 
   <section id="collisions">
     <h2>Words that mean two things</h2>
-    <p class="section-note">Checked within each state, since the palette shows one state's list at a time. Includes command names and their other words.</p>
+    <p class="section-note">Checked within each state, since the palette reads one state's commands at a time. Includes command names and aliases, and each param's label, aliases and hints.</p>
     ${renderCollisions(collisions)}
+  </section>
+
+  <section id="untypeable">
+    <h2>Words nobody can type</h2>
+    <p class="section-note">A typed line names a command by its name or an alias, not its label. A param after unquoted typed text needs a hint (such as \u201Cwith\u201D) to start it; after a closing quote, the param's own word (such as \u201Ckind\u201D) starts it too.</p>
+    ${renderCollisions(untypeable)}
   </section>
 
   <section id="functions">
     <h2>Functions the catalog names</h2>
-    <p class="section-note">Every <code>run</code>, <code>when</code> and <code>from</code>: the interface of the app's service layer. Each must exist in the app, or be written, before the catalog runs. Check the spelling here; nothing else does until the app loads the catalog.</p>
+    <p class="section-note">Every <code>run</code>, <code>lookup</code> and <code>current</code>, and each condition in a <code>when</code>: the interface of the app's service layer. Each must exist in the app, or be written, before the catalog runs. Check the spelling here; nothing else does until the app loads the catalog.</p>
     ${renderFunctions(functions)}
-  </section>
-
-  ${catalog.pickers ? `<section id="pickers">
-    <h2>Pickers</h2>
-    <p class="section-note">Lists a command opens so you can choose what it acts on.</p>
-    <div class="vocabs">${Object.entries(catalog.pickers).map(renderPicker).join("")}</div>
-  </section>` : ""}`;
+  </section>`;
   return {
-    summary: `${counts.builtStates} states, ${counts.plannedStates} planned states, ${counts.builtRows} palette rows, ${counts.examples} examples (${unmatchedCount} unmatched), ${functions.length} functions named`,
+    summary: `${counts.builtStates} states, ${counts.plannedStates} planned states, ${counts.builtRows} palette rows, ${counts.examples} examples (${unmatchedCount} unmatched), ${collisions.length} words that mean two things, ${untypeable.length} words nobody can type, ${functions.length} functions named`,
     html: renderShell({
       app: catalog.app,
       version: catalog.version,
@@ -751,20 +787,21 @@ function renderStatesPage(catalog, examples = []) {
         [counts.builtRows, "palette rows built"],
         [counts.plannedCommands, "commands planned"],
         [counts.examples, "examples"],
-        unmatchedCount && [unmatchedCount, "examples matching no command"],
+        unmatchedCount && [unmatchedCount, "examples matching no start-state command"],
         [collisions.length, "words that mean two things"],
+        [untypeable.length, "words nobody can type"],
         [functions.length, "functions named"]
       ].filter(Boolean),
       nav: [
-        ["map", "Map"],
+        ["map", "States"],
         ...states.map(([id, state]) => [
           `state-${id}`,
           `${shortLabel(state, id)}${state.planned ? " (planned)" : ""}`
         ]),
         catalog.workflows && ["workflows", "Workflows"],
         ["collisions", "Words that mean two things"],
-        ["functions", "Functions"],
-        catalog.pickers && ["pickers", "Pickers"]
+        ["untypeable", "Words nobody can type"],
+        ["functions", "Functions"]
       ].filter(Boolean),
       body
     })
