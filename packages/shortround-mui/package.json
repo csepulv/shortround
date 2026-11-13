@@ -1,6 +1,6 @@
 {
   "name": "@shortround/mui",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Material UI components for Shortround, a command palette and intentional UI library.",
   "keywords": [
     "shortround",
@@ -49,15 +49,18 @@
     "framer-motion": "^12.19.1"
   },
   "devDependencies": {
+    "@ai-sdk/react": "4.0.173",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^9.0.0",
+    "@shortround/chat": "workspace:*",
     "@shortround/conformance": "workspace:*",
     "@shortround/core": "workspace:*",
     "@shortround/react": "workspace:*",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@vitejs/plugin-react": "^4.6.0",
+    "ai": "7.0.169",
     "jsdom": "^26.1.0",
     "lucide-react": "^0.523.0",
     "react": "^18.2.0",
@@ -69,8 +72,8 @@
     "@emotion/react": "^11.0.0",
     "@emotion/styled": "^11.0.0",
     "@mui/material": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^9.0.0",
-    "@shortround/core": "^0.5.0",
-    "@shortround/react": "^0.5.0",
+    "@shortround/core": "^0.6.0",
+    "@shortround/react": "^0.6.0",
     "lucide-react": ">=0.300.0",
     "react": "^18.2.0 || ^19.0.0"
   }

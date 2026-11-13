@@ -33,10 +33,11 @@ describe('what each package ships', () => {
     );
     expect(manifestOf('shortround-react').files).toContain('CHANGELOG.md');
     expect(manifestOf('shortround-mui').files).toContain('CHANGELOG.md');
+    expect(manifestOf('shortround-chat').files).toContain('CHANGELOG.md');
   });
 
   // A name in `files` that matches nothing ships nothing, silently.
-  test.each(['shortround-core', 'shortround-react', 'shortround-mui'])(
+  test.each(['shortround-core', 'shortround-react', 'shortround-mui', 'shortround-chat'])(
     "every changelog %s's files names exists",
     (folder) => {
       const changelogs = manifestOf(folder).files.filter((name) => name.startsWith('CHANGELOG'));
@@ -45,7 +46,7 @@ describe('what each package ships', () => {
     }
   );
 
-  test.each(['shortround-react', 'shortround-mui'])(
+  test.each(['shortround-react', 'shortround-mui', 'shortround-chat'])(
     "%s uses the app's JSX runtime, not a bundled copy",
     (folder) => {
       const bundle = bundleOf(folder);
@@ -56,7 +57,7 @@ describe('what each package ships', () => {
   );
 
   // Without it pnpm sends no access level, and npm publishes a new scoped package restricted.
-  test.each(['shortround-core', 'shortround-react', 'shortround-mui'])(
+  test.each(['shortround-core', 'shortround-react', 'shortround-mui', 'shortround-chat'])(
     '%s publishes publicly',
     (folder) => {
       expect(manifestOf(folder).publishConfig).toEqual({ access: 'public' });
@@ -69,5 +70,39 @@ describe('what each package ships', () => {
       'react-dom': REACT_RANGE
     });
     expect(manifestOf('shortround-mui').peerDependencies).toMatchObject({ react: REACT_RANGE });
+    expect(manifestOf('shortround-chat').peerDependencies).toMatchObject({
+      react: REACT_RANGE,
+      'react-dom': REACT_RANGE
+    });
+  });
+
+  test('chat ships both entries, each with its declarations, and no bundled dependency', () => {
+    const manifest = manifestOf('shortround-chat');
+
+    expect(manifest.exports).toEqual({
+      '.': { types: './src/index.d.ts', import: './dist/index.js', default: './dist/index.js' },
+      './server': {
+        types: './src/server.d.ts',
+        import: './dist/server.js',
+        default: './dist/server.js'
+      }
+    });
+    expect(manifest.files).toEqual(
+      expect.arrayContaining(['dist', 'src/index.d.ts', 'src/server.d.ts'])
+    );
+    ['src/index.d.ts', 'src/server.d.ts', 'dist/index.js', 'dist/server.js'].forEach((path) =>
+      expect(existsSync(packageUrl('shortround-chat', path))).toBe(true)
+    );
+    const bundle = bundleOf('shortround-chat');
+    [
+      'ai',
+      '@ai-sdk/react',
+      '@shortround/core',
+      '@shortround/react',
+      'react',
+      'react-markdown',
+      'remark-gfm',
+      'zod'
+    ].forEach((name) => expect(bundle).toMatch(new RegExp(`from\\s*["']${name}["']`)));
   });
 });

@@ -16,7 +16,7 @@ You start with:
 
 ## Before you start
 
-- **Install** `@shortround/core` and `@shortround/react` (0.5.0 or later). Core brings the catalog engine and the
+- **Install** `@shortround/core` and `@shortround/react` (0.6.0 or later). Core brings the catalog engine and the
   command builder, with `yaml`, `zod`, `jsep`, `chrono-node` and `damerau-levenshtein`, and doesn't depend on React.
 
 ## 1. Check the catalog
@@ -135,6 +135,7 @@ import {
   buildPalette,
   checkCatalog,
   findExampleFailures,
+  findInvalidToolNames,
   findUntypedCommands,
   loadCatalog,
   loadExamples
@@ -157,17 +158,29 @@ test('every command can be typed', () => {
 });
 ```
 
-A command's name is typed only when it is a plain lowercase word (`search`); a name like `clearFilters` needs an
-alias (`clear filters`). `findUntypedCommands` lists the commands with neither. If one is meant to be picked only,
-never typed, list it in the expectation instead of `[]`:
-`expect(findUntypedCommands(checkCatalog(CATALOG_TEXT))).toEqual([{ command: 'clearFilters', label: 'Clear filters' }])`.
+A command is typed by its name when the name is a plain lowercase word (`search`), by its label when the label is
+plain words (`Clear filters` is typed "clear filters"), and by its aliases. `findUntypedCommands` lists the commands
+with none of these, such as `exportCsv` labelled `Export (CSV)` with no alias. If one is meant to be picked only, never
+typed, list it in the expectation instead of `[]`:
+`expect(findUntypedCommands(checkCatalog(CATALOG_TEXT))).toEqual([{ command: 'exportCsv', label: 'Export (CSV)' }])`.
+
+If the catalog drives a chat (`@shortround/chat`), each command is also a tool a model can call, and model providers
+take tool names of letters, digits, `_` and `-`, up to 64 characters. Add a fourth test:
+`expect(findInvalidToolNames(checkCatalog(CATALOG_TEXT))).toEqual([])`. It lists each command it would refuse as
+`{ command, reason }`, such as `{ command: 'notes.archive', reason: 'a tool name has only letters, digits, _ and -' }`;
+the runtime leaves those out of its tools, with a warning.
 
 The examples test reads each line against the list the palette was built on (the states that hold for your fake app;
 usually the start state's) and the rows your lookups return, so give the fake app
 realistic data, with near neighbours (`react` next to `react-native`): tidy data hides ranking mistakes.
 
+An example's `means` writes each arg as your `run` receives it. For a param of `type: integer` or `number`, that is a
+number (`means: { showNotes: { limit: 20 } }`, not `'20'`), and a word a `nullable` param names is `null`
+(`say: show notes all`, `means: { showNotes: { limit: null } }`).
+
 ## Asking an agent to do it
 
 > Add a ShortRound palette to this app from `catalog.yaml`. Follow `ADOPTING-A-CATALOG.md` in `@shortround/core`.
 > List every function the catalog names and whether the app has it, needs an adapter, or is missing it. Write the
-> bindings in `catalog-bindings.js`, mark any command whose function is missing as `planned`, and add the three tests.
+> bindings in `catalog-bindings.js`, mark any command whose function is missing as `planned`, and add the three tests
+> (and the fourth, if the catalog drives a chat).

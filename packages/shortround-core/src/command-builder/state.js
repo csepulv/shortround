@@ -2,7 +2,8 @@
 // role, and why the line is broken.
 
 import { FAILED, isUnavailable, PENDING } from './lookups.js';
-import { argsOf, displayOf, hasSource } from './values.js';
+import { isTypedParam, readTypedText } from './typed-values.js';
+import { argsOf, displayOf, hasSource, textOf } from './values.js';
 
 const MAX_ROWS = 5;
 
@@ -24,6 +25,8 @@ export function makeState({ stepper, values }) {
         ranked.length || problem
           ? []
           : [...describeIncomplete(readings, ctx), ...emptyAtCaret(caretFrame, text, ctx)],
+      brokenRules: ranked.length || problem ? [] : brokenRulesOf(readings, ctx),
+      awaiting: ranked.length || problem ? [] : awaitedAfterHints(readings),
       ...lookupStatus([...live, ...readings], caretFrame, ctx),
       partial: partial?.text
     };
@@ -195,6 +198,36 @@ export function makeState({ stepper, values }) {
     return [...names, ...valuesOf];
   }
 
+  // The params a hint word waits for ("with" → Sort), each with the `incomplete` message that says so.
+  function awaitedAfterHints(readings) {
+    const awaited = readings
+      .filter((reading) => reading.pendingHint)
+      .map(({ command, pendingHint }) => {
+        const labels = pendingHint.params.map((param) => command.params[param].label);
+        return { message: hintMessage(pendingHint, labels), labels };
+      });
+    return dedupe(awaited, 'message');
+  }
+
+  const ruleBrokenBy = ({ command, open }) => {
+    const spec = command.params[open.param];
+    return isTypedParam(spec) ? readTypedText(spec, textOf(open)).rule : undefined;
+  };
+
+  function brokenRulesOf(readings, ctx) {
+    const quiet = { ...ctx, die: () => [] };
+    const rules = readings
+      .filter(
+        (reading) =>
+          reading.open?.tokens.length &&
+          isTypedParam(reading.command.params[reading.open.param]) &&
+          !values.closeOpen(reading, quiet).length
+      )
+      .map(ruleBrokenBy)
+      .filter(Boolean);
+    return [...new Set(rules)];
+  }
+
   // What each live reading is waiting for: a param after a hint, or the rest of a value.
   function describeIncomplete(readings, ctx) {
     const quiet = { ...ctx, die: () => [] };
@@ -202,10 +235,14 @@ export function makeState({ stepper, values }) {
       const { command, pendingHint, open } = reading;
       if (pendingHint) {
         const labels = pendingHint.params.map((param) => command.params[param].label);
-        return [`After "${pendingHint.word}": ${joinOr(labels)}`];
+        return [hintMessage(pendingHint, labels)];
       }
       if (open?.tokens.length && !values.closeOpen(reading, quiet).length) {
         const spec = command.params[open.param];
+        const rule = ruleBrokenBy(reading);
+        if (rule) {
+          return [rule];
+        }
         const kind = spec.argSource.type === 'range' ? 'a date' : 'a value';
         return [{ kind, label: spec.label }];
       }
@@ -330,8 +367,10 @@ const fixStep = ({ verbEnd, termStart }, text) => {
   return { label: fix, insertText: fix, kind: 'fix' };
 };
 
-const joinOr = (items) =>
+export const joinOr = (items) =>
   items.length > 1 ? `${items.slice(0, -1).join(', ')} or ${items.at(-1)}` : (items[0] ?? '');
+
+const hintMessage = (pendingHint, labels) => `After "${pendingHint.word}": ${joinOr(labels)}`;
 
 const joinParts = (before, inserted, after) =>
   after ? `${before}${inserted} ${after.trimStart()}` : `${before}${inserted} `;

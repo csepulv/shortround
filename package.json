@@ -11,7 +11,7 @@
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,jsx}\"",
     "format:check": "prettier --check \"**/*.{js,jsx}\"",
-    "verify": "pnpm install --frozen-lockfile && pnpm build && pnpm test && pnpm --filter @shortround/core test:node-import && pnpm --filter @shortround/react test:node-import && pnpm test:release && node release-tools/check-migration-guide.js && pnpm --filter @shortround/react types:check && pnpm lint && pnpm format:check && pnpm --filter @shortround/storybook build:storybook",
+    "verify": "pnpm install --frozen-lockfile && pnpm build && pnpm test && pnpm --filter @shortround/core test:node-import && pnpm --filter @shortround/react test:node-import && pnpm --filter @shortround/chat test:node-import && pnpm test:release && node release-tools/check-migration-guide.js && pnpm --filter @shortround/react types:check && pnpm --filter @shortround/chat types:check && pnpm lint && pnpm format:check && pnpm --filter @shortround/storybook build:storybook",
     "dev:watch": "pnpm --parallel --filter \"./packages/*\" run dev"
   },
   "devDependencies": {

@@ -5,7 +5,8 @@
 //
 //   makeCommandLine({ builder, run, now?, schedule? })
 //     → { getState, change, acceptCompletion, submit, cancel, subscribe, dispose }
-//   getState() → { text, caret, roles, nextSteps, ghost, top, readings, canRun, incomplete, problem, loading, failed }
+//   getState() → { text, caret, roles, nextSteps, ghost, top, readings, canRun, incomplete, awaiting, problem, loading,
+//                  failed }
 
 import { makeLoadingDelay } from './loading-delay.js';
 
@@ -52,6 +53,8 @@ export function makeCommandLine({
       readings: current.readings,
       canRun: Boolean(top) && top.needs.length === 0,
       incomplete: current.incomplete,
+      brokenRules: current.brokenRules,
+      awaiting: current.awaiting,
       problem: current.problem,
       loading: loadingDelay.shown(current.pending),
       failed: current.failed

@@ -184,6 +184,83 @@ describe('command names', () => {
   });
 });
 
+describe('command labels', () => {
+  const COMMANDS = [
+    { name: 'next', label: 'Next', aliases: [], run: 'app.next', params: {} },
+    { name: 'closePreview', label: 'Close preview', aliases: [], run: 'app.close', params: {} },
+    { name: 'exportCsv', label: 'Export (CSV)', aliases: [], run: 'app.export', params: {} }
+  ];
+  const engine = () => makeCommandBuilder({ commands: COMMANDS, lookups: {}, now });
+  const commandOf = (state) => state.readings[0]?.call.command;
+  const stepsOf = (text) =>
+    engine()
+      .read(text)
+      .nextSteps.map(({ label }) => label);
+
+  test('a label is read and suggested, though the command has no alias', () => {
+    expect(commandOf(engine().read('close preview'))).toBe('closePreview');
+    expect(commandOf(engine().read('Close Preview'))).toBe('closePreview');
+    expect(stepsOf('cl')).toEqual(['close preview']);
+  });
+
+  test('a label that is the name is suggested once', () => {
+    expect(stepsOf('ne')).toEqual(['next']);
+  });
+
+  test('a label with characters a typed word cannot hold is not offered', () => {
+    expect(stepsOf('ex')).toEqual([]);
+    expect(commandOf(engine().read('export (csv)'))).toBeUndefined();
+  });
+
+  test.each([
+    ['declared before', ['closeAll', 'shut']],
+    ['declared after', ['shut', 'closeAll']]
+  ])("another command's alias keeps its phrase from a label %s it", (_order, names) => {
+    const byName = {
+      closeAll: { name: 'closeAll', label: 'Close', aliases: [], run: 'app.closeAll', params: {} },
+      shut: { name: 'shut', label: 'Shut', aliases: ['close'], run: 'app.shut', params: {} }
+    };
+    const commands = names.map((name) => byName[name]);
+    const read = makeCommandBuilder({ commands, lookups: {}, now }).read('close');
+
+    expect(read.readings.map(({ call }) => call.command)).toEqual(['shut']);
+  });
+
+  test("another command's typed name keeps its phrase from a label", () => {
+    const commands = [
+      { name: 'closeAll', label: 'Close', aliases: [], run: 'app.closeAll', params: {} },
+      { name: 'close', label: 'Close one', aliases: [], run: 'app.close', params: {} }
+    ];
+    const read = makeCommandBuilder({ commands, lookups: {}, now }).read('close');
+
+    expect(read.readings.map(({ call }) => call.command)).toEqual(['close']);
+  });
+
+  test('typing and editing a label reads as a fresh read does', () => {
+    const kept = engine();
+    const texts = [
+      'c',
+      'close',
+      'close ',
+      'close p',
+      'close preview',
+      'close',
+      'clos preview',
+      'close preview'
+    ];
+    const mismatched = texts.filter(
+      (text) =>
+        JSON.stringify(kept.read(text).readings.map(({ call }) => call)) !==
+        JSON.stringify(
+          engine()
+            .read(text)
+            .readings.map(({ call }) => call)
+        )
+    );
+    expect(mismatched).toEqual([]);
+  });
+});
+
 describe('invalidate', () => {
   test('a changed lookup shows only after invalidate()', () => {
     const tags = ['react'];

@@ -15,7 +15,11 @@ const withPalette = (slots) =>
 const withSidekick = (slots) =>
   withComponents({ Sidekick: { ...referenceTheme.components.Sidekick, ...slots } });
 
+const withChat = (slots) =>
+  withComponents({ Chat: { ...referenceTheme.components.Chat, ...slots } });
+
 const { Input, Item, NoMatches } = referenceTheme.components.IntentionPalette;
+const { Text, ToolRun, Row } = referenceTheme.components.Chat;
 const { ControlBar } = referenceTheme.components.Sidekick;
 const { Toast } = referenceTheme;
 
@@ -94,7 +98,48 @@ export const BROKEN_THEMES = {
   'toast-shows': { ...referenceTheme, Toast: (props) => <Toast {...props} message={null} /> },
 
   // The toast ignores isOpen, so it is always there and can never be dismissed.
-  'toast-hidden': { ...referenceTheme, Toast: (props) => <Toast {...props} isOpen /> }
+  'toast-hidden': { ...referenceTheme, Toast: (props) => <Toast {...props} isOpen /> },
+
+  // The input is never placed.
+  'chat-input': withChat({ Input: () => null }),
+
+  // A typed run is drawn without the app's message.
+  'chat-intention-run': withChat({ IntentionRun: ({ line }) => <p>{line}</p> }),
+
+  // The assistant's text is dropped.
+  'chat-text': withChat({
+    Text: (props) => (props.role === 'assistant' ? null : <Text {...props} />)
+  }),
+
+  // A finished tool run drops the app's answer.
+  'chat-tool-done': withChat({
+    ToolRun: (props) => <ToolRun {...props} output={undefined} />
+  }),
+
+  'chat-tool-label': withChat({
+    ToolRun: (props) => <ToolRun {...props} label={props.name} />
+  }),
+
+  // A refused tool run drops the reason.
+  'chat-tool-refused': withChat({
+    ToolRun: (props) => <ToolRun {...props} errorText={undefined} />
+  }),
+
+  // A failed request isn't shown.
+  'chat-error': withChat({ Error: () => null }),
+
+  // The subtitle is left out.
+  'chat-row-shows': withChat({
+    Row: ({ row, ...props }) => <Row {...props} row={{ ...row, subtitle: undefined }} />
+  }),
+
+  // A click does nothing.
+  'chat-row-chooses': withChat({ Row: (props) => <Row {...props} onChoose={() => {}} /> }),
+
+  // The highlight isn't marked.
+  'chat-row-highlight': withChat({
+    Row: (props) => <Row {...props} isHighlighted={false} />
+  })
 };
 
 // Checks that may also fail for a broken theme because they reach their own slot through the broken
@@ -102,5 +147,16 @@ export const BROKEN_THEMES = {
 // 'all': when the frames drop their children nothing renders, and every check fails at its own slot.
 export const DEPENDENTS = {
   'children-pass-through': 'all',
-  'input-narrows': ['input-message', 'no-matches']
+  'input-narrows': ['input-message', 'no-matches'],
+  'chat-input': [
+    'chat-intention-run',
+    'chat-text',
+    'chat-tool-done',
+    'chat-tool-label',
+    'chat-tool-refused',
+    'chat-error',
+    'chat-row-shows',
+    'chat-row-chooses',
+    'chat-row-highlight'
+  ]
 };

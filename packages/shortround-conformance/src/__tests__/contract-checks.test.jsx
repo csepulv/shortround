@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 
 import { CONTRACT_CHECKS } from '../contract-checks.js';
 import { BROKEN_THEMES, DEPENDENTS } from './themes/broken-themes.jsx';
@@ -14,7 +14,17 @@ const SLOTS = [
   'Sidekick.Frame',
   'Sidekick.ControlBar',
   'SidecarContent',
-  'Toast'
+  'Toast',
+  'Chat.Frame',
+  'Chat.Transcript',
+  'Chat.Message',
+  'Chat.Text',
+  'Chat.IntentionRun',
+  'Chat.ToolRun',
+  'Chat.Error',
+  'Chat.Composer',
+  'Chat.Row',
+  'Chat.Input'
 ];
 
 const failureOf = (check, theme) =>
@@ -31,6 +41,26 @@ test('every slot has at least one check', () => {
   );
 
   expect(unchecked).toEqual([]);
+});
+
+test('a Chat group missing a slot fails every Chat check, naming the slot', async () => {
+  const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+  // eslint-disable-next-line no-unused-vars -- the Row slot is taken out on purpose
+  const { Row, ...chatWithoutRow } = referenceTheme.components.Chat;
+  const theme = {
+    ...referenceTheme,
+    components: { ...referenceTheme.components, Chat: chatWithoutRow }
+  };
+  const chatChecks = CONTRACT_CHECKS.filter((check) => check.group === 'chat');
+
+  const messages = [];
+  for (const check of chatChecks) {
+    messages.push((await failureOf(check, theme))?.message);
+  }
+  quiet.mockRestore();
+
+  expect(chatChecks).toHaveLength(10);
+  expect(messages.filter((message) => !message?.includes('components.Chat.Row'))).toEqual([]);
 });
 
 test('every check has a broken theme that proves it can fail', () => {

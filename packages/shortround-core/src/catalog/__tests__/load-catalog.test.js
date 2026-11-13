@@ -212,6 +212,151 @@ describe('a mistake fails when the catalog loads, naming where it is', () => {
     );
   });
 
+  test('`minItems` on a param that takes one value', () => {
+    const text = minimal({
+      command:
+        'find: { label: Find, group: search, run: app.find, params: { term: { label: Term, default: true, minItems: 1, argSource: { freeform: true } } } }'
+    });
+    expect(() => loadCatalog(text, appBindings())).toThrow(
+      /Catalog is malformed[\s\S]*minItems is for a list param \(list: true\)[\s\S]*commands\.find\.params\.term\.minItems/
+    );
+    expect(() => checkCatalog(text)).toThrow(
+      /Catalog is malformed[\s\S]*minItems is for a list param \(list: true\)[\s\S]*commands\.find\.params\.term\.minItems/
+    );
+  });
+
+  test('`minItems` below 1, or not a whole number', () => {
+    const withMinItems = (value) =>
+      minimal({
+        command: `find: { label: Find, group: search, run: app.find, params: { tags: { label: Tag, default: true, list: true, minItems: ${value}, argSource: { freeform: true } } } }`
+      });
+    expect(() => loadCatalog(withMinItems(0), appBindings())).toThrow(
+      /Catalog is malformed[\s\S]*commands\.find\.params\.tags\.minItems/
+    );
+    expect(() => loadCatalog(withMinItems(1.5), appBindings())).toThrow(
+      /Catalog is malformed[\s\S]*commands\.find\.params\.tags\.minItems/
+    );
+  });
+
+  test('`minItems` on a list param loads', () => {
+    const text = minimal({
+      command:
+        'find: { label: Find, group: search, run: app.find, params: { tags: { label: Tag, default: true, list: true, minItems: 2, argSource: { freeform: true } } } }'
+    });
+    expect(loadCatalog(text, appBindings()).commands.find.params.tags.minItems).toBe(2);
+  });
+
+  describe('typed params', () => {
+    const withParam = (param) =>
+      minimal({
+        command: `find: { label: Find, group: search, run: app.find, params: { p: ${param} } }`
+      });
+    const loads = (param) => loadCatalog(withParam(param), appBindings()).commands.find.params.p;
+
+    test('a number type with bounds, text with maxLength, and nullable params load', () => {
+      expect(
+        loads(
+          '{ label: Limit, default: true, nullable: [all, every], argSource: { freeform: true, type: integer, minimum: 1, maximum: 50 } }'
+        )
+      ).toMatchObject({
+        nullable: ['all', 'every'],
+        argSource: { type: 'integer', minimum: 1, maximum: 50 }
+      });
+      expect(
+        loads(
+          '{ label: Scale, nullable: true, argSource: { freeform: true, type: number, minimum: 0.5 } }'
+        ).argSource.type
+      ).toBe('number');
+      expect(
+        loads('{ label: Name, argSource: { freeform: true, maxLength: 40 } }').argSource.maxLength
+      ).toBe(40);
+    });
+
+    test.each([
+      [
+        'a bound on text',
+        '{ label: Name, argSource: { freeform: true, type: text, minimum: 1 } }',
+        /minimum and maximum are for a number type \(integer or number\)/
+      ],
+      [
+        'maxLength on a number',
+        '{ label: Limit, argSource: { freeform: true, type: integer, maxLength: 3 } }',
+        /maxLength is for text/
+      ],
+      [
+        'a number type without freeform',
+        '{ label: Limit, argSource: { type: integer, lookup: app.tags } }',
+        /a number type is freeform only, with no list or lookup/
+      ],
+      [
+        'a minimum above the maximum',
+        '{ label: Limit, argSource: { freeform: true, type: integer, minimum: 5, maximum: 2 } }',
+        /minimum is above maximum/
+      ],
+      [
+        'nullable on a list param',
+        '{ label: Tag, list: true, nullable: true, argSource: { freeform: true } }',
+        /nullable is for a param that takes one value/
+      ],
+      [
+        'nullable with no words',
+        '{ label: Limit, nullable: [], argSource: { freeform: true, type: integer } }',
+        />=1 items[\s\S]*commands\.find\.params\.p\.nullable/
+      ],
+      [
+        'nullable on a lookup param',
+        '{ label: Tag, nullable: [none], argSource: { lookup: app.tags } }',
+        /nullable is for a param with no list or lookup/
+      ],
+      [
+        'nullable on a fixed list',
+        '{ label: Kind, nullable: [none], argSource: { list: [{ value: a, title: A }] } }',
+        /nullable is for a param with no list or lookup/
+      ],
+      [
+        'nullable on free text with a lookup',
+        '{ label: Tag, nullable: true, argSource: { freeform: true, lookup: app.tags } }',
+        /nullable is for a param with no list or lookup/
+      ],
+      [
+        'a number type with a fixed list',
+        '{ label: Limit, argSource: { freeform: true, type: integer, list: [{ value: 1, title: One }] } }',
+        /a number type is freeform only, with no list or lookup/
+      ],
+      [
+        'a fractional bound on an integer',
+        '{ label: Limit, argSource: { freeform: true, type: integer, minimum: 0.5 } }',
+        /an integer type's minimum and maximum are whole numbers/
+      ]
+    ])('%s is refused, naming it', (_, param, message) => {
+      expect(() => loadCatalog(withParam(param), appBindings())).toThrow(message);
+      expect(() => checkCatalog(withParam(param))).toThrow(message);
+    });
+
+    const withParams = (params) =>
+      minimal({
+        command: `find: { label: Find, group: search, run: app.find, params: { ${params} } }`
+      });
+    const LIMIT =
+      'limit: { label: Limit, default: true, nullable: [all], argSource: { freeform: true, type: integer } }';
+
+    test.each([
+      [
+        "another param's value alias",
+        'scope: { label: Scope, argSource: { list: [{ value: everything, title: Everything, aliases: [all] }] } }'
+      ],
+      ['a hint', 'page: { label: Page, hints: [All], argSource: { freeform: true } }'],
+      ['a param word', 'page: { label: Page, aliases: [all], argSource: { freeform: true } }']
+    ])('a null word that is also %s of the command is refused, naming it', (_, other) => {
+      const text = withParams(`${LIMIT}, ${other}`);
+      const message =
+        /"all" is already a word of this command[\s\S]*commands\.find\.params\.limit\.nullable/;
+
+      expect(() => loadCatalog(text, appBindings())).toThrow(message);
+      expect(() => checkCatalog(text)).toThrow(message);
+    });
+  });
+
   test('a misspelled field (fields are strict)', () => {
     const text = minimal({
       command:

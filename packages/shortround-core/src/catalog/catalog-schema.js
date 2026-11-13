@@ -60,10 +60,16 @@ const listEntrySchema = z.strictObject({
   path: z.strictObject({ id: z.string().optional() }).optional()
 });
 
+const NUMBER_TYPES = ['integer', 'number'];
+const isNumberType = (source) => NUMBER_TYPES.includes(source.type);
+
 const argSourceSchema = z
   .strictObject({
     freeform: z.boolean().optional(),
-    type: z.enum(['text', 'range', 'url']).optional(),
+    type: z.enum(['text', 'range', 'url', ...NUMBER_TYPES]).optional(),
+    minimum: z.number().optional(),
+    maximum: z.number().optional(),
+    maxLength: z.number().int().min(1).optional(),
     list: z.array(listEntrySchema).optional(),
     lookup: z.string().optional(),
     key: z.string().optional(),
@@ -72,28 +78,100 @@ const argSourceSchema = z
   .refine((source) => source.freeform || source.list || source.lookup || source.current, {
     message: 'an argSource needs freeform, list, lookup or current'
   })
+  .refine(
+    (source) => !isNumberType(source) || (source.freeform && !source.list && !source.lookup),
+    {
+      message: 'a number type is freeform only, with no list or lookup',
+      path: ['type']
+    }
+  )
+  .refine(
+    (source) =>
+      isNumberType(source) || (source.minimum === undefined && source.maximum === undefined),
+    { message: 'minimum and maximum are for a number type (integer or number)', path: ['minimum'] }
+  )
+  .refine(
+    (source) =>
+      source.minimum === undefined ||
+      source.maximum === undefined ||
+      source.minimum <= source.maximum,
+    { message: 'minimum is above maximum', path: ['minimum'] }
+  )
+  .refine(
+    (source) =>
+      source.type !== 'integer' ||
+      [source.minimum, source.maximum].every(
+        (bound) => bound === undefined || Number.isInteger(bound)
+      ),
+    { message: "an integer type's minimum and maximum are whole numbers", path: ['minimum'] }
+  )
+  .refine(
+    (source) =>
+      source.maxLength === undefined || (source.freeform && (source.type ?? 'text') === 'text'),
+    { message: 'maxLength is for text (freeform, type text)', path: ['maxLength'] }
+  )
   // `current` may hold nothing (no result previewed); the param must then have a way to ask.
   .refine((source) => !source.current || source.freeform || source.list || source.lookup, {
     message: 'current needs a way to ask too: freeform, list or lookup'
   });
 
-const paramSchema = z.strictObject({
-  label: z.string(),
-  summary: z.string().optional(),
-  required: z.boolean().optional(),
-  list: z.boolean().optional(),
-  default: z.boolean().optional(),
-  priority: z.number().optional(),
-  hints: stringList.optional(),
-  aliases: stringList.optional(),
-  argSource: argSourceSchema,
-  path: pathSchema.optional()
-});
+const paramSchema = z
+  .strictObject({
+    label: z.string(),
+    summary: z.string().optional(),
+    required: z.boolean().optional(),
+    list: z.boolean().optional(),
+    minItems: z.number().int().min(1).optional(),
+    nullable: z.union([z.literal(true), stringList.min(1)]).optional(),
+    default: z.boolean().optional(),
+    priority: z.number().optional(),
+    hints: stringList.optional(),
+    aliases: stringList.optional(),
+    argSource: argSourceSchema,
+    path: pathSchema.optional()
+  })
+  .refine((param) => param.minItems === undefined || param.list, {
+    message: 'minItems is for a list param (list: true)',
+    path: ['minItems']
+  })
+  .refine((param) => param.nullable === undefined || !param.list, {
+    message: 'nullable is for a param that takes one value',
+    path: ['nullable']
+  })
+  .refine(
+    (param) => param.nullable === undefined || (!param.argSource.list && !param.argSource.lookup),
+    { message: 'nullable is for a param with no list or lookup', path: ['nullable'] }
+  );
+
+const wordsOfParam = (param) => [
+  param.label,
+  ...(param.aliases ?? []),
+  ...(param.hints ?? []),
+  ...(param.argSource.list ?? []).flatMap((entry) => entry.aliases ?? [])
+];
+
+function refuseNullWordsTheCommandUses(command, context) {
+  const params = Object.entries(command.params);
+  const commandWords = new Set(
+    params.flatMap(([, param]) => wordsOfParam(param)).map((word) => word.toLowerCase())
+  );
+  for (const [key, param] of params) {
+    const nullWords = Array.isArray(param.nullable) ? param.nullable : [];
+    for (const word of nullWords.filter((each) => commandWords.has(each.toLowerCase()))) {
+      context.addIssue({
+        code: 'custom',
+        message: `"${word}" is already a word of this command, so it can't also mean no value`,
+        path: ['params', key, 'nullable']
+      });
+    }
+  }
+}
 
 const commandSchema = z
   .strictObject({
     label: z.string(),
     summary: z.string().optional(),
+    toolDescription: z.string().optional(),
     aliases: stringList.optional(),
     group: z.string().optional(),
     icon: z.string().optional(),
@@ -107,7 +185,8 @@ const commandSchema = z
   .refine((command) => command.planned || command.run, {
     message: 'a built command needs run (a planned one may leave it out)',
     path: ['run']
-  });
+  })
+  .superRefine(refuseNullWordsTheCommandUses);
 
 const stateSchema = z
   .strictObject({

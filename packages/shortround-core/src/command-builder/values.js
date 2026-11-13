@@ -3,6 +3,7 @@
 
 import { FAILED, isUnavailable } from './lookups.js';
 import { parseRange } from './ranges.js';
+import { isNullWord, isNumberParam, readTypedText } from './typed-values.js';
 
 export function makeValues({ matcher, now }) {
   function entriesFor({ command, filled }, param, ctx) {
@@ -56,6 +57,13 @@ export function makeValues({ matcher, now }) {
     if (!spec.argSource.freeform) {
       return ctx.die(`No ${spec.label} value matches "${text}"`);
     }
+    const asText = (value) => ({
+      ...fill(cleared, open.param, value),
+      textWords: reading.textWords + open.tokens.length
+    });
+    if (isNullWord(spec, text)) {
+      return [asText({ value: null, title: text })];
+    }
     if (isRange(spec)) {
       const range = toRange(text, text, open.hint);
       return range
@@ -67,14 +75,15 @@ export function makeValues({ matcher, now }) {
           ]
         : ctx.die(`No date matches "${text}"`);
     }
+    const read = readTypedText(spec, text);
+    if (read.rule) {
+      return ctx.die(read.rule);
+    }
+    if (isNumberParam(spec)) {
+      return [asText({ value: read.value, title: text })];
+    }
     const value = spec.list || hasSource(spec) ? { value: text, title: text, isNew: true } : text;
-    return [
-      {
-        ...fill(cleared, open.param, value),
-        textWords: reading.textWords + open.tokens.length,
-        termStart: open.tokens[0].index
-      }
-    ];
+    return [{ ...asText(value), termStart: open.tokens[0].index }];
   }
 
   // A list entry for a range param ("recent") stands for a range ("last 30 days").

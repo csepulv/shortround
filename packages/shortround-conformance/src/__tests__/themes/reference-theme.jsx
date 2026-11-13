@@ -65,8 +65,45 @@ function ControlBar({ title, labels, onClose, setSize, cycleAnchorOrigin }) {
   );
 }
 
+const answerOf = ({ state, output, errorText }) =>
+  state === 'refused' ? errorText : typeof output === 'string' ? output : '';
+
+export const REFERENCE_CHAT = {
+  Frame: PassThrough,
+  Transcript: ({ children }) => <ol>{children}</ol>,
+  Message: ({ children }) => <li>{children}</li>,
+  Text: ({ children }) => <div>{children}</div>,
+  IntentionRun: ({ line, message }) => (
+    <p>
+      <code>{line}</code> {message}
+    </p>
+  ),
+  ToolRun: (props) => (
+    <p>
+      <code>{props.label}</code> {answerOf(props)}
+    </p>
+  ),
+  Error: ({ message }) => <p>{message}</p>,
+  Composer: ({ rows, input }) => (
+    <div>
+      {rows && <ul>{rows}</ul>}
+      {input}
+    </div>
+  ),
+  Row: ({ row, isHighlighted, onChoose }) => (
+    <li aria-selected={isHighlighted} role="option">
+      <button onClick={onChoose} type="button">
+        {row.title}
+        {row.subtitle && <span> {row.subtitle}</span>}
+      </button>
+    </li>
+  ),
+  Input: ({ input }) => <div>{input}</div>
+};
+
 export const referenceTheme = {
   components: {
+    Chat: REFERENCE_CHAT,
     IntentionPalette: {
       Frame: PassThrough,
       Input,

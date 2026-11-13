@@ -5,6 +5,7 @@
 // roles); named value sources and list params (Fig's generators, isVariadic).
 
 import { isUnavailable } from './lookups.js';
+import { beginsNullWord, isNumberParam, takesAnotherWord } from './typed-values.js';
 import { displayOf, hasSource, textOf, unavailableFlag } from './values.js';
 
 const SEPARATORS = [',', 'and'];
@@ -163,12 +164,12 @@ export function makeStepper({ commands, matcher, values }) {
   function addValueWord(reading, token, index, ctx) {
     const { command } = reading;
     const open = reading.open ?? openDefault(reading);
-    if (!open || (open.tokens.length && (token.isQuoted || open.tokens[0].isQuoted))) {
+    if (!open || (open.tokens.length && !canAddWord(command.params[open.param], open, token))) {
       return ctx.die(`"${token.word}" isn't part of ${command.label}`);
     }
     const extended = { ...open, tokens: [...open.tokens, token] };
     const spec = command.params[extended.param];
-    const role = hasSource(spec) ? 'value' : 'text';
+    const role = hasSource(spec) || isNumberParam(spec) ? 'value' : 'text';
     if (!spec.argSource.freeform) {
       const matches = values.matchEntries(reading, extended, ctx);
       if (isUnavailable(matches)) {
@@ -184,6 +185,11 @@ export function makeStepper({ commands, matcher, values }) {
     ];
   }
 
+  const canAddWord = (spec, open, token) =>
+    !token.isQuoted &&
+    !open.tokens[0].isQuoted &&
+    (token.index === open.tokens.at(-1).end || takesAnotherWord(spec, textOf(open)));
+
   const openDefault = ({ command, filled }) => {
     const [param] = Object.entries(command.params).find(([, spec]) => spec.default) ?? [];
     return param && filled[param] === undefined ? { param, tokens: [] } : undefined;
@@ -191,10 +197,17 @@ export function makeStepper({ commands, matcher, values }) {
 
   function continuesValue(reading, token, ctx) {
     const { open, command } = reading;
-    if (!open?.tokens.length || token.isQuoted || !hasSource(command.params[open.param])) {
+    if (!open?.tokens.length || token.isQuoted) {
       return false;
     }
+    const spec = command.params[open.param];
     const extended = { ...open, tokens: [...open.tokens, token] };
+    if (beginsNullWord(spec, textOf(extended))) {
+      return true;
+    }
+    if (!hasSource(spec)) {
+      return false;
+    }
     const matches = values.matchEntries(reading, extended, ctx);
     return !isUnavailable(matches) && Boolean(matches[0]) && matches[0].rank <= 1;
   }
@@ -268,12 +281,9 @@ export function makeStepper({ commands, matcher, values }) {
     }));
 
   // A command's name is typed only if it is a plain lowercase word ("next"); a name like "clearFilters" is the catalog's
-  // identifier, typed by its aliases (CATALOG.md).
+  // identifier, typed by its label when that is plain words ("close preview") and by its aliases (CATALOG.md).
   const commandItems = () =>
-    commands.flatMap((command) => [
-      ...(isTypedName(command.name) ? [{ phrase: command.name, isAlias: false, command }] : []),
-      ...(command.aliases ?? []).map((phrase) => ({ phrase, isAlias: true, command }))
-    ]);
+    commands.flatMap((command) => commandPhrases(command).map((item) => ({ ...item, command })));
 
   function canTake({ command, filled, open }, param) {
     const isFilled = filled[param] !== undefined || open?.param === param;
@@ -308,6 +318,24 @@ export function makeStepper({ commands, matcher, values }) {
 
 // Whether a command's name is typed as it is (catalog checks ask too: findUntypedCommands).
 export const isTypedName = (name) => /^[a-z]+$/.test(name);
+
+export function typedLabelOf(label) {
+  const phrase = String(label ?? '')
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .join(' ');
+  return /^[a-z0-9]+( [a-z0-9]+)*$/.test(phrase) ? phrase : undefined;
+}
+
+function commandPhrases(command) {
+  const label = typedLabelOf(command.label);
+  return [
+    ...(isTypedName(command.name) ? [{ phrase: command.name, isAlias: false }] : []),
+    ...(command.aliases ?? []).map((phrase) => ({ phrase, isAlias: true })),
+    ...(label ? [{ phrase: label, isAlias: true, isLabel: true }] : [])
+  ];
+}
 
 const isFreeformText = (spec) =>
   Boolean(spec.argSource.freeform) && (spec.argSource.type ?? 'text') === 'text';

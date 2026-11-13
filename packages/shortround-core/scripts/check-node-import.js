@@ -38,11 +38,20 @@ for (const name of [
   'buildPalette',
   'makeCommandBuilder',
   'makeCommandLine',
-  'findUntypedCommands'
+  'findUntypedCommands',
+  'findInvalidToolNames',
+  'buildCatalogRuntime',
+  'makeChatLine',
+  'drawnLineState',
+  'firstEnabledIndex',
+  'moveHighlight'
 ]) {
   if (typeof core[name] !== 'function') {
     fail(`the built entry has no ${name}`);
   }
+}
+if (core.SEND_AS_CHAT_ROW_ID !== 'chat:send') {
+  fail('the built entry has no SEND_AS_CHAT_ROW_ID');
 }
 if ('ShortRoundSidekick' in core) {
   fail('the built entry still exports ShortRoundSidekick, a React component');

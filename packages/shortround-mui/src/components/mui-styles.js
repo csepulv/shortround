@@ -1,5 +1,20 @@
 import { alpha } from '@mui/material';
 
+// The typed line's words, by role (core's react input marks them). Colour only: the words sit under the input's own
+// text, so a wider word (bold, say) would move the rest away from the caret.
+export const lineRoleStyles = (theme) => ({
+  '& [data-role="verb"]': { color: theme.palette.primary.main },
+  '& [data-role="hint"]': { color: theme.palette.secondary.main },
+  '& [data-role="param"]': { color: theme.palette.info.main },
+  '& [data-role="value"]': { color: theme.palette.success.main },
+  '& [data-role="unread"]': { color: alpha(theme.palette.text.primary, 0.6) },
+  '& [data-role="broken"]': {
+    color: theme.palette.error.main,
+    textDecoration: 'underline wavy'
+  },
+  '& [data-role="ghost"]': { color: alpha(theme.palette.text.primary, 0.35) }
+});
+
 export function makeShortRoundPaletteStyles(theme) {
   return {
     root: {
@@ -17,18 +32,7 @@ export function makeShortRoundPaletteStyles(theme) {
           color: alpha(theme.palette.text.primary, 0.5)
         }
       },
-      // The typed line's words, by role (core's react input marks them). Colour only: the words sit under the input's
-      // own text, so a wider word (bold, say) would move the rest away from the caret.
-      '& [data-role="verb"]': { color: theme.palette.primary.main },
-      '& [data-role="hint"]': { color: theme.palette.secondary.main },
-      '& [data-role="param"]': { color: theme.palette.info.main },
-      '& [data-role="value"]': { color: theme.palette.success.main },
-      '& [data-role="unread"]': { color: alpha(theme.palette.text.primary, 0.6) },
-      '& [data-role="broken"]': {
-        color: theme.palette.error.main,
-        textDecoration: 'underline wavy'
-      },
-      '& [data-role="ghost"]': { color: alpha(theme.palette.text.primary, 0.35) },
+      ...lineRoleStyles(theme),
       '& [cmdk-list]': {
         // cmdk's list takes focus on a mouse click (tabIndex -1) but is never a keyboard target, so its ring
         // tells nobody anything; keyboard focus stays on the input.

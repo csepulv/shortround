@@ -2,7 +2,8 @@
 // Exact and alias phrases compete on length together, so a longer phrase is not hidden by a shorter exact one ("open
 // in service" over the command name "open"); Damerau-Levenshtein only.
 //
-// Phrases: exact and alias first (the longest phrase wins; an exact one wins a tie), then fuzzy. Values: exact,
+// Phrases: exact and alias first (the longest phrase wins; an exact one wins a tie, and an alias beats a label), then
+// fuzzy. Values: exact,
 // alias, prefix, then fuzzy; a later layer runs only when earlier ones found nothing. Every match records the
 // layer that found it (`via`).
 
@@ -21,8 +22,9 @@ const allowedDistance = (word) => (word.length <= 5 ? 1 : 2);
 export function makeMatcher({ layers = LAYERS } = {}) {
   const uses = (layer) => layers.includes(layer);
 
-  // Items are { phrase, isAlias, ...payload }. Returns [{ item, wordCount, via }]: the longest exact or alias
-  // phrases ("sort by" over "sort", "open in service" over "open"), exact ones first on a tie; else fuzzy.
+  // Items are { phrase, isAlias, isLabel?, ...payload }. Returns [{ item, wordCount, via }]: the longest exact or
+  // alias phrases ("sort by" over "sort", "open in service" over "open"); on a tie, exact ones, then aliases, then
+  // labels (a label read as a phrase never takes one from another command's alias); else fuzzy.
   function matchPhrase(tokens, index, items) {
     const whole = items
       .map((item) => ({
@@ -33,8 +35,11 @@ export function makeMatcher({ layers = LAYERS } = {}) {
       .filter(({ wordCount, via }) => wordCount > 0 && uses(via));
     const found = longest(whole);
     if (found.length) {
-      const exact = found.filter(({ via }) => via === 'exact');
-      return exact.length ? exact : found;
+      return firstNonEmpty([
+        found.filter(({ via }) => via === 'exact'),
+        found.filter(({ item }) => !item.isLabel),
+        found
+      ]);
     }
     return uses('fuzzy') ? fuzzyPhrase(tokens[index], items) : [];
   }
@@ -111,6 +116,8 @@ function countPhraseWords(phrase, tokens, index) {
   });
   return isMatch ? words.length : 0;
 }
+
+const firstNonEmpty = (lists) => lists.find((list) => list.length) ?? [];
 
 const longest = (matches) => {
   const most = Math.max(0, ...matches.map(({ wordCount }) => wordCount));

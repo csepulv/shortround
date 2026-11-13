@@ -8,8 +8,10 @@ if (typeof window !== 'undefined') {
 // By the package's own name, so Node resolves it through `exports`, as an app would.
 const react = await import('@shortround/react');
 
-if (typeof react.ShortRoundSidekick !== 'function') {
-  throw new Error("@shortround/react's built entry loaded without ShortRoundSidekick");
+for (const name of ['ShortRoundSidekick', 'LineInput', 'useShortRoundComponents']) {
+  if (typeof react[name] !== 'function') {
+    throw new Error(`@shortround/react's built entry loaded without ${name}`);
+  }
 }
 
 console.log('@shortround/react: the built entry imports in plain Node');

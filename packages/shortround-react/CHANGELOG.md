@@ -1,5 +1,23 @@
 # @shortround/react
 
+## 0.6.0
+
+### Breaking Changes
+
+- `ShortRoundProvider` needs only `components` and `Toast`. It no longer refuses a theme without `IntentionPalette`,
+  `Sidekick` or `SidecarContent`; `ShortRoundSidekick` throws when it mounts instead, naming the groups it misses
+  (`ShortRoundSidekick: the theme has no components.Sidekick`). A theme for an app that draws only the chat has `Chat`
+  and a `Toast`.
+- Types: `ShortRoundTheme.components` is `Partial<SidekickComponents>` with other groups allowed. Under `strict`, code
+  that reads a group off a value typed `ShortRoundTheme` (`theme.components.Sidekick.Frame`) needs a check or `!`.
+
+### Minor Changes
+
+- `LineInput`: an input with the typed line drawn under it (each word's role, and the ghost), for a host's own input.
+- `useShortRoundComponents()`: the nearest provider's slots, or `null` without one, for a package that draws through
+  slot groups of its own (`@shortround/chat`'s `Chat`).
+- Takes `@shortround/core` `^0.6.0` as a peer.
+
 ## 0.5.0
 
 ### Major Changes

@@ -4,22 +4,27 @@
 //     whatever the app's state now says.
 //   - a compound command shows one row per param; a run calls the command's own `run({ [paramKey]: arg })`.
 
-import { makeCommandLine } from '../command-builder/command-line.js';
-import { makeCommandBuilder } from '../command-builder/engine.js';
-import { makePaletteAdapter, rowsFor } from '../command-builder/palette-adapter.js';
+import { makePaletteAdapter } from '../command-builder/palette-adapter.js';
+import { isTypedParam, readTypedText } from '../command-builder/typed-values.js';
+import { argFor } from './app-held-values.js';
+import {
+  buildCatalogRuntime,
+  emptyTextOf,
+  fillTemplate,
+  isCatalogRuntime,
+  keyOf,
+  makeEngine
+} from './catalog-runtime.js';
 
-export function buildPalette(catalog, { panels = {}, backIntentionId, fallback } = {}) {
+export function buildPalette(catalogOrRuntime, { panels = {}, backIntentionId, fallback } = {}) {
+  const runtime = isCatalogRuntime(catalogOrRuntime)
+    ? catalogOrRuntime
+    : buildCatalogRuntime(catalogOrRuntime);
+  const { catalog, activeStates, availableCommands } = runtime;
   checkAppSupplies(catalog, { panels, backIntentionId });
   const engines = new Map();
 
-  const activeStates = () => Object.values(catalog.states).filter((state) => state.holds({}));
   const panelOf = (states) => states.find((state) => state.panel)?.panel;
-
-  // The states' commands whose own `when` holds now: what the list shows and what a typed line can read.
-  const availableCommands = (states) =>
-    [...new Set(states.flatMap((state) => state.commands))]
-      .map((name) => catalog.commands[name])
-      .filter((command) => command.isAvailable({ command: command.name }));
 
   const listFor = (states) => inGroupOrder(availableCommands(states).flatMap(rowsOfCommand));
 
@@ -155,7 +160,13 @@ export function buildPalette(catalog, { panels = {}, backIntentionId, fallback }
         if (!trimmed && path.required) {
           return askForText(command, paramKey, param, meta, path.required);
         }
-        return runCommand(command.name, { [paramKey]: trimmed });
+        if (!isTypedParam(param)) {
+          return runCommand(command.name, { [paramKey]: argFor(param, trimmed) });
+        }
+        const read = readTypedText(param, trimmed);
+        return read.rule
+          ? askForText(command, paramKey, param, meta, read.rule)
+          : runCommand(command.name, { [paramKey]: argFor(param, read.value) });
       }
     };
     return {
@@ -170,7 +181,7 @@ export function buildPalette(catalog, { panels = {}, backIntentionId, fallback }
 
   async function runCommand(name, args) {
     const before = activeStates();
-    const outcome = (await catalog.commands[name].call(args)) ?? {};
+    const outcome = await runtime.run(name, args);
     return stateResult(before, activeStates(), outcome);
   }
 
@@ -198,7 +209,6 @@ export function buildPalette(catalog, { panels = {}, backIntentionId, fallback }
 
   // The command-builder engine over the commands available now (a command the list hides doesn't read either), with
   // its typed-line resolver; one per set of commands, so a `when` that changes gives the line another engine.
-  const keyOf = (commands) => commands.map((command) => command.name).join('+');
   function engineFor(states) {
     const commands = availableCommands(states);
     const key = keyOf(commands);
@@ -212,69 +222,17 @@ export function buildPalette(catalog, { panels = {}, backIntentionId, fallback }
   const resolverFor = (states) => engineFor(states).resolveInput;
   const runCall = (call) => runTyped(catalog.commands[call.command], call.args);
 
-  // The adapter maps the engine's state to rows, holds "Loading" back for a short delay, and tells subscribers when a
-  // lookup lands or the delay passes.
-  function makeEngine(commands) {
-    const lookups = {};
-    return makeCommandBuilder({
-      commands: commands.map((command) => toEngineCommand(command, lookups)),
-      lookups
-    });
-  }
+  // A command line for the commands available now (a custom UI's typed line, an editor's slash command) that runs as a
+  // typed-line row does. A palette store reads its rows here, so the rows and the line are one reading.
+  const commandLine = () => runtime.commandLine({ runCall, followWith: subscribe });
 
-  // A command line for the commands available now: a custom UI's typed line, or an editor's slash command. It follows
-  // the app (its notify(), and its own runs) and runs as a typed-line row does. It reads with engines of its own: an
-  // engine holds one line's reading, and a reader with other text on a shared engine would cut it and drop a pending
-  // lookup's result. dispose() stops it following.
-  function commandLine() {
-    const lineEngines = new Map();
-    const lineListeners = new Set();
-    const tellLine = () => lineListeners.forEach((listener) => listener());
-    const lineEngineFor = (states) => {
-      const commands = availableCommands(states);
-      const key = keyOf(commands);
-      if (!lineEngines.has(key)) {
-        const engine = makeEngine(commands);
-        engine.subscribe(tellLine);
-        lineEngines.set(key, engine);
-      }
-      return lineEngines.get(key);
-    };
-    const builder = {
-      read: (text, caret) => lineEngineFor(activeStates()).read(text, caret),
-      subscribe(listener) {
-        lineListeners.add(listener);
-        return () => lineListeners.delete(listener);
-      }
-    };
-    const line = makeCommandLine({ builder, run: runCall });
-    const followApp = () => {
-      lineEngines.forEach((engine) => engine.invalidate());
-      const { text, caret } = line.getState();
-      line.change(text, caret);
-    };
-    const stopFollowing = subscribe(followApp);
-    const dispose = () => {
-      stopFollowing();
-      line.dispose();
-    };
-    // The typed-line rows for the line as it reads now, at its caret, as `resolveInput` would give them: a palette store
-    // reads its rows here, so the rows and the line are one reading. The line's `loading` is already the delayed
-    // pending.
-    const rows = () => {
-      const state = line.getState();
-      return rowsFor({ ...state, pending: state.loading }, runCall);
-    };
-    return { ...line, rows, dispose };
-  }
-
-  // The app tells ShortRound when something it knows changed (the preview closed, results arrived).
-  // ShortRound drops what it cached and tells its subscribers, who re-read through listNow().
+  // The app's notify() reaches the runtime. The palette drops what it cached before it tells its own subscribers, who
+  // re-read through listNow(), whatever else subscribed to the runtime first.
   const listeners = new Set();
-  function notify() {
+  runtime.subscribe(() => {
     engines.forEach(({ engine }) => engine.invalidate());
     listeners.forEach((listener) => listener());
-  }
+  });
   function subscribe(listener) {
     listeners.add(listener);
     return () => listeners.delete(listener);
@@ -291,43 +249,15 @@ export function buildPalette(catalog, { panels = {}, backIntentionId, fallback }
     };
   }
 
-  // Whether a command is offered now: one of its states holds, and its own `when` does.
-  const isAvailable = (name) =>
-    activeStates().some((state) => state.commands.includes(name)) &&
-    catalog.commands[name].isAvailable({ command: name });
-
   return {
     ...current(),
     current,
     commandLine,
-    isAvailable,
+    isAvailable: runtime.isAvailable,
     // The list as the app's state says now: what a palette would show if it re-read after an outside change.
     listNow: () => listFor(activeStates()),
-    notify,
+    notify: runtime.notify,
     subscribe
-  };
-}
-
-// The engine names its lookups; each param's source is wrapped so it also receives the param's `key`. Each param
-// carries the empty picker's text, so a typed line with nothing to choose says the same.
-function toEngineCommand(command, lookups) {
-  const params = Object.fromEntries(
-    Object.entries(command.params).map(([paramKey, param]) => {
-      const withEmpty = { ...param, emptyText: emptyTextOf(param) };
-      if (!param.source) {
-        return [paramKey, withEmpty];
-      }
-      const name = `${command.name}.${paramKey}`;
-      lookups[name] = (context) => param.source({ ...context, key: param.argSource.key });
-      return [paramKey, { ...withEmpty, argSource: { ...param.argSource, lookup: name } }];
-    })
-  );
-  return {
-    name: command.name,
-    label: command.label,
-    aliases: command.aliases ?? [],
-    run: command.run,
-    params
   };
 }
 
@@ -346,12 +276,3 @@ function checkAppSupplies(catalog, { panels, backIntentionId }) {
 
 // What `path` defaults to, so a catalog writes it only to change the wording.
 const DEFAULT_PROMPT = 'Type the {label}';
-const DEFAULT_EMPTY = 'No {label} to choose from';
-
-const argFor = (param, value) => (param.list ? [value] : value);
-// `{label}` in a message names the param ("No {label} values"); `{title}` in a row title names a list value
-// ("Match {title}").
-const fillTemplate = (template, fields) =>
-  template?.replace(/\{(\w+)\}/g, (placeholder, name) => fields[name] ?? placeholder);
-const emptyTextOf = (param) =>
-  fillTemplate(param.path?.empty ?? DEFAULT_EMPTY, { label: param.label.toLowerCase() });

@@ -2,6 +2,7 @@
 // constants) are @shortround/core's; this file imports them and doesn't re-export them.
 import type {
   AnchorPosition,
+  CommandLineState,
   ControlLabels,
   Intention,
   IntentionActionResult,
@@ -12,7 +13,7 @@ import type {
   SidekickStore,
   SidekickStoreState
 } from '@shortround/core';
-import { JSX, ReactNode } from 'react';
+import { JSX, ReactNode, RefObject } from 'react';
 
 /** Where the sidekick sits for an anchor origin, as CSS position properties. */
 export interface AnchorPositionStyle {
@@ -139,11 +140,13 @@ export interface ToastProps {
 
 /**
  * What an app hands to `ShortRoundProvider`, once, at its root (defined at module scope, or memoized): the slots and
- * the Toast view. Toast's obligation: while `isOpen`, show `message` (`data-testid="shortround-toast"`); otherwise
- * render nothing.
+ * the Toast view. Each slot group is needed only by what draws it: `ShortRoundSidekick` throws, naming the groups it
+ * misses, when it mounts; another package's group (such as `@shortround/chat`'s `Chat`) is checked by its own
+ * component. Toast's obligation: while `isOpen`, show `message` (`data-testid="shortround-toast"`); otherwise render
+ * nothing.
  */
 export interface ShortRoundTheme {
-  components: SidekickComponents;
+  components: Partial<SidekickComponents> & { [group: string]: any };
   Toast: React.ComponentType<ToastProps>;
 }
 
@@ -161,6 +164,12 @@ export function ShortRoundProvider(props: {
 
 /** Shows a toast in the nearest provider's theme. Throws outside a `ShortRoundProvider`. */
 export function useShortRoundToast(): { showToast: (args: { message: string }) => void };
+
+/**
+ * The nearest `ShortRoundProvider`'s theme slots (`theme.components`), or `null` with no provider. For a package that
+ * draws through a slot group of its own, such as `@shortround/chat`'s `Chat`, which the provider doesn't require.
+ */
+export function useShortRoundComponents(): ShortRoundTheme['components'] | null;
 
 export interface UseShortRoundResult {
   inputValue: string;
@@ -240,4 +249,18 @@ export function ShortRoundSidekick(props: {
    * text, and Tab completes through the line. Pickers and typed-text steps never show them.
    */
   disableLineHints?: boolean;
+}): JSX.Element;
+
+/**
+ * An input with its typed line drawn under it, for a host's own input (a chat, an editor's command field): each word
+ * with its role (`data-role` on the word's span, for a stylesheet to colour) and the ghost text after the last word
+ * (`data-role="ghost"`). The input itself (`children`, an `<input>` or `<textarea>` whose element is `inputRef`) stays
+ * on top with its text made transparent, so typing, the caret and selection stay native. Without `lineState` the input
+ * shows as it is. The line is drawn on one line: pass no `lineState` while the text has a line break.
+ */
+export function LineInput(props: {
+  children: ReactNode;
+  inputRef: RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
+  /** A command line's state (`CommandLine.getState()`, or a chat line's `drawnLineState`), or `null`. */
+  lineState?: CommandLineState | null;
 }): JSX.Element;

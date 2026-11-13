@@ -4,6 +4,7 @@
 import { describe, expect, test, vi } from 'vitest';
 import { parse, stringify } from 'yaml';
 
+import { LOADING_DELAY_MS } from '../../command-builder/loading-delay.js';
 import * as core from '../../index.js';
 import { buildPalette } from '../build-palette.js';
 import { loadCatalog } from '../load-catalog.js';
@@ -609,17 +610,23 @@ describe("a command's default param, right after its name", () => {
   });
 
   // A slow lookup behind the default param says it is loading, as one behind a param word does.
-  test("the default param's slow lookup says it is loading", async () => {
-    const line = nextOf(
-      paintPalette(() => new Promise(() => {})),
-      'paint '
-    );
+  test("the default param's slow lookup says it is loading", () => {
+    vi.useFakeTimers();
+    try {
+      const line = nextOf(
+        paintPalette(() => new Promise(() => {})),
+        'paint '
+      );
+      expect(line.getState().loading).toEqual([]);
 
-    await vi.waitFor(() =>
-      expect(line.getState().loading).toEqual([{ param: 'item', label: 'Item' }])
-    );
-    // A lookup still loading isn't empty.
-    expect(line.getState().incomplete).toEqual([]);
+      vi.advanceTimersByTime(LOADING_DELAY_MS);
+
+      expect(line.getState().loading).toEqual([{ param: 'item', label: 'Item' }]);
+      // A lookup still loading isn't empty.
+      expect(line.getState().incomplete).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   // The default's values come first; hints and other params' words still follow; only the default param's own label

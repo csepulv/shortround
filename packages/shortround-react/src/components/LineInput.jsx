@@ -20,9 +20,9 @@ const COPIED_STYLES = [
   'borderLeftWidth'
 ];
 
-// The palette's input with the line drawn under it: each word with its role (`data-role`, for a theme to colour) and
-// the ghost after the last word. The real input stays on top, its text made transparent, so typing, the caret and
-// selection stay native. Without `lineState` (in a step), the input shows as it always has.
+// An input (the palette's, or a host's own) with the line drawn under it: each word with its role (`data-role`, for
+// a theme to colour) and the ghost after the last word. The real input stays on top, its text made transparent, so
+// typing, the caret and selection stay native. Without `lineState` (in a step), the input shows as it always has.
 export function LineInput({ children, inputRef, lineState }) {
   const shadowRef = useRef(null);
   const isShowing = Boolean(lineState);

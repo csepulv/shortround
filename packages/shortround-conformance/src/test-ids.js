@@ -7,5 +7,6 @@ export const TEST_IDS = {
   close: 'shortround-close',
   size: (size) => `shortround-size-${size}`,
   anchor: 'shortround-anchor',
-  toast: 'shortround-toast'
+  toast: 'shortround-toast',
+  chatInput: 'shortround-chat-input'
 };

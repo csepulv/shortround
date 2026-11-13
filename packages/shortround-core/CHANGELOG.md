@@ -1,5 +1,51 @@
 # @shortround/core
 
+## 0.6.0
+
+### Minor Changes
+
+- `buildCatalogRuntime(loadCatalog(text, bindings))`: the catalog at run time, with no UI. A palette
+  (`buildPalette(runtime, …)`, which still takes a loaded catalog too) and a chat (`@shortround/chat`) are views over
+  one runtime, so an app with both calls `runtime.notify()` once. It has `isAvailable`, `run`, `notify`, `subscribe`
+  and `commandLine()`, and gives the intentions as tools for a model: `tools()` (a name, a description and a JSON
+  Schema for each) and `runTool({ toolName, input })`. Types: `CatalogRuntime`, `IntentionTool`,
+  `IntentionToolProperty`, `IntentionToolItem`, `IntentionToolCall`, `IntentionToolAnswer`, `RunResult`.
+  - `tools()` offers every intention, each time: one that isn't available now is marked "(not available now)" after
+    its label. For one that is, a lookup param's description lists the app's values now (up to twenty; a lookup gets
+    up to 500 ms). A required param the app holds a value for isn't in the schema's `required`. A command whose name
+    a model provider won't take is left out, with a warning, once.
+  - The runtime's own command line (`runtime.commandLine()`) says a typed line needs an app-held value the app holds
+    none of (`appNeeds`), and doesn't run it; the palette's line still asks for it with a picker.
+- A model's tool call is checked as the catalog says before `run` sees it: an intention that isn't available now, an
+  unknown param, or several values for a one-value param is refused; free text arrives as text, a value that isn't
+  text is refused, a `required` param left out, `null`, empty or blank is refused, a param given `null` counts as left
+  out (unless it is `nullable`), and a value outside a param's choices is refused, naming them. A param left out that
+  the app holds a value for (`current`) is filled, and the call is refused when the app holds none.
+- `makeChatLine({ runtime, onIntentionRun, onSendAsChat, showHintForMissing })`: a chat's input line over a runtime.
+  A typed intention runs, anything else is sent as chat, and the rows say what Enter would do. Also `drawnLineState`,
+  `SEND_AS_CHAT_ROW_ID`, `firstEnabledIndex` and `moveHighlight`. Types: `ChatLine`, `ChatLineRow`, `ChatLineKey`.
+- A command can be typed by its label, lowercased, when the label is plain words (`Close preview` is typed "close
+  preview"). A label never takes a phrase from another command's name or alias. `findUntypedCommands` counts a typed
+  label.
+- Catalog fields: a command's `toolDescription` (rules or context for a model, after its label in the tool's
+  description); a list param's `minItems`; typed params: `argSource.type` `integer` and `number` (with `minimum` and
+  `maximum`), text's `maxLength`, and a param's `nullable` (`true`, or words such as `[all, every]` that mean `null`
+  when typed). One rule is checked on the typed line, in the palette's text step and in a model's call, and a value
+  that breaks it is refused with the rule ("Limit is a whole number from 1, or all"). The catalog refuses a null word
+  one of the command's params already uses, and `nullable` on a param with a list or a lookup. An examples file's
+  `means` writes a number type's value as a number (`limit: 20`; `'20'` no longer matches). See CATALOG.md.
+- A `run` may return `output` beside `message`: data a model gets in place of the message. A typed run
+  still shows the message; a model's call shows the answer through the chat's `ToolRun` slot.
+- `findInvalidToolNames(catalog)`: the commands whose names a model provider won't take as tool names.
+- The command line's state has `awaiting` (the params a hint word waits for) and `brokenRules` (the rules a typed
+  value breaks).
+
+### Patch Changes
+
+- The palette's text step for a freeform `list: true` param runs with a list of one, as the typed line and a picker do.
+- Peers of `@shortround/react`, `@shortround/mui` and `@shortround/chat` on core are `^0.6.0`; the four packages are
+  released together.
+
 ## 0.5.0
 
 ### Breaking Changes

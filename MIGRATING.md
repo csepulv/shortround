@@ -8,6 +8,109 @@ CHANGELOGs list everything that changed; this guide covers only what affects you
 Each item says what changed, what to do, and how to check it. Items are grouped by who they affect, so you can skip
 the groups that don't apply to you.
 
+## 0.6.0
+
+From 0.5.0. A new package, `@shortround/chat`, puts a chat over your catalog, and `@shortround/mui` draws it. For an
+existing app, three things change: a command can now be typed by its label, a list param's text step gives a list, and
+the provider no longer requires the palette's slot groups. Apart from one case in strict TypeScript (see "TypeScript"),
+nothing in an app's code has to change.
+
+### Upgrade
+
+Upgrade `@shortround/core`, `@shortround/react` and `@shortround/mui` together, as before. To add the chat, install
+`@shortround/chat` with its peers `ai` (7) and `@ai-sdk/react` (4); see its README.
+
+### Apps with a catalog
+
+- **A command can be typed by its label.** Besides its name (when that is a plain lowercase word) and its aliases, a
+  typed line now starts a command by its label, lowercased, when the label is plain words: `Close preview` is typed
+  "close preview". This holds for the palette's typed line and the chat's.
+  A label never takes a phrase from another command's name or alias: if `Shut` has the alias `close` and another
+  command is labelled `Close`, "close" still starts `Shut`. A longer label does win over a shorter phrase, as any
+  longer phrase does: a command labelled `Close all` now reads "close all", where before "close" started `Shut` and
+  "all" was its words.
+  *To do:* nothing, usually. If your `findUntypedCommands` test expects a list, the commands whose labels are plain
+  words leave it; expect what it now returns (often `[]`). If a label of several words begins with another command's
+  name or alias, check that typing it now starts the command you mean.
+  *Check:* type a label in the palette ("close preview" with a preview open); the command's row reads it, and Enter
+  runs it.
+- **New, for a chat:** a command may have a `toolDescription` (rules or context for a model, after its label in the
+  tool's description); a `run` may return `output` beside `message`, data a model gets in place of the message (a typed
+  run still shows the message; a model's call shows the answer through `Chat.ToolRun`, which MUI draws as JSON); and
+  `findInvalidToolNames(catalog)` lists commands whose names a model provider won't take as tool names (a v2 catalog's
+  dotted names, such as `notes.archive`).
+  *To do:* nothing for the palette, which ignores all three. Before adding a chat, add
+  `expect(findInvalidToolNames(checkCatalog(CATALOG_TEXT))).toEqual([])` to your catalog tests, and rename what it
+  lists (letters, digits, `_` and `-`, up to 64 characters); until then the runtime leaves those commands out of its
+  tools and warns once.
+- **A model's call is checked as the catalog says.** Before a command's `run` sees a model's call, a `required` param
+  left out, `null`, an empty list or blank text is refused (a typed line already needed it); free text arrives as text
+  (`2` becomes `"2"`); a value that isn't text (an object) is refused; a param given `null` counts as left out (unless
+  it is `nullable`, below); and a list param may set `minItems`, which refuses a shorter list.
+  *To do:* nothing for the palette. If a command's `run` treats an empty filter as "everything", set `minItems: 1` on
+  the param; if it treats a missing one that way too, mark the param `required`, or refuse it in `run`.
+- **New: typed params.** A freeform param may be `type: integer` or `number` (with `minimum` and `maximum`), text may
+  set `maxLength`, and a one-value param with no `list` or `lookup` may be `nullable` (`[all, every]`: typing a word
+  gives `null`; `true`: only a model can send `null`). A null word can't be a word the command's params already use (a
+  hint, a param's label or alias, a value's alias); the catalog refuses it, naming it. One rule is checked on the typed
+  line, in the palette's text step and in a model's call, and a value that breaks it is refused with the rule ("Limit is
+  a whole number from 1"); on a chat line Enter then does nothing. A number is one word on a typed line, so a sentence
+  after the command is sent as chat.
+  *To do:* nothing for a catalog without them. A catalog that adds them gets numbers (and `null`) in `run`, from
+  every path; its examples file writes them that way (`means: { showNotes: { limit: 20 } }`).
+- **A list param's text step gives a list.** The palette's step for a freeform `list: true` param now runs with
+  `[value]`, as the typed line and a picker already did, where before it gave the value alone.
+  *To do:* if a `run` for such a param handled a single value from the step, it can drop that case.
+  *Check:* choose the param's row, type a value, and Enter; `run` receives a list of one.
+
+### Theme authors
+
+- **The provider needs only `components` and `Toast`.** `ShortRoundProvider` no longer refuses a theme without
+  `IntentionPalette`, `Sidekick` or `SidecarContent`; `ShortRoundSidekick` throws when it mounts instead, naming the
+  groups it misses (`ShortRoundSidekick: the theme has no components.Sidekick`). A theme for an app that draws only
+  the chat has `Chat` and a `Toast`.
+  *To do:* nothing for a complete theme. A test that expected the provider's old error ("ShortRoundProvider: the theme
+  has no components.Sidekick") now gets the sidekick's, when the sidekick mounts.
+- **`@shortround/conformance` follows the theme.** `describeThemeContract` runs the palette's checks when the theme has
+  any palette group, the `Chat` checks when it has `Chat`, and the Toast's always. The Toast checks now render only the
+  provider ("shows a message while it is open" replaces "shows an intention's message while it is open"). The `Chat`
+  checks need `@shortround/chat`, `ai` and `@ai-sdk/react` installed; a missing one fails them, naming what to
+  install. A `Chat.Row` sets `aria-selected` from `isHighlighted`; a `Chat.ToolRun` shows its `label`, not the name
+  the model called.
+  *To do:* nothing for a palette theme. For a `Chat` group, install those packages beside the suite.
+
+### New (optional)
+
+- **`@shortround/chat`**: `<IntentionChat runtime transport />` (drawn through the theme's `Chat` slots) and
+  `useIntentionChat` for your own UI; `makeIntentionChat` for a conversation your app holds itself;
+  `@shortround/chat/server` for your route; `CHAT_SLOT_NAMES` lists the `Chat` slots. See its README.
+- **`buildCatalogRuntime(catalog)`** in core: the catalog at run time, which a palette (`buildPalette(runtime, …)`)
+  and a chat are views over, so an app with both calls `notify()` once. It gives the intentions as tools for a model
+  (`tools()`, `runTool()`). Build the runtime once, and one palette over it: a palette over a runtime follows it for
+  the runtime's life. Core also exports `makeChatLine`, `drawnLineState`, `SEND_AS_CHAT_ROW_ID`,
+  `firstEnabledIndex` and `moveHighlight`; see core's README.
+- **`LineInput`** and **`useShortRoundComponents()`** in `@shortround/react`: line hints in your own input, and the
+  provider's slot groups for a package that draws through its own.
+- **`muiTheme`'s `Chat` slots**: with `muiTheme` at the root, `<IntentionChat>` needs no other setup.
+
+### TypeScript
+
+- Core: new `CatalogRuntime`, `IntentionTool`, `IntentionToolCall`, `IntentionToolAnswer`, `ChatLine`, `ChatLineRow`,
+  `ChatLineKey`, `RunResult` (what a run returns: `message`, `output`, `sideEffects`; `RunOutcome` is built on it);
+  `CatalogCommand` gains `toolDescription`, `CatalogParam` gains `minItems` and `nullable`, `ArgSource` gains the
+  `integer` and `number` types, `minimum`, `maximum` and `maxLength`, `IntentionTool.inputSchema` may have `required`,
+  and its properties are `IntentionToolProperty` (a number type, bounds, `maxLength`, `minItems`, a `'null'` pair;
+  `IntentionToolValueType`), `CatalogIntention` gains `missing?` and a `BuilderState` reading `appNeeds?`,
+  with a list's items `IntentionToolItem`; `buildPalette` takes a `Catalog` or a `CatalogRuntime`; `BuilderState` and
+  `CommandLineState` gain `awaiting` (the params a hint word waits for) and `brokenRules` (the rules a typed value
+  breaks).
+- React: `ShortRoundTheme.components` is `Partial<SidekickComponents>` with other groups allowed, so a chat-only theme
+  type-checks while a misshapen palette group still doesn't; new `LineInput` and `useShortRoundComponents`. Under
+  `strict`, code that reads a group off a value typed `ShortRoundTheme` (`theme.components.Sidekick.Frame`) now needs a
+  check or `!`, since the group may be missing.
+- MUI: `MuiSidekickComponents` gains `Chat`; `muiTheme` is typed with its own components, so reading a group off it
+  needs no check.
+
 ## 0.5.0
 
 From 0.4.0. ShortRound splits into a headless core and a React package. Every React app changes its imports. An app
@@ -95,8 +198,8 @@ and
 [version 3](https://github.com/csepulv/shortround/blob/main/packages/shortround-core/src/catalog/__tests__/fixtures/search-palette-v3.yaml).
 Run `checkCatalog` on the new file as you go; it names the command (and param) and the reason for anything wrong.
 
-**2. The words people type.** A typed line names a command by its name or an alias, never by its label, and fills a
-param by its label, aliases or hints. A literal translation leaves most commands untypeable:
+**2. The words people type.** A typed line names a command by its name or an alias (and, from 0.6.0, by a label of plain
+words), and fills a param by its label, aliases or hints. A literal translation leaves most commands untypeable:
 
 - **A command's name is typed only if it is a plain lowercase word** (`next`, `open`). Version 2's names are dotted
   (`search.clearFilters`): give each command an alias phrase people say (`clear filters`).

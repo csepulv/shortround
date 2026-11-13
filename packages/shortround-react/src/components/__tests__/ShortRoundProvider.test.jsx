@@ -1,6 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 
-import { useShortRoundToast } from '../../hooks/useShortRoundTheme.js';
+import { useShortRoundComponents, useShortRoundToast } from '../../hooks/useShortRoundTheme.js';
 import { ShortRoundProvider } from '../ShortRoundProvider.jsx';
 import { ShortRoundSidekick } from '../ShortRoundSidekick.jsx';
 
@@ -42,12 +42,16 @@ const savingIntention = (id = 'save') => ({
   action: () => ({ message: 'Saved' })
 });
 
+function ToastButton() {
+  const { showToast } = useShortRoundToast();
+  return <button data-testid="app-toast" onClick={() => showToast({ message: 'Hello' })} />;
+}
+
 // App code: imports only core, names no theme.
 function App({ intentions = [savingIntention()] }) {
-  const { showToast } = useShortRoundToast();
   return (
     <>
-      <button data-testid="app-toast" onClick={() => showToast({ message: 'Hello' })} />
+      <ToastButton />
       <ShortRoundSidekick defaultIntentions={intentions} initialSidekickState={{ isOpen: true }} />
     </>
   );
@@ -113,14 +117,60 @@ describe('ShortRoundProvider: toasts', () => {
     );
   });
 
-  test('a theme missing a slot group is refused, naming the group', () => {
+  test('a theme without components is refused', () => {
+    expectRenderToThrow(
+      <ShortRoundProvider theme={{ Toast: themeA.Toast }}>
+        <span />
+      </ShortRoundProvider>,
+      /components/
+    );
+  });
+});
+
+describe('slot groups are checked by the component that draws them', () => {
+  const chatOnly = { components: { Chat: { Frame: Pass } }, Toast: themeA.Toast };
+
+  test('a theme with none of the palette groups is accepted, and its toast works', async () => {
+    render(
+      <ShortRoundProvider theme={chatOnly}>
+        <ToastButton />
+      </ShortRoundProvider>
+    );
+
+    await choose('app-toast');
+    expect(screen.getByTestId('toast-a').textContent).toBe('Hello');
+  });
+
+  test('a sidekick under such a theme throws, naming every group it misses', () => {
+    expectRenderToThrow(
+      <ShortRoundProvider theme={chatOnly}>
+        <App />
+      </ShortRoundProvider>,
+      'ShortRoundSidekick: the theme has no components.IntentionPalette or components.Sidekick or components.SidecarContent'
+    );
+  });
+
+  test('a sidekick names the one group the theme misses', () => {
     const { Sidekick, ...withoutSidekick } = themeA.components;
     expect(Sidekick).toBeTruthy();
     expectRenderToThrow(
       <ShortRoundProvider theme={{ ...themeA, components: withoutSidekick }}>
-        <span />
+        <App />
       </ShortRoundProvider>,
-      /components\.Sidekick/
+      'ShortRoundSidekick: the theme has no components.Sidekick'
+    );
+  });
+
+  test('slots passed as SidekickComponents are checked the same way', () => {
+    const { SidecarContent, ...withoutSidecar } = themeA.components;
+    expect(SidecarContent).toBeTruthy();
+    expectRenderToThrow(
+      <ShortRoundSidekick
+        SidekickComponents={withoutSidecar}
+        defaultIntentions={[]}
+        initialSidekickState={{ isOpen: true }}
+      />,
+      'ShortRoundSidekick: the theme has no components.SidecarContent'
     );
   });
 });
@@ -205,5 +255,37 @@ describe('ShortRoundProvider: nested providers', () => {
 
     await choose('item-outer-save');
     expect(screen.getByTestId('toast-a').textContent).toBe('Saved');
+  });
+});
+
+describe("a package's own components read the theme's slots", () => {
+  function ShowsSlotGroups() {
+    const components = useShortRoundComponents();
+    return (
+      <span data-testid="slot-groups">
+        {components ? Object.keys(components).join(',') : 'none'}
+      </span>
+    );
+  }
+
+  test("under a provider, the theme's components, including groups the provider does not require", () => {
+    const theme = makeTheme('a');
+    const withChat = { ...theme, components: { ...theme.components, Chat: { Frame: Pass } } };
+
+    render(
+      <ShortRoundProvider theme={withChat}>
+        <ShowsSlotGroups />
+      </ShortRoundProvider>
+    );
+
+    expect(screen.getByTestId('slot-groups')).toHaveTextContent(
+      'IntentionPalette,Sidekick,SidecarContent,Chat'
+    );
+  });
+
+  test('with no provider, null', () => {
+    render(<ShowsSlotGroups />);
+
+    expect(screen.getByTestId('slot-groups')).toHaveTextContent('none');
   });
 });

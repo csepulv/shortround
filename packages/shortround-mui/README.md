@@ -81,6 +81,21 @@ import { MuiSidekickComponents } from '@shortround/mui';
 // - IntentionPalette.Item, Input, Group, Frame, NoMatches
 // - Sidekick.ControlBar, Frame, Popover  
 // - SidecarContent
+// - Chat: Frame, Transcript, Message, Text, IntentionRun, ToolRun, Error, Composer, Row, Input
+```
+
+### The chat's slots
+
+`MuiSidekickComponents.Chat` draws `@shortround/chat`'s `<IntentionChat>`: the transcript (the user's messages as
+bubbles, the assistant's Markdown, typed and model-run intentions with their answers), the rows above the input (the
+highlighted one selected, a row saying what a command is missing in italics), and the input, whose typed words are
+coloured by role as in the palette. This package doesn't depend on `@shortround/chat`; install it to use the chat
+(see its README). With `muiTheme` at the root, `<IntentionChat>` needs no other setup:
+
+```jsx
+<ShortRoundProvider theme={muiTheme}>
+  <IntentionChat runtime={runtime} transport={transport} />
+</ShortRoundProvider>
 ```
 
 ### Toast Integration

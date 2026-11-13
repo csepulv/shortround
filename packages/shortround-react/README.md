@@ -42,9 +42,14 @@ root.render(
 const { showToast } = useShortRoundToast(); // shows a toast in the theme's Toast
 ```
 
-- A theme is `{ components, Toast }`: the `SidekickComponents` slots and a Toast view. The provider holds the
-  toast's state; the theme only draws it. Define the theme at module scope (or memoize it): a theme object built
-  on every render remounts its Toast.
+- A theme is `{ components, Toast }`: slot groups and a Toast view. The provider holds the toast's state; the theme
+  only draws it. Define the theme at module scope (or memoize it): a Toast or slot component created during render
+  remounts on every render.
+- Each slot group is needed only by what draws it. `ShortRoundSidekick` needs `IntentionPalette`, `Sidekick` and
+  `SidecarContent`, and throws when it mounts, naming any it misses; `@shortround/chat`'s chat needs `Chat`. So an app
+  that draws only the chat gives a theme with `Chat` and a `Toast`.
+- `useShortRoundComponents()` gives the nearest provider's `theme.components` (or `null`), for a package that draws
+  through a slot group of its own.
 - An action's `message` is shown as a toast.
 - A nested `ShortRoundProvider` wins for its subtree.
 - `ShortRoundSidekick`'s `SidekickComponents` and `showToast` props (the 0.2.x way to choose a look) override the provider; each prop
@@ -336,6 +341,40 @@ const sendAsChat = (text, { matches }) =>
 - Keep it quick and synchronous, and memoize it: a new function resets the list and the input. So read app state that
   changes (such as whether the chat shows) when the fallback runs, through a ref or a store, rather than closing over
   it. One that throws adds no rows and logs why.
+
+### Line hints in your own input: LineInput
+
+The sidekick's input shows each typed word coloured by its role and the rest of the next word as ghost text. A host
+with its own input (a chat, an editor's command field) gets the same drawing with `LineInput`: wrap the input, pass
+its ref, and pass a command line's state. The input stays on top with its text made transparent, so typing, the caret
+and selection stay native.
+
+```jsx
+import { useRef, useSyncExternalStore } from 'react';
+import { LineInput } from '@shortround/react';
+
+function CommandField({ line }) {
+  // line: a command line from @shortround/core (palette.commandLine(), or runtime.commandLine())
+  const inputRef = useRef(null);
+  const lineState = useSyncExternalStore(line.subscribe, line.getState);
+  return (
+    <LineInput inputRef={inputRef} lineState={lineState}>
+      <input
+        ref={inputRef}
+        value={lineState.text}
+        onChange={(event) => line.change(event.target.value, event.target.selectionStart)}
+      />
+    </LineInput>
+  );
+}
+```
+
+- Each word is a `<span data-role="…">` (`verb`, `text`, `hint`, `param`, `value`, `unread`, `broken`) and the ghost a
+  `<span data-role="ghost">`, inside `data-testid="shortround-line-shadow"`. Colour them in your stylesheet.
+- The line is drawn on one line. Pass `lineState={null}` while the text has a line break (a `<textarea>`), and the
+  input shows as it is.
+- A chat line's state should go through core's `drawnLineState`, so a line that reads as chat isn't drawn as a broken
+  command.
 
 `@shortround/core`'s catalog engine (`loadCatalog`, `buildPalette`) builds the intentions, the resolver and (given
 one) the fallback from a YAML catalog: see its

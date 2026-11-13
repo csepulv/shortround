@@ -6,6 +6,12 @@ export const ShortRoundThemeContext = createContext(null);
 // For core's own components: the nearest provider's theme, or null when there is none.
 export const useShortRoundTheme = () => useContext(ShortRoundThemeContext);
 
+/**
+ * The nearest provider's theme slots (`theme.components`), or null when there is no provider: for packages that draw
+ * through slot groups of their own, such as `@shortround/chat`'s `Chat`.
+ */
+export const useShortRoundComponents = () => useShortRoundTheme()?.components ?? null;
+
 export function useShortRoundToast() {
   const provided = useShortRoundTheme();
   if (!provided) {

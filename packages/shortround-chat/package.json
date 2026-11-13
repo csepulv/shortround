@@ -1,0 +1,87 @@
+{
+  "name": "@shortround/chat",
+  "version": "0.6.0",
+  "description": "ShortRound's chat: a line that runs the app's intentions as typed, or sends the line to a model that can run them as tools. On the AI SDK, with the server helpers for its route.",
+  "keywords": [
+    "shortround",
+    "chat",
+    "intentional ui",
+    "ai sdk",
+    "tools",
+    "react"
+  ],
+  "author": "Chris Sepulveda <csepulv@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/csepulv/shortround.git",
+    "directory": "packages/shortround-chat"
+  },
+  "bugs": {
+    "url": "https://github.com/csepulv/shortround/issues"
+  },
+  "homepage": "https://github.com/csepulv/shortround#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./src/server.d.ts",
+      "import": "./dist/server.js",
+      "default": "./dist/server.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src/index.d.ts",
+    "src/server.d.ts",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "types": "./src/index.d.ts",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "types:check": "tsc -p types-check",
+    "test:node-import": "node scripts/check-node-import.js"
+  },
+  "devDependencies": {
+    "@ai-sdk/react": "4.0.173",
+    "@shortround/core": "workspace:*",
+    "@shortround/react": "workspace:*",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^22.20.5",
+    "@types/react": "19.1.8",
+    "@vitejs/plugin-react": "^4.6.0",
+    "ai": "7.0.169",
+    "jsdom": "^26.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "5.8.3",
+    "vite": "^7.3.6",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "@ai-sdk/react": "^4.0.0",
+    "@shortround/core": "^0.6.0",
+    "@shortround/react": "^0.6.0",
+    "ai": "^7.0.0",
+    "react": "^18.2.0 || ^19.0.0",
+    "react-dom": "^18.2.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1",
+    "zod": "^4.6.5"
+  }
+}

@@ -4,8 +4,22 @@
 import {
   type ArgSource,
   type BuilderState,
+  buildCatalogRuntime,
   buildPalette,
+  type CatalogRuntime,
+  type ChatLine,
+  type ChatLineRow,
+  drawnLineState,
+  firstEnabledIndex,
+  type IntentionTool,
+  type IntentionToolAnswer,
+  type IntentionToolProperty,
+  makeChatLine,
+  moveHighlight,
+  SEND_AS_CHAT_ROW_ID,
   type CatalogExample,
+  type CatalogIntention,
+  type CatalogParam,
   type CatalogResolveFallbackInput,
   type CatalogResolveInput,
   checkCatalog,
@@ -16,6 +30,7 @@ import {
   createPaletteStore,
   createSidekickStore,
   findExampleFailures,
+  findInvalidToolNames,
   findUntypedCommands,
   type Intention,
   type IntentionActionResult,
@@ -27,13 +42,16 @@ import {
   type PickerRow,
   type ResolveFallbackInput,
   type ResolveInput,
-  type RunOutcome
+  type RunOutcome,
+  type RunResult
 } from '@shortround/core';
 import {
+  LineInput,
   type ShortRoundTheme,
   ShortRoundProvider,
   ShortRoundSidekick,
   type SidekickComponents,
+  useShortRoundComponents,
   useShortRoundToast
 } from '@shortround/react';
 import type { ComponentProps } from 'react';
@@ -92,6 +110,18 @@ export const theme: ShortRoundTheme = {
 export const root = ShortRoundProvider({ theme, children: null });
 export const sidekickUnderRoot = ShortRoundSidekick({ defaultIntentions });
 export const showSaved = () => useShortRoundToast().showToast({ message: 'Saved' });
+// A package's own slot group, read from the same theme.
+export const chatSlots = () => useShortRoundComponents()?.Chat;
+// A theme for an app that draws only another package's group: no palette groups.
+export const chatOnlyTheme: ShortRoundTheme = {
+  components: { Chat: {} },
+  Toast: () => null
+};
+export const misshapenTheme: ShortRoundTheme = {
+  // @ts-expect-error a palette group, when given, is still checked against the contract
+  components: { SidecarContent: 'not a component' },
+  Toast: () => null
+};
 
 // Slots that only draw: core hands Input its cmdk input element, tells Item whether its
 // row is selected, and gives ControlBar the controls' names.
@@ -162,6 +192,9 @@ export const untyped: Array<{ command: string; label: string }> = findUntypedCom
   checkCatalog(catalogText)
 );
 export const untypedLoaded = findUntypedCommands(loadCatalog(catalogText, bindings));
+export const invalidToolNames: Array<{ command: string; reason: string }> = findInvalidToolNames(
+  checkCatalog(catalogText)
+);
 
 // A custom UI: the palette store proposes side panels to the sidekick store it is given, and the app's reducer decides
 // (core's README).
@@ -176,10 +209,26 @@ export const chosen = createPaletteStore({ defaultIntentions }).select('x', { si
 // A run function may be async.
 export const asyncOutcome: RunOutcome = Promise.resolve({ message: 'Sorted' });
 
+// A run may answer a model apart from the user: `output` for the model, `message` for the user.
+export const readOutcome: RunOutcome = { message: 'Found 2 notes', output: { total: 2 } };
+
 // The catalog's own shapes, as an app that builds or reads one in TypeScript names them. A list value may keep an id
 // with `path.id` (MIGRATING.md, "From a v2 catalog").
 export const matchSource: ArgSource = {
   list: [{ value: 'any', title: 'any', aliases: ['either'], path: { id: 'app.matchAny' } }]
+};
+export const limitParam: CatalogParam = {
+  label: 'Limit',
+  nullable: ['all', 'every'],
+  argSource: { freeform: true, type: 'integer', minimum: 1, maximum: 50 }
+};
+export const nameParam: CatalogParam = { label: 'Name', argSource: { freeform: true, maxLength: 40 } };
+export const tagsParam: CatalogParam = {
+  label: 'Tag',
+  list: true,
+  minItems: 1,
+  required: true,
+  argSource: { freeform: true }
 };
 export const nowList: PaletteNow = palette.current();
 export const example: CatalogExample = { say: 'sort relevance', means: { search: { sort: 'relevance' } } };
@@ -206,3 +255,53 @@ export const typedRows: Intention[] = paletteLine.rows();
 export const candidates: CommandLineState['readings'] = lineState.readings;
 paletteLine.dispose();
 export const sidekickWithoutHints = ShortRoundSidekick({ palette, disableLineHints: true });
+
+// One runtime for a palette and a chat: the app calls notify() once; the model gets the intentions as tools (core's
+// CatalogRuntime).
+const runtime: CatalogRuntime = buildCatalogRuntime(loadCatalog(catalogText, bindings));
+export const paletteOverRuntime = buildPalette(runtime, { panels: { sidecar: () => null }, backIntentionId: 'back' });
+runtime.notify();
+export const stopRuntime: () => void = runtime.subscribe(() => {});
+export const canShare: boolean = runtime.isAvailable('share');
+export const ranShare: Promise<{ message?: string }> = runtime.run('share', { result: 'w1' });
+export const ranResult: Promise<RunResult> = runtime.run('share');
+const runtimeLine = runtime.commandLine();
+export const runtimeRows: Intention[] = runtimeLine.rows();
+runtimeLine.dispose();
+export const tools: Promise<IntentionTool[]> = runtime.tools();
+export const toolSchema: Promise<Record<string, IntentionToolProperty>> = tools.then(
+  (built) => built[0].inputSchema.properties
+);
+export const answer: Promise<IntentionToolAnswer> = runtime.runTool({ toolName: 'share', input: { result: '1' } });
+export const requiredFromModel: Promise<string[] | undefined> = tools.then((built) => built[0].inputSchema.required);
+export const fewestItems: Promise<number | undefined> = tools.then(
+  (built) => built[0].inputSchema.properties.tags?.minItems
+);
+
+// The chat line: the keyboard rules and the highlight, for a chat UI of any kind.
+const chatLine: ChatLine = makeChatLine({
+  runtime,
+  showHintForMissing: true,
+  onIntentionRun: ({ line, message, output }) => `${line}: ${message} ${JSON.stringify(output)}`,
+  onSendAsChat: (text) => text
+});
+chatLine.change('share hello', 11);
+const chatRows: ChatLineRow[] = chatLine.rows();
+const highlight: number = moveHighlight(chatRows, chatLine.defaultHighlightIndex(chatRows), 1);
+export const firstEnabled: number = firstEnabledIndex(chatRows);
+export const sendsAsChat: boolean = chatRows.some((row) => row.id === SEND_AS_CHAT_ROW_ID);
+export const handled: boolean | Promise<boolean> = chatLine.pressKey({
+  key: 'Enter',
+  metaKey: true,
+  highlightedRow: chatRows[highlight]
+});
+chatLine.chooseRow(chatRows[0]);
+export const drawn: CommandLineState = drawnLineState(chatLine.getState());
+export const awaited: string[] | undefined = drawn.awaiting[0]?.labels;
+export const missingLabels: string[] | undefined = (chatRows[0] as CatalogIntention).missing;
+export const appOnly: string[] | undefined = drawn.readings[0]?.appNeeds;
+chatLine.dispose();
+
+// A host's own input with the line drawn under it.
+declare const chatInputRef: { current: HTMLTextAreaElement | null };
+export const chatInput = LineInput({ inputRef: chatInputRef, lineState: drawn, children: null });

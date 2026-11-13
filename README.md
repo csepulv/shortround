@@ -21,8 +21,10 @@ ShortRound provides a flexible command palette system where:
 npm install @shortround/core @shortround/react @shortround/mui
 ```
 
+For the chat, also `npm install @shortround/chat ai @ai-sdk/react` (see its README).
+
 React 18.2 or 19. `@shortround/mui` also needs `@mui/material`, `@emotion/react`, `@emotion/styled` and `lucide-react`
-(its README has the versions).
+(its README has `@mui/material`'s versions).
 
 Choose the theme once, at your app's root:
 
@@ -89,7 +91,9 @@ Press `Cmd+K` (or `Ctrl+K`) to open the command palette. Switching to another th
   [`catalog-discovery` skill](skills/catalog-discovery) helps a coding agent map an existing app into a catalog
 - **[@shortround/react](packages/shortround-react)** - The palette, sidekick, hooks, provider and theme contract for
   React
-- **[@shortround/mui](packages/shortround-mui)** - Material-UI themed components
+- **[@shortround/mui](packages/shortround-mui)** - Material-UI themed components, the chat's included
+- **[@shortround/chat](packages/shortround-chat)** - A chat over your catalog: a line that runs the app's intentions
+  as typed, or sends the line to a model (through the AI SDK) that can run them as tools; with helpers for your route
 
 ## Examples
 
@@ -99,6 +103,11 @@ Check out the [todo-app example](examples/todo-app) for a complete implementatio
 - Sidekick drawer usage
 - Form validation
 - Toast notifications
+
+The todo app's `/chat` page puts `@shortround/chat` beside a small todo list, with a real model through a dev-server
+route (an Anthropic key in `examples/todo-app/.env.local`; typed intentions work without one). The storybook
+(`examples/storybook`) has an "Intention chat" story: the same chat component over a notes catalog, with a scripted
+model, so it needs no key.
 
 The [TipTap example](examples/tiptap-slash) drives slash commands in an editor from `@shortround/core` alone, with no
 palette UI.
@@ -149,6 +158,7 @@ For detailed API documentation and advanced usage, see the individual package RE
   [format](packages/shortround-core/CATALOG.md) and [adoption guide](packages/shortround-core/ADOPTING-A-CATALOG.md)
 - [React Package Documentation](packages/shortround-react/README.md)
 - [MUI Package Documentation](packages/shortround-mui/README.md)
+- [Chat Package Documentation](packages/shortround-chat/README.md)
 
 Upgrading? [MIGRATING.md](MIGRATING.md) lists what each release asks of your app, release by release.
 

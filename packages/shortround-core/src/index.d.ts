@@ -2,6 +2,7 @@
 
 // The catalog engine (was @shortround/catalog).
 export * from './catalog/index.js';
+import type { CatalogIntention, CatalogRuntime } from './catalog/index.js';
 
 export const RevertIntentionIds: {
   readonly BACK: string;
@@ -340,6 +341,8 @@ export interface BuilderState {
   readings: Array<{
     title: string;
     needs: string[];
+    /** On a catalog runtime's own line: the params in `needs` only the app can supply (it holds no value for them now). */
+    appNeeds?: string[];
     call: { command: string; run: string; args: Record<string, unknown> };
   }>;
   /** What may come next at the caret: `insertText` is the whole line with it. */
@@ -351,6 +354,10 @@ export interface BuilderState {
    * offered at the caret have none to choose from and nothing is typed for it.
    */
   incomplete: string[];
+  /** The rules a typed value breaks ("Limit is a whole number from 1"); each is also an `incomplete` message. */
+  brokenRules: string[];
+  /** The params a hint word waits for ("with" → Sort), each with the `incomplete` message that says so. */
+  awaiting: Array<{ message: string; labels: string[] }>;
   /** Params whose lookups are still loading, or failed. */
   pending: Array<{ param: string; label: string }>;
   failed: Array<{ param: string; label: string }>;
@@ -384,6 +391,13 @@ export interface CommandLineState {
   canRun: boolean;
   /** As `BuilderState.incomplete`: what is still being typed, or that there is nothing to choose from. */
   incomplete: string[];
+  /**
+   * As `BuilderState.brokenRules`: the rules a typed value breaks; a chat line's Enter does nothing while there are
+   * any.
+   */
+  brokenRules: string[];
+  /** As `BuilderState.awaiting`: the params a hint word waits for. */
+  awaiting: BuilderState['awaiting'];
   problem?: string;
   /** Params whose lookups have been loading for longer than a short delay. */
   loading: Array<{ param: string; label: string }>;
@@ -410,6 +424,84 @@ export interface CommandLine {
   /** The host is done with the line: it stops hearing lookups (and, from a palette, the app) and tells no one more. */
   dispose: () => void;
 }
+
+/** The id of a chat line's "Send as chat" row. */
+export const SEND_AS_CHAT_ROW_ID: 'chat:send';
+
+/** A chat line's row: a typed line's row from the runtime, or "Send as chat" (which has no action). */
+export type ChatLineRow =
+  | CatalogIntention
+  | { id: typeof SEND_AS_CHAT_ROW_ID; title: string; group: string; icon: string };
+
+/** A key the chat line's input received; `highlightedRow` is the row the arrows moved to, if they did. */
+export interface ChatLineKey {
+  key: string;
+  metaKey?: boolean;
+  ctrlKey?: boolean;
+  shiftKey?: boolean;
+  highlightedRow?: ChatLineRow;
+}
+
+/**
+ * A chat's input line over a catalog runtime. Enter acts on the highlighted row (by default `defaultHighlightIndex`):
+ * it runs a command, completes a next step, or sends as chat. Enter does nothing on an empty line, while the top
+ * command misses a value only the app can supply, or while a typed value breaks its param's rule. Cmd+Enter
+ * (Ctrl+Enter) always sends as chat; Shift+Enter is left to the input, for a new line; Tab completes. On an empty line,
+ * Tab opens the command list, and on the open list it acts like Enter; Shift+Tab there is left to the host, so the
+ * focus can leave. No DOM and no React.
+ */
+export interface ChatLine {
+  /** The line's state, and whether the command list is open on an empty line. */
+  getState: () => CommandLineState & { isCommandListOpen: boolean };
+  subscribe: (listener: () => void) => () => void;
+  /** Changes the text (closing the command list). */
+  change: (text: string, caret?: number) => void;
+  dispose: () => void;
+  /**
+   * The rows for the line now. An empty line has none, unless ArrowDown, ArrowUp or Tab opened the command list: one row
+   * per command available now, by its label, which puts the command in the line when chosen. A line of just `help` or
+   * `?` lists the same rows (unless a command answers to that word), then "Send as chat". "Send as chat" is last
+   * whenever the line has text, and the only row when the line reads as chat: its first word starts no command, or it
+   * has a line break. A next step's row has no subtitle when it would repeat its title.
+   */
+  rows: () => ChatLineRow[];
+  /**
+   * The row to highlight before the arrows move: the first that can be chosen, or -1 (none) while the top command
+   * misses a value only the app can supply or a typed value breaks its rule, since Enter then does nothing.
+   */
+  defaultHighlightIndex: (rows: ReadonlyArray<{ id: string; disabled?: boolean }>) => number;
+  /**
+   * Whether the line handled the key; the input does its default otherwise (Shift+Enter, a letter). On an empty line,
+   * an arrow opens the command list and Escape closes it.
+   */
+  pressKey: (event: ChatLineKey) => boolean | Promise<boolean>;
+  /** Chooses a row as Enter would (a click); a disabled row does nothing. */
+  chooseRow: (row: ChatLineRow) => unknown;
+}
+
+/**
+ * A chat line: `onIntentionRun` hears each typed run, its message (or "Ran <label>") and, when the run returned one,
+ * its `output` for a model; `onSendAsChat` the text.
+ */
+export function makeChatLine(options: {
+  runtime: CatalogRuntime;
+  onIntentionRun: (run: { line: string; message: string; output?: unknown }) => void;
+  onSendAsChat: (text: string) => void;
+  /**
+   * Whether rows say what a command is missing (default `true`): a value the app holds none for, or a param a hint
+   * word waits for, reads "Missing <label>" on a disabled row carrying `missing`. Off, those rows are hidden.
+   */
+  showHintForMissing?: boolean;
+}): ChatLine;
+
+/** The line as the input draws it: a line that reads as chat has no word roles, so it isn't drawn as broken. */
+export function drawnLineState(state: CommandLineState): CommandLineState;
+
+/** The row Enter acts on before the arrows move: the first that isn't disabled, or -1. */
+export function firstEnabledIndex(rows: ReadonlyArray<{ id: string; disabled?: boolean }>): number;
+
+/** The next row that isn't disabled in the arrow's direction; the highlight stops at the ends. */
+export function moveHighlight(rows: ReadonlyArray<{ id: string; disabled?: boolean }>, index: number, step: 1 | -1): number;
 
 /** A command line over a command builder; `run` receives the call Enter runs. */
 export function makeCommandLine(options: {

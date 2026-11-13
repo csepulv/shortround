@@ -1,5 +1,17 @@
 # @shortround/mui
 
+## 0.6.0
+
+### Minor Changes
+
+- `Chat` slots for `@shortround/chat`'s `<IntentionChat>`, on `MuiSidekickComponents` and so on `muiTheme`: a
+  transcript (messages, Markdown text, the intentions a line ran, a model's tool runs, errors) and a composer (the
+  input with its line hints, and the rows above it). With `muiTheme` at the root, `<IntentionChat>` needs no other
+  setup. This package doesn't depend on `@shortround/chat`.
+- Types: `MuiSidekickComponents` includes `Chat`, and `muiTheme` is typed with its own components, so reading a group
+  off it (`muiTheme.components.Sidekick`) needs no check under `strict`.
+- Takes `@shortround/core` and `@shortround/react` `^0.6.0` as peers.
+
 ## 0.5.0
 
 ### Breaking Changes

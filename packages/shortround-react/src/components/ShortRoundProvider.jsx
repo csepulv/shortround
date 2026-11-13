@@ -4,18 +4,10 @@ import { ShortRoundThemeContext } from '../hooks/useShortRoundTheme.js';
 
 const CLOSED_TOAST = { isOpen: false, message: null };
 
-const SLOT_GROUPS = ['IntentionPalette', 'Sidekick', 'SidecarContent'];
-
 function requireTheme(theme) {
   const missing = ['components', 'Toast'].filter((key) => !theme?.[key]);
   if (missing.length > 0) {
     throw new Error(`ShortRoundProvider: the theme has no ${missing.join(' or ')}`);
-  }
-  const missingGroups = SLOT_GROUPS.filter((group) => !theme.components[group]);
-  if (missingGroups.length > 0) {
-    throw new Error(
-      `ShortRoundProvider: the theme has no ${missingGroups.map((group) => `components.${group}`).join(' or ')}`
-    );
   }
 }
 

@@ -90,11 +90,43 @@ order). Use it to know what the palette would show for a text, instead of copyin
 
 ## The catalog
 
-`loadCatalog`, `checkCatalog`, `buildPalette`, `loadExamples`, `findExampleFailures` and `findUntypedCommands` build
-and check the palette from a YAML catalog of an app's commands (format version 3): rows to pick from, and typed whole
-commands. See
+`loadCatalog`, `checkCatalog`, `buildPalette`, `loadExamples`, `findExampleFailures`, `findUntypedCommands` and
+`findInvalidToolNames` build and check the palette from a YAML catalog of an app's commands (format version 3): rows
+to pick from, and typed whole commands. See
 [CATALOG.md](./CATALOG.md) for the format and [ADOPTING-A-CATALOG.md](./ADOPTING-A-CATALOG.md) for adding one to an
 app. (They were `@shortround/catalog` before 0.5.0, for format version 2.)
+
+## The catalog at run time: one runtime, a palette and a chat over it
+
+`buildCatalogRuntime(loadCatalog(text, bindings))` is the catalog at run time, with no UI. Build it once; a palette
+(`buildPalette(runtime, { backIntentionId })`) and a chat (`@shortround/chat`) are views over it, so an app with both
+calls `runtime.notify()` once when its state changes.
+
+- `isAvailable(name)`, `run(name, args)`, `notify()`, `subscribe(listener)`, and `commandLine()` (a command line for
+  the commands available now; see below).
+- `await tools()`: every intention as a tool a model can call (a name, a description, a JSON Schema for the args),
+  except one whose name a model provider won't take as a tool name, which is left out with a warning, once
+  (`findInvalidToolNames` lists them). The description is the command's label, then its `toolDescription` when it
+  has one. One that isn't available now has "(not available now)" after its label. For one that is, a lookup
+  param's description lists the values the app has now (up to twenty, then how many more); for one that isn't,
+  the lookup isn't asked.
+- `await runTool({ toolName, input })`: runs a model's call, or answers why not (not available now, an unknown param, a
+  value outside its choices, several values for a one-value param, a value that isn't text such as an object, fewer
+  items than a list param's `minItems`, a value the app holds none of, and every required param left out, empty or
+  blank, named in one answer, and a typed value that breaks its param's rule, with the rule). A lookup value matches by
+  its value, title or alias; a number or boolean given as free text arrives as its text; a number type's value may be a
+  number or a number written as text, and arrives as a number; a param given `null` counts as left out, unless it is
+  `nullable`. A tool's schema lists the required params the app holds no value for now, a list param's `minItems` (at
+  least 1 for a required list), a number type's `integer` or `number` with its `minimum` and `maximum`, text's
+  `maxLength`, and `null` for a nullable param, described in words ("Limit: a whole number from 1, or null for all").
+  The model gets the run's `output` when it returns one, else its `message`, else "Ran <label>".
+
+`makeChatLine({ runtime, onIntentionRun, onSendAsChat, showHintForMissing })` is a chat's input line: a typed intention
+runs (`onIntentionRun` hears the line, the message, and the run's `output` when it returned one), anything else is sent
+as chat, and the rows say what Enter would do. An empty line shows no rows; ArrowDown, ArrowUp or Tab
+(or a line of just `help` or `?`) lists the commands available now. `drawnLineState`, `SEND_AS_CHAT_ROW_ID`,
+`firstEnabledIndex` and `moveHighlight` help a UI draw it. `@shortround/chat` draws it; its README describes the
+keys.
 
 ## The command builder
 
@@ -145,8 +177,9 @@ this way, with core alone.
 The package carries its types: `Intention`, `IntentionActionResult`, `ResolveInput`, `ResolveFallbackInput`,
 `PaletteStore`, `PaletteStoreState`, `PaletteDefaults`, `PaletteSource`, `SidekickStore`, `SidekickStoreState`,
 `SidecarReducer`, `SidecarChange`, `SidecarReason`, `SidecarRenderer`, `BuilderCommand`, `BuilderState`, `WordRole`,
-`CommandLine`, `CommandLineState`, and the
-catalog's types (`Catalog`, `CheckedCatalog`, `Palette`, `PickerRow`, `RunOutcome`, `CatalogExample`, ...).
+`CommandLine`, `CommandLineState`, `CatalogRuntime`, `IntentionTool`, `IntentionToolProperty`, `IntentionToolItem`,
+`IntentionToolCall`, `IntentionToolAnswer`, `RunResult`, `ChatLine`, `ChatLineRow`, `ChatLineKey`, and the catalog's
+types (`Catalog`, `CheckedCatalog`, `Palette`, `PickerRow`, `RunOutcome`, `CatalogExample`, ...).
 
 ## License
 

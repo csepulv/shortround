@@ -3,21 +3,21 @@
 // ContractError naming the slot and what it expected; when it reaches its slot through another one and
 // that fails, the message says "(precondition)" and names the slot it went through.
 import { ControlLabels, createSidekickStore, Sizes } from '@shortround/core';
-import { ShortRoundProvider, ShortRoundSidekick } from '@shortround/react';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { ShortRoundProvider, ShortRoundSidekick, useShortRoundToast } from '@shortround/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { createElement } from 'react';
 
+import { CHAT_CHECKS } from './chat-checks.js';
+import {
+  actAndSettle,
+  click,
+  defineCheck,
+  expectThat,
+  findByHook,
+  installJsdomShims,
+  typeInto
+} from './check-tools.js';
 import { TEST_IDS } from './test-ids.js';
-
-// cmdk needs these browser APIs; jsdom lacks them.
-function installJsdomShims() {
-  globalThis.ResizeObserver ??= class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  };
-  Element.prototype.scrollIntoView ??= () => {};
-}
 
 const TITLE = 'Contract palette';
 const PANEL_TEXT = 'Contract panel content';
@@ -63,32 +63,6 @@ function makeIntentions(ran) {
   ];
 }
 
-class ContractError extends Error {}
-
-function expectThat(condition, message) {
-  if (!condition) {
-    throw new ContractError(message);
-  }
-}
-
-// A check: its failures carry its id, so a theme author (and the suite's own tests) can tell a
-// contract failure from an unrelated crash.
-const defineCheck = ({ id, slots, obligation, verify }) => ({
-  id,
-  slots,
-  obligation,
-  run: async (theme) => {
-    try {
-      await verify(theme);
-    } catch (error) {
-      if (error instanceof ContractError) {
-        error.checkId = id;
-      }
-      throw error;
-    }
-  }
-});
-
 // Renders the open palette as an app would (the theme from a provider, no slot props, optionally the app's
 // icons), runs `exercise` against it, and always cleans up.
 async function withPalette(theme, exercise, { icons } = {}) {
@@ -113,27 +87,27 @@ async function withPalette(theme, exercise, { icons } = {}) {
   }
 }
 
-function findByHook(testId, slot) {
-  const elements = screen.queryAllByTestId(testId);
-  expectThat(elements.length > 0, `${slot}: no element with data-testid="${testId}"`);
-  expectThat(elements.length === 1, `${slot}: more than one element with data-testid="${testId}"`);
-  return elements[0];
+const SHOW_TOAST_ID = 'shortround-contract-show-toast';
+
+function ToastButton() {
+  const { showToast } = useShortRoundToast();
+  return createElement('button', {
+    'data-testid': SHOW_TOAST_ID,
+    onClick: () => showToast({ message: TOAST_TEXT }),
+    type: 'button'
+  });
+}
+
+async function withProvider(theme, exercise) {
+  render(createElement(ShortRoundProvider, { theme }, createElement(ToastButton)));
+  try {
+    await exercise();
+  } finally {
+    cleanup();
+  }
 }
 
 const listedRows = () => document.querySelectorAll('[data-testid^="shortround-item-"]');
-
-// Choosing an intention runs it asynchronously; letting it settle inside act() keeps React's updates
-// where React expects them (no "not configured to support act" warnings in a theme's test output).
-const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
-const actAndSettle = (doSomething) =>
-  act(async () => {
-    doSomething();
-    await settle();
-  });
-
-const typeInto = (input, text) =>
-  actAndSettle(() => fireEvent.change(input, { target: { value: text } }));
-const click = (element) => actAndSettle(() => element.click());
 
 // For checks that reach their slot by typing: text that matches nothing must empty the list.
 async function typeNoMatch(slot) {
@@ -147,21 +121,9 @@ async function typeNoMatch(slot) {
   );
 }
 
-// For checks that reach their slot by choosing a row.
-async function choose(slot, intentionId, ran) {
-  await click(
-    findByHook(TEST_IDS.item(intentionId), `${slot}: (precondition) IntentionPalette.Item`)
-  );
-  await waitFor(() =>
-    expectThat(
-      ran.includes(intentionId),
-      `${slot}: (precondition) clicking IntentionPalette.Item "${intentionId}" did not run it`
-    )
-  );
-}
-
 export const CONTRACT_CHECKS = [
   defineCheck({
+    group: 'palette',
     id: 'children-pass-through',
     slots: ['Sidekick.Popover', 'Sidekick.Frame', 'IntentionPalette.Frame'],
     obligation: 'render their children: the palette appears',
@@ -174,6 +136,7 @@ export const CONTRACT_CHECKS = [
       })
   }),
   defineCheck({
+    group: 'palette',
     id: 'input-narrows',
     slots: ['IntentionPalette.Input'],
     obligation: "places core's input: typing narrows the rows",
@@ -188,6 +151,7 @@ export const CONTRACT_CHECKS = [
       })
   }),
   defineCheck({
+    group: 'palette',
     id: 'input-message',
     slots: ['IntentionPalette.Input'],
     obligation: 'shows the input message',
@@ -203,6 +167,7 @@ export const CONTRACT_CHECKS = [
       })
   }),
   defineCheck({
+    group: 'palette',
     id: 'item-shows',
     slots: ['IntentionPalette.Item'],
     obligation: "shows the intention's title and subtitle",
@@ -217,6 +182,7 @@ export const CONTRACT_CHECKS = [
   }),
   // The app's override for one row reaches the theme as `icon`, whatever icons the theme has of its own.
   defineCheck({
+    group: 'palette',
     id: 'item-icon',
     slots: ['IntentionPalette.Item'],
     obligation: 'shows the icon it is given',
@@ -234,6 +200,7 @@ export const CONTRACT_CHECKS = [
       )
   }),
   defineCheck({
+    group: 'palette',
     id: 'group-name',
     slots: ['IntentionPalette.Group'],
     obligation: "shows each group's name",
@@ -246,6 +213,7 @@ export const CONTRACT_CHECKS = [
       })
   }),
   defineCheck({
+    group: 'palette',
     id: 'no-matches',
     slots: ['IntentionPalette.NoMatches'],
     obligation: 'when nothing matches, says so, naming the typed text',
@@ -260,6 +228,7 @@ export const CONTRACT_CHECKS = [
       })
   }),
   defineCheck({
+    group: 'palette',
     id: 'control-title',
     slots: ['Sidekick.ControlBar'],
     obligation: 'shows the title',
@@ -273,6 +242,7 @@ export const CONTRACT_CHECKS = [
       })
   }),
   defineCheck({
+    group: 'palette',
     id: 'control-close',
     slots: ['Sidekick.ControlBar'],
     obligation: 'the close control closes the palette',
@@ -287,6 +257,7 @@ export const CONTRACT_CHECKS = [
   }),
   // The palette opens at medium, so compact first: each click changes the size.
   defineCheck({
+    group: 'palette',
     id: 'control-size',
     slots: ['Sidekick.ControlBar'],
     obligation: 'the size controls set each size',
@@ -302,6 +273,7 @@ export const CONTRACT_CHECKS = [
       })
   }),
   defineCheck({
+    group: 'palette',
     id: 'control-anchor',
     slots: ['Sidekick.ControlBar'],
     obligation: 'the position control moves the palette',
@@ -318,6 +290,7 @@ export const CONTRACT_CHECKS = [
   // Core decides the names (ControlLabels) and passes them as `labels`; each control, and the size group,
   // must carry its own, so a screen reader and an app's tests find the same controls whatever the theme.
   defineCheck({
+    group: 'palette',
     id: 'control-names',
     slots: ['Sidekick.ControlBar'],
     obligation: "each control, and the size group, is named with core's labels",
@@ -346,6 +319,7 @@ export const CONTRACT_CHECKS = [
   }),
   // Opened through the store, as an intention's sidecar renderer would, so no other slot is involved.
   defineCheck({
+    group: 'palette',
     id: 'sidecar',
     slots: ['SidecarContent'],
     obligation: "shows the side panel's content when it opens",
@@ -366,12 +340,13 @@ export const CONTRACT_CHECKS = [
       })
   }),
   defineCheck({
+    group: 'toast',
     id: 'toast-shows',
     slots: ['Toast'],
-    obligation: "shows an intention's message while it is open",
+    obligation: 'shows a message while it is open',
     verify: (theme) =>
-      withPalette(theme, async ({ ran }) => {
-        await choose('Toast', 'notify', ran);
+      withProvider(theme, async () => {
+        await click(screen.getByTestId(SHOW_TOAST_ID));
         await waitFor(() =>
           expectThat(
             findByHook(TEST_IDS.toast, 'Toast').textContent.includes(TOAST_TEXT),
@@ -382,15 +357,17 @@ export const CONTRACT_CHECKS = [
   }),
   // Before any message the toast is closed; a Toast drawn regardless of isOpen could never be dismissed.
   defineCheck({
+    group: 'toast',
     id: 'toast-hidden',
     slots: ['Toast'],
     obligation: 'shows nothing while it is closed',
     verify: (theme) =>
-      withPalette(theme, () => {
+      withProvider(theme, () => {
         expectThat(
           screen.queryAllByTestId(TEST_IDS.toast).length === 0,
           `Toast: an element with data-testid="${TEST_IDS.toast}" is shown while the toast is closed (render nothing unless isOpen)`
         );
       })
-  })
+  }),
+  ...CHAT_CHECKS
 ];

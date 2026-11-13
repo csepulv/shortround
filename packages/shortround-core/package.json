@@ -1,6 +1,6 @@
 {
   "name": "@shortround/core",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "ShortRound's headless core: the command palette's state, matching, catalog engine, command builder and constants, with no UI. @shortround/react draws it.",
   "keywords": [
     "shortround",

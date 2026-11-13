@@ -199,7 +199,19 @@ function useResolvedTheme(SidekickComponents, showToast) {
       'ShortRoundSidekick has no theme: wrap the app in <ShortRoundProvider theme={…}>, or pass SidekickComponents'
     );
   }
+  requireSidekickGroups(components);
   return { components, showToast: showToast ?? provided?.showToast };
+}
+
+const SIDEKICK_GROUPS = ['IntentionPalette', 'Sidekick', 'SidecarContent'];
+
+function requireSidekickGroups(components) {
+  const missing = SIDEKICK_GROUPS.filter((group) => !components[group]);
+  if (missing.length > 0) {
+    throw new Error(
+      `ShortRoundSidekick: the theme has no ${missing.map((group) => `components.${group}`).join(' or ')}`
+    );
+  }
 }
 
 export function ShortRoundSidekick({

@@ -12,12 +12,14 @@ const manifestOf = (folder) =>
 const core = manifestOf('shortround-core');
 const react = manifestOf('shortround-react');
 const mui = manifestOf('shortround-mui');
+const chat = manifestOf('shortround-chat');
 
 describe('the packages released together', () => {
-  test('core, react and mui are at one version', () => {
-    expect({ react: react.version, mui: mui.version }).toEqual({
+  test('core, react, mui and chat are at one version', () => {
+    expect({ react: react.version, mui: mui.version, chat: chat.version }).toEqual({
       react: core.version,
-      mui: core.version
+      mui: core.version,
+      chat: core.version
     });
   });
 
@@ -27,11 +29,15 @@ describe('the packages released together', () => {
     expect(react.peerDependencies['@shortround/core']).toBe(range);
     expect(mui.peerDependencies['@shortround/core']).toBe(range);
     expect(mui.peerDependencies['@shortround/react']).toBe(range);
+    expect(chat.peerDependencies['@shortround/core']).toBe(range);
+    expect(chat.peerDependencies['@shortround/react']).toBe(range);
   });
 
   test('in the workspace, they link each other', () => {
     expect(react.devDependencies['@shortround/core']).toBe('workspace:*');
     expect(mui.devDependencies['@shortround/core']).toBe('workspace:*');
     expect(mui.devDependencies['@shortround/react']).toBe('workspace:*');
+    expect(chat.devDependencies['@shortround/core']).toBe('workspace:*');
+    expect(chat.devDependencies['@shortround/react']).toBe('workspace:*');
   });
 });

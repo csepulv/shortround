@@ -11,6 +11,9 @@ test('core imports with no window, and exports the headless pieces', async () =>
   expect(core.makeCommandBuilder).toBeTypeOf('function');
   expect(core.makeCommandLine).toBeTypeOf('function');
   expect(core.findUntypedCommands).toBeTypeOf('function');
+  expect(core.findInvalidToolNames).toBeTypeOf('function');
+  expect(core.buildCatalogRuntime).toBeTypeOf('function');
+  expect(core.makeChatLine).toBeTypeOf('function');
   expect(core.RevertIntentionIds.BACK).toBe('shortround::system::back');
   expect(core).not.toHaveProperty('ShortRoundSidekick');
 });

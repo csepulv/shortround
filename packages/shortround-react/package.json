@@ -1,6 +1,6 @@
 {
   "name": "@shortround/react",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "ShortRound for React: the command palette, the sidekick, the provider and the theme contract, on @shortround/core.",
   "keywords": [
     "shortround",
@@ -60,7 +60,7 @@
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
-    "@shortround/core": "^0.5.0",
+    "@shortround/core": "^0.6.0",
     "react": "^18.2.0 || ^19.0.0",
     "react-dom": "^18.2.0 || ^19.0.0"
   },

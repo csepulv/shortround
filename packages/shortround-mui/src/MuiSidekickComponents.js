@@ -1,3 +1,4 @@
+import { MuiChatComponents } from './components/chat/index.js';
 import { IntentionGroup } from './components/intention-palette/IntentionGroup.jsx';
 import { IntentionInput } from './components/intention-palette/IntentionInput.jsx';
 import { IntentionItem } from './components/intention-palette/IntentionItem.jsx';
@@ -23,6 +24,7 @@ export const MuiSidekickComponents = {
     Popover: SidekickPopover
   },
   SidecarContent,
+  Chat: MuiChatComponents,
   // With the slots, so an app passing SidekickComponents without a provider keeps them.
   icons: MUI_ICONS
 };

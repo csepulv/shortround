@@ -1,10 +1,28 @@
-import { JSX, ReactNode } from 'react';
+import { ComponentType, JSX, ReactNode } from 'react';
 import { ShortRoundTheme, SidekickComponents } from '@shortround/react';
 
-/** MUI's theme for `ShortRoundProvider`: its slots and its Toast view. */
-export const muiTheme: ShortRoundTheme;
+/** MUI's theme for `ShortRoundProvider`: its slots (the palette's, and `Chat` for `@shortround/chat`) and its Toast. */
+export const muiTheme: ShortRoundTheme & { components: typeof MuiSidekickComponents };
 
-export const MuiSidekickComponents: SidekickComponents;
+/**
+ * MUI's slots. `Chat` draws `@shortround/chat`'s `<IntentionChat>` (its props are `ChatComponents` there); this
+ * package doesn't depend on `@shortround/chat`.
+ */
+export const MuiSidekickComponents: SidekickComponents & {
+  Chat: Record<
+    | 'Frame'
+    | 'Transcript'
+    | 'Message'
+    | 'Text'
+    | 'IntentionRun'
+    | 'ToolRun'
+    | 'Error'
+    | 'Composer'
+    | 'Row'
+    | 'Input',
+    ComponentType<any>
+  >;
+};
 
 export function MuiToastProvider(props: { children: ReactNode }): JSX.Element;
 
